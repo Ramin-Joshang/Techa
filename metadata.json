@@ -1,0 +1,8 @@
+{
+  "name": "Techa",
+  "description": "Educational platform for learning web development, programming courses, exercises, and tech career roadmaps.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

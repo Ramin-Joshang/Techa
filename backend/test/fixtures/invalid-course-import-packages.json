@@ -1,0 +1,194 @@
+[
+  {
+    "name": "duplicate_chapter_import_key",
+    "description": "Two chapters sharing the same chapterImportKey",
+    "expectedError": "Duplicate chapterImportKey",
+    "payload": {
+      "contractVersion": 1,
+      "contentSchemaVersion": 1,
+      "course": {
+        "slug": "course-test",
+        "title": "دوره تست",
+        "summary": "خلاصه تست",
+        "description": "توضیحات تست",
+        "level": "beginner",
+        "icon": { "kind": "system", "name": "lucide:book" },
+        "seo": { "metaTitle": "عنوان سئو تست", "metaDescription": "توضیحات سئو تست" }
+      },
+      "chapters": [
+        { "chapterImportKey": "ch_dup", "title": "فصل اول", "slug": "chapter-1", "order": 1 },
+        { "chapterImportKey": "ch_dup", "title": "فصل دوم", "slug": "chapter-2", "order": 2 }
+      ],
+      "lessons": [
+        {
+          "chapterImportKey": "ch_dup",
+          "title": "درس اول",
+          "slug": "lesson-1",
+          "order": 1,
+          "contentBlocks": [
+            { "id": "blk_test_0001", "version": 1, "type": "paragraph", "data": { "text": "متن تست" } }
+          ],
+          "seo": { "metaTitle": "سئو درس", "metaDescription": "توضیحات سئو" }
+        }
+      ],
+      "mediaManifest": []
+    }
+  },
+  {
+    "name": "orphan_lesson_reference",
+    "description": "Lesson references non-existent chapterImportKey",
+    "expectedError": "does not exist in chapters",
+    "payload": {
+      "contractVersion": 1,
+      "contentSchemaVersion": 1,
+      "course": {
+        "slug": "course-test-2",
+        "title": "دوره تست ۲",
+        "summary": "خلاصه تست ۲",
+        "description": "توضیحات تست ۲",
+        "level": "beginner",
+        "icon": { "kind": "system", "name": "lucide:book" },
+        "seo": { "metaTitle": "عنوان سئو تست", "metaDescription": "توضیحات سئو تست" }
+      },
+      "chapters": [
+        { "chapterImportKey": "ch_existing", "title": "فصل اول", "slug": "chapter-1", "order": 1 }
+      ],
+      "lessons": [
+        {
+          "chapterImportKey": "ch_non_existent",
+          "title": "درس اول",
+          "slug": "lesson-1",
+          "order": 1,
+          "contentBlocks": [
+            { "id": "blk_test_0002", "version": 1, "type": "paragraph", "data": { "text": "متن تست" } }
+          ],
+          "seo": { "metaTitle": "سئو درس", "metaDescription": "توضیحات سئو" }
+        }
+      ],
+      "mediaManifest": []
+    }
+  },
+  {
+    "name": "duplicate_lesson_slug",
+    "description": "Two lessons sharing the exact same slug",
+    "expectedError": "Duplicate lesson slug",
+    "payload": {
+      "contractVersion": 1,
+      "contentSchemaVersion": 1,
+      "course": {
+        "slug": "course-test-3",
+        "title": "دوره تست ۳",
+        "summary": "خلاصه تست ۳",
+        "description": "توضیحات تست ۳",
+        "level": "beginner",
+        "icon": { "kind": "system", "name": "lucide:book" },
+        "seo": { "metaTitle": "عنوان سئو تست", "metaDescription": "توضیحات سئو تست" }
+      },
+      "chapters": [
+        { "chapterImportKey": "ch_one", "title": "فصل اول", "slug": "chapter-1", "order": 1 }
+      ],
+      "lessons": [
+        {
+          "chapterImportKey": "ch_one",
+          "title": "درس اول",
+          "slug": "same-slug",
+          "order": 1,
+          "contentBlocks": [
+            { "id": "blk_test_0003", "version": 1, "type": "paragraph", "data": { "text": "متن تست" } }
+          ],
+          "seo": { "metaTitle": "سئو درس", "metaDescription": "توضیحات سئو" }
+        },
+        {
+          "chapterImportKey": "ch_one",
+          "title": "درس دوم با نام تکراری",
+          "slug": "same-slug",
+          "order": 2,
+          "contentBlocks": [
+            { "id": "blk_test_0004", "version": 1, "type": "paragraph", "data": { "text": "متن تست" } }
+          ],
+          "seo": { "metaTitle": "سئو درس ۲", "metaDescription": "توضیحات سئو ۲" }
+        }
+      ],
+      "mediaManifest": []
+    }
+  },
+  {
+    "name": "duplicate_block_id",
+    "description": "Two blocks in different lessons sharing the same block ID",
+    "expectedError": "Duplicate block ID",
+    "payload": {
+      "contractVersion": 1,
+      "contentSchemaVersion": 1,
+      "course": {
+        "slug": "course-test-4",
+        "title": "دوره تست ۴",
+        "summary": "خلاصه تست ۴",
+        "description": "توضیحات تست ۴",
+        "level": "beginner",
+        "icon": { "kind": "system", "name": "lucide:book" },
+        "seo": { "metaTitle": "عنوان سئو تست", "metaDescription": "توضیحات سئو تست" }
+      },
+      "chapters": [
+        { "chapterImportKey": "ch_one", "title": "فصل اول", "slug": "chapter-1", "order": 1 }
+      ],
+      "lessons": [
+        {
+          "chapterImportKey": "ch_one",
+          "title": "درس اول",
+          "slug": "lesson-one",
+          "order": 1,
+          "contentBlocks": [
+            { "id": "blk_shared_id_01", "version": 1, "type": "paragraph", "data": { "text": "متن یک" } }
+          ],
+          "seo": { "metaTitle": "سئو درس یک", "metaDescription": "توضیحات سئو یک" }
+        },
+        {
+          "chapterImportKey": "ch_one",
+          "title": "درس دوم",
+          "slug": "lesson-two",
+          "order": 2,
+          "contentBlocks": [
+            { "id": "blk_shared_id_01", "version": 1, "type": "paragraph", "data": { "text": "متن دو با شناسه بلاک تکراری" } }
+          ],
+          "seo": { "metaTitle": "سئو درس دو", "metaDescription": "توضیحات سئو دو" }
+        }
+      ],
+      "mediaManifest": []
+    }
+  },
+  {
+    "name": "undeclared_media_reference",
+    "description": "Course cover references storageKey missing from mediaManifest",
+    "expectedError": "not declared in mediaManifest",
+    "payload": {
+      "contractVersion": 1,
+      "contentSchemaVersion": 1,
+      "course": {
+        "slug": "course-test-5",
+        "title": "دوره تست ۵",
+        "summary": "خلاصه تست ۵",
+        "description": "توضیحات تست ۵",
+        "level": "beginner",
+        "icon": { "kind": "system", "name": "lucide:book" },
+        "coverStorageKey": "courses/test/cover-missing.webp",
+        "seo": { "metaTitle": "عنوان سئو تست", "metaDescription": "توضیحات سئو تست" }
+      },
+      "chapters": [
+        { "chapterImportKey": "ch_one", "title": "فصل اول", "slug": "chapter-1", "order": 1 }
+      ],
+      "lessons": [
+        {
+          "chapterImportKey": "ch_one",
+          "title": "درس اول",
+          "slug": "lesson-one",
+          "order": 1,
+          "contentBlocks": [
+            { "id": "blk_unique_001", "version": 1, "type": "paragraph", "data": { "text": "متن" } }
+          ],
+          "seo": { "metaTitle": "سئو درس", "metaDescription": "توضیحات سئو" }
+        }
+      ],
+      "mediaManifest": []
+    }
+  }
+]

@@ -1,0 +1,152 @@
+{
+  "contractVersion": 1,
+  "contentSchemaVersion": 1,
+  "course": {
+    "slug": "react-foundations",
+    "title": "مبانی و مفاهیم جامع ری‌اکت",
+    "summary": "یادگیری عمیق و کاربردی ری‌اکت ۱۹ از مفاهیم پایه تا ساخت کامپوننت‌های پیشرفته",
+    "description": "در این دوره آموزشی از صفر با معماری کامپوننت‌محور، هوک‌ها، مدیریت وضعیت و الگوهای مدرن توسعه رابط کاربری در ری‌اکت آشنا می‌شوید.",
+    "level": "beginner",
+    "icon": {
+      "kind": "system",
+      "name": "lucide:react"
+    },
+    "coverStorageKey": "courses/react-foundations/cover.webp",
+    "tags": ["react", "frontend", "javascript"],
+    "prerequisites": ["آشنایی مقدماتی با HTML و CSS", "مفاهیم پایه‌ای جاوااسکریپت ES6+"],
+    "targetAudience": ["دانشجویان و علاقه‌مندان به برنامه‌نویسی وب", "توسعه‌دهندگان فرانت‌اند مبتدی"],
+    "order": 1,
+    "seo": {
+      "metaTitle": "آموزش جامع و کاربردی ری‌اکت - تکا",
+      "metaDescription": "دوره جامع آموزش مقدماتی تا پیشرفته ری‌اکت ۱۹ به زبان فارسی همراه با تمرین‌ها و نمونه کدهای تعاملی در تکا."
+    }
+  },
+  "chapters": [
+    {
+      "chapterImportKey": "ch_introduction",
+      "title": "فصل اول: آشنایی با اکوسیستم ری‌اکت",
+      "slug": "introduction-to-react",
+      "summary": "مفاهیم اولیه، چرایی پیدایش ری‌اکت و نصب محیط توسعه",
+      "order": 1
+    },
+    {
+      "chapterImportKey": "ch_components",
+      "title": "فصل دوم: کامپوننت‌ها و ساختار JSX",
+      "slug": "components-and-jsx",
+      "summary": "نحوه تعریف کامپوننت‌های تابعی و قواعد نگارش JSX",
+      "order": 2
+    }
+  ],
+  "lessons": [
+    {
+      "chapterImportKey": "ch_introduction",
+      "title": "ری‌اکت چیست و چرا از آن استفاده می‌کنیم؟",
+      "slug": "what-is-react",
+      "order": 1,
+      "readingTimeMinutes": 6,
+      "seo": {
+        "metaTitle": "ری‌اکت چیست؟ معرفی جامع کتابخانه React",
+        "metaDescription": "بررسی مزایا، معماری و ویژگی‌های کلیدی کتابخانه ری‌اکت در توسعه رابط‌های کاربری مدرن."
+      },
+      "contentBlocks": [
+        {
+          "id": "blk_intro_heading_01",
+          "version": 1,
+          "type": "heading",
+          "data": {
+            "level": 2,
+            "text": "مقدمه‌ای بر کتابخانه ری‌اکت"
+          }
+        },
+        {
+          "id": "blk_intro_para_01",
+          "version": 1,
+          "type": "paragraph",
+          "data": {
+            "text": "ری‌اکت یک کتابخانه جاوااسکریپتی متن‌باز برای ساخت رابط‌های کاربری تعاملی و ماژولار است که توسط فیسبوک (متا) توسعه داده شده است."
+          }
+        },
+        {
+          "id": "blk_intro_callout_01",
+          "version": 1,
+          "type": "callout",
+          "data": {
+            "type": "tip",
+            "title": "نکته کلیدی",
+            "text": "ری‌اکت یک فریم‌ورک همه‌منظوره نیست، بلکه یک کتابخانه متمرکز بر لایه نمایش (View) است."
+          }
+        }
+      ]
+    },
+    {
+      "chapterImportKey": "ch_components",
+      "title": "اولین کامپوننت من در ری‌اکت",
+      "slug": "first-component",
+      "order": 1,
+      "readingTimeMinutes": 10,
+      "seo": {
+        "metaTitle": "آموزش ساخت اولین کامپوننت در ری‌اکت",
+        "metaDescription": "نحوه نوشتن کامپوننت تابعی ساده با JSX و نمایش آن در صفحه."
+      },
+      "contentBlocks": [
+        {
+          "id": "blk_comp_heading_01",
+          "version": 1,
+          "type": "heading",
+          "data": {
+            "level": 2,
+            "text": "تعریف یک کامپوننت ساده"
+          }
+        },
+        {
+          "id": "blk_comp_code_01",
+          "version": 1,
+          "type": "codeBlock",
+          "data": {
+            "language": "javascript",
+            "title": "Greeting.jsx",
+            "code": "export default function Greeting({ name }) {\n  return <h1>سلام {name} عزیز!</h1>;\n}",
+            "showLineNumbers": true
+          }
+        },
+        {
+          "id": "blk_comp_interactive_01",
+          "version": 1,
+          "type": "interactiveExample",
+          "data": {
+            "environment": "react",
+            "preset": "preset-react-19-v1",
+            "title": "نمونه تعاملی کامپوننت خوش‌آمدگویی",
+            "description": "ویرایش و مشاهده خروجی زنده کامپوننت",
+            "files": [
+              {
+                "path": "App.jsx",
+                "language": "javascript",
+                "content": "export default function App() {\n  return <div className=\"box\">خوش آمدید</div>;\n}",
+                "entryPoint": true,
+                "readOnly": false
+              },
+              {
+                "path": "styles.css",
+                "language": "css",
+                "content": ".box { padding: 1rem; color: #0284c7; }",
+                "entryPoint": false,
+                "readOnly": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "mediaManifest": [
+    {
+      "storageKey": "courses/react-foundations/cover.webp",
+      "originalFileName": "react-cover.webp",
+      "mimeType": "image/webp",
+      "sizeBytes": 124500,
+      "category": "course_cover",
+      "altText": "تصویر جلد دوره آموزش ری‌اکت"
+    }
+  ]
+}
