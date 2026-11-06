@@ -27,7 +27,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspace=@techa/backend",
     "verify": "node scripts/verify-step1.cjs",
-    "verify:step2": "node scripts/verify-step2.cjs"
+    "verify:step2": "node scripts/verify-step2.cjs",
+    "verify:step3": "node scripts/verify-step3.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

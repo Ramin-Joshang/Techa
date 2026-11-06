@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { env } from '../config/env';
 import { logger } from '../logger/logger';
+import { isDatabaseConnected, getDatabaseStatus } from './database-status';
 
 export function sanitizeMongoUri(uri: string): string {
   try {
@@ -10,7 +11,29 @@ export function sanitizeMongoUri(uri: string): string {
   }
 }
 
-let isConnecting = false;
+let connectionPromise: Promise<typeof mongoose | null> | null = null;
+let eventListenersRegistered = false;
+
+function registerConnectionEvents(): void {
+  if (eventListenersRegistered) return;
+  eventListenersRegistered = true;
+
+  mongoose.connection.on('connected', () => {
+    logger.info('[Database] MongoDB connection established successfully.');
+  });
+
+  mongoose.connection.on('error', (err) => {
+    logger.error({ err }, '[Database] MongoDB connection error occurred.');
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    logger.warn('[Database] MongoDB disconnected.');
+  });
+
+  mongoose.connection.on('reconnected', () => {
+    logger.info('[Database] MongoDB connection re-established.');
+  });
+}
 
 export async function connectToDatabase(uriOverride?: string): Promise<typeof mongoose | null> {
   const uri = uriOverride || env.MONGODB_URI;
@@ -27,58 +50,46 @@ export async function connectToDatabase(uriOverride?: string): Promise<typeof mo
     return mongoose;
   }
 
-  if (isConnecting) {
-    logger.debug('[Database] Connection already in progress, awaiting established connection...');
-    return mongoose;
+  // Prevent duplicate concurrent connection attempts
+  if (connectionPromise) {
+    logger.debug('[Database] Awaiting in-flight connection attempt...');
+    return connectionPromise;
   }
 
   const sanitized = sanitizeMongoUri(uri);
   logger.info({ uri: sanitized }, '[Database] Connecting to MongoDB Atlas...');
 
-  try {
-    isConnecting = true;
+  registerConnectionEvents();
 
-    // Set connection options for resilience
-    mongoose.set('strictQuery', true);
+  connectionPromise = (async () => {
+    try {
+      mongoose.set('strictQuery', true);
 
-    // Event listeners
-    mongoose.connection.on('connected', () => {
-      logger.info('[Database] MongoDB connection established successfully.');
-    });
+      await mongoose.connect(uri, {
+        maxPoolSize: 10,
+        minPoolSize: 2,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        heartbeatFrequencyMS: 10000,
+      });
 
-    mongoose.connection.on('error', (err) => {
-      logger.error({ err }, '[Database] MongoDB connection error occurred.');
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      logger.warn('[Database] MongoDB disconnected.');
-    });
-
-    mongoose.connection.on('reconnected', () => {
-      logger.info('[Database] MongoDB connection re-established.');
-    });
-
-    await mongoose.connect(uri, {
-      maxPoolSize: 10,
-      minPoolSize: 2,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      heartbeatFrequencyMS: 10000,
-    });
-
-    return mongoose;
-  } catch (error) {
-    logger.error({ error }, '[Database] Failed to connect to MongoDB Atlas.');
-    if (env.NODE_ENV === 'production') {
-      throw error;
+      return mongoose;
+    } catch (error) {
+      logger.error({ error }, '[Database] Failed to connect to MongoDB Atlas.');
+      if (env.NODE_ENV === 'production') {
+        throw error;
+      }
+      return null;
+    } finally {
+      connectionPromise = null;
     }
-    return null;
-  } finally {
-    isConnecting = false;
-  }
+  })();
+
+  return connectionPromise;
 }
 
 export async function disconnectFromDatabase(): Promise<void> {
+  connectionPromise = null;
   if (mongoose.connection.readyState !== 0) {
     logger.info('[Database] Closing MongoDB connection...');
     try {
@@ -89,3 +100,8 @@ export async function disconnectFromDatabase(): Promise<void> {
     }
   }
 }
+
+// Canonical aliases
+export const connectDatabase = connectToDatabase;
+export const disconnectDatabase = disconnectFromDatabase;
+export { isDatabaseConnected, getDatabaseStatus };

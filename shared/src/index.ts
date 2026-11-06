@@ -10,6 +10,7 @@ export * from './schemas/chapter.schema';
 export * from './schemas/lesson.schema';
 export * from './schemas/media.schema';
 export * from './schemas/page.schema';
+export * from './schemas/public-query.schema';
 export * from './schemas/import-package.schema';
 export * from './types/api.types';
 export * from './types/common.types';

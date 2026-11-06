@@ -7,6 +7,7 @@ import { globalRateLimiter } from './core/middleware/rate-limiter';
 import { notFoundHandler } from './core/middleware/not-found';
 import { errorHandler } from './core/errors/error-handler';
 import { healthRoutes } from './modules/health/health.routes';
+import { publicRoutes } from './modules/public/public.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -32,6 +33,7 @@ export function createApp(): Express {
 
   // API v1 Routes
   app.use('/api/v1/health', healthRoutes);
+  app.use('/api/v1/public', publicRoutes);
 
   // 404 Fallback
   app.use(notFoundHandler);
