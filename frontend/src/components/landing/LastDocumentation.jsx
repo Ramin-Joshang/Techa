@@ -14,15 +14,18 @@ import DocCard from '../docs/DocCard';
 
 
 
-const LastDocumentation = () => {
-
-
-
-    const { loading, docs } = useSelector(state => state.docs);
+const LastDocumentation = ({ courses: initialCourses }) => {
+    const { loading, docs: reduxDocs } = useSelector(state => state.docs);
     const dispatch = useDispatch();
+
     useEffect(() => {
-        dispatch(fetchDocs({ "Take": 3 }));
-    }, []);
+        if (!initialCourses || initialCourses.length === 0) {
+            dispatch(fetchDocs({ "Take": 3 }));
+        }
+    }, [dispatch, initialCourses]);
+
+    const docs = initialCourses && initialCourses.length > 0 ? initialCourses : (reduxDocs || []);
+    const isLoading = (!initialCourses || initialCourses.length === 0) && loading;
 
 
 
@@ -43,13 +46,18 @@ const LastDocumentation = () => {
                 </div>
 
                 {/* لیست دوره‌ها */}
-                {loading ? (
+                {isLoading ? (
                     <DocsSkeleton />
-                ) : (
+                ) : docs.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-10 mt-10">
                         {docs.map((doc, index) => (
-                            <DocCard key={index} index={index} doc={doc} />
+                            <DocCard key={doc.id || doc.slug || doc.Slug || index} index={index} doc={doc} />
                         ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-2xl border border-gray-100 mt-10">
+                        <p className="font-medium text-base">در حال حاضر دوره‌ای منتشر نشده است.</p>
+                        <p className="text-sm text-gray-400 mt-1">به زودی دوره‌های جدید به این بخش افزوده خواهد شد.</p>
                     </div>
                 )}
 

@@ -15,6 +15,7 @@ import SidebarSkeleton from "../../components/common/SidebarSkeleton";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchContents } from "../../features/main/contents/contentsActions";
+import { useCourseOutline } from "../../context/CourseOutlineContext";
 
 const Sidebar = () => {
   const [openAccordion, setOpenAccordion] = useState(-1);
@@ -24,12 +25,16 @@ const Sidebar = () => {
   const params = useParams();
   const { slug, lessonId } = params;
 
-  const { loading, contents } = useSelector(state => state.contents);
+  const { outline } = useCourseOutline();
+  const { loading: reduxLoading, contents } = useSelector(state => state.contents);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(fetchContents({ "Take": 1000, "Slug": slug }));
-  }, []);
+    // Only dispatch legacy Redux action if server outline is absent
+    if (!outline && slug) {
+      dispatch(fetchContents({ "Take": 1000, "Slug": slug }));
+    }
+  }, [outline, slug, dispatch]);
 
   // قفل اسکرول در موبایل
   useEffect(() => {
@@ -41,8 +46,25 @@ const Sidebar = () => {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMobileOpen]);
 
-  // گروه‌بندی دیتا
+  // گروه‌بندی دیتا بر اساس سرفصل سرور یا ساختار قبلی
   const groupedArray = useMemo(() => {
+    if (outline?.chapters && Array.isArray(outline.chapters)) {
+      return outline.chapters.map((chapter) => ({
+        Id: chapter.id,
+        Title: chapter.title,
+        slug: chapter.slug,
+        Status: 1,
+        ProgressPercent: 0,
+        children: (chapter.lessons || []).map((l) => ({
+          Id: l.id,
+          Title: l.title,
+          slug: l.slug,
+          Status: 1,
+          EstimatedReadTime: l.readingTimeMinutes,
+        })),
+      }));
+    }
+
     if (!contents) return [];
     const groupedContents = new Map();
     contents.forEach(content => {
@@ -54,13 +76,15 @@ const Sidebar = () => {
       }
     });
     return Array.from(groupedContents.values());
-  }, [contents]);
+  }, [outline, contents]);
+
+  const loading = !outline && reduxLoading;
 
   // باز کردن آکاردئون فعال
   useEffect(() => {
     if (groupedArray.length > 0 && lessonId) {
       const parentIndex = groupedArray.findIndex(content =>
-        content.children.some(child => String(child.Id) === String(lessonId))
+        content.children.some(child => String(child.slug) === String(lessonId) || String(child.Id) === String(lessonId))
       );
       if (parentIndex !== -1) setOpenAccordion(parentIndex);
     }
@@ -193,11 +217,12 @@ const Sidebar = () => {
                     content={
                       <ul className="flex flex-col gap-1 mt-2 border-r-2 border-white/20 lg:border-emerald-100 pr-3 mr-3">
                         {content.children.map((child) => {
-                          const isActive = String(child.Id) === String(lessonId);
+                          const targetSlug = child.slug || child.Id;
+                          const isActive = String(child.slug) === String(lessonId) || String(child.Id) === String(lessonId);
                           return (
-                            <li key={child.Id}>
+                            <li key={child.Id || child.slug}>
                               <Link
-                                href={`/docs/${slug}/${child.Id}`}
+                                href={`/docs/${slug}/${targetSlug}`}
                                 onClick={() => setIsMobileOpen(false)}
                                 className={`
                                   flex items-center justify-between gap-2 py-3 px-3 rounded-xl transition-all duration-200 text-sm

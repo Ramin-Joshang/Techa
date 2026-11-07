@@ -1,132 +1,71 @@
-"use client";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import DocTitle from "../../../components/courses/course/CourseTitle";
-import DocInfo from "../../../components/docs/doc/DocInfo";
-import DocTitleSkeleton from "../../../components/courses/course/CourseTitleSkeleton";
-// import VideoCourseAd from "../../../components/docs/doc/VideoCourseAd";
-import VideoCourseAdEnd from "../../../components/docs/doc/VideoCourseAdEnd";
-import { SP_fetch } from "../../../api/utils/api";
+import React from 'react';
+import { notFound } from 'next/navigation';
+import DocTitle from '../../../components/courses/course/CourseTitle';
+import CourseTabsContainer from '../../../components/courses/course/CourseTabsContainer';
+import {
+  getPublishedCourseDetail,
+  getCourseOutline,
+  isNotFoundError,
+} from '../../../lib/server';
 
-import CourseContent from "../../../components/courses/course/CourseContent";
-import Exercises from "../../../components/courses/course/Exercises";
-import Comments from "../../../components/courses/course/Comments";
-import TabButtons from "../../../components/courses/course/TabButtons";
-import TabButtonsSkeleton from "../../../components/courses/course/TabButtonsSkeleton";
-import TabContent from "../../../components/courses/course/TabContent";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchDocById } from "../../../features/main/docs/docsActions";
-import { fetchExerciseProgress } from "../../../features/main/exercises/exercisesActions";
-import { fetchReviews } from "../../../features/main/reviews/reviewsActions";
+export async function generateMetadata({ params }) {
+  const courseSlug = params?.courseSlug || params?.slug || '';
+  if (!courseSlug) return { title: 'مستندات تکا' };
 
-export default function DocDetailsPage() {
-  const params = useParams();
-  const { slug } = params;
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const tabParam = searchParams.get("tab");
-  const initialTabIndex = tabParam ? parseInt(tabParam) : 0;
-  const [activeTab, setActiveTab] = useState(initialTabIndex);
-
-  const { loading, singleDoc: doc } = useSelector((state) => state.docs);
-  const { userExerciseProgress } = useSelector((state) => state.exercises);
-  const { reviews } = useSelector((state) => state.reviews);
-  const dispatch = useDispatch();
-  console.log(doc)
-  // گرفتن شناسه مستند (در صورت وجود)
-  const docId = doc?.Id;
-
-  // مرحله اول: دریافت اطلاعات مستند بر اساس Slug (هنگام لود شدن کامپوننت)
-  useEffect(() => {
-    if (slug) {
-      dispatch(fetchDocById({ Slug: slug }));
+  try {
+    const course = await getPublishedCourseDetail(courseSlug);
+    return {
+      title: course.seo?.metaTitle || `${course.title} | مستندات تکا`,
+      description: course.seo?.metaDescription || course.summary,
+      keywords: course.seo?.metaKeywords || course.tags,
+      robots: course.seo?.robotsNoIndex ? 'noindex, nofollow' : 'index, follow',
+    };
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      return { title: 'دوره یافت نشد | تکا' };
     }
-  }, [slug, dispatch]);
+    return { title: 'مستندات آموزشی | تکا' };
+  }
+}
 
-  // مرحله دوم: دریافت اطلاعات وابسته به Id مستند (صبر میکند تا docId مقدار بگیرد)
-  useEffect(() => {
-    if (docId) {
-      console.log(docId)
-      // دقت کنید: اگر در بک‌اند فیلد برای مستندات DocId است، CourseId را اصلاح کنید 
-      // من بر اساس کد خودتان CourseId نوشتم
-      dispatch(fetchExerciseProgress({ UserId: 9, CourseId: docId }));
-      dispatch(fetchReviews({ DocId: docId }));
+export default async function DocDetailsPage({ params }) {
+  const courseSlug = params?.courseSlug || params?.slug || '';
+  if (!courseSlug) {
+    notFound();
+  }
+
+  let course;
+  let outline;
+
+  try {
+    [course, outline] = await Promise.all([
+      getPublishedCourseDetail(courseSlug),
+      getCourseOutline(courseSlug),
+    ]);
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      notFound();
     }
-  }, [docId, dispatch]);
-
-
-  // تب‌ها (استفاده از متغیر docId که از state خوانده شده است)
-  const tabContent = [
-    {
-      id: 0,
-      title: "اطلاعات دوره",
-      content: <DocInfo docDetails={doc} />,
-    },
-    {
-      id: 1,
-      title: "تمرین‌ها",
-      content: <Exercises docId={docId} data={userExerciseProgress} />,
-    },
-    {
-      id: 2,
-      title: "نظرات کاربران",
-      content: <Comments docId={docId} reviews={reviews} />,
-    },
-  ];
-
-  // تغییر تب
-  const handleTabChange = (index) => {
-    setActiveTab(index);
-    router.push(`${window.location.pathname}?tab=${index}`, { shallow: true });
-  };
-
-  // انیمیشن
-  const tabVariants = {
-    initial: { opacity: 0, x: 50 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 },
-  };
+    // Network or server error - throw to trigger error boundary (never convert 500 to 404)
+    throw err;
+  }
 
   return (
     <div className="space-y-10">
-      {/* عنوان و تبلیغ اول */}
-      <div className="flex flex-col xl:flex-row justify-between items-center gap-5 xl:gap-10">
-        {/* عنوان دوره */}
+      {/* Course Header & Title */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 xl:gap-10 pb-6 border-b border-gray-100">
         <div className="flex-1">
-          {loading && !doc ? (
-            <DocTitleSkeleton />
-          ) : (
-            <DocTitle title={doc?.Title} />
-          )}
-        </div>
-
-        {/* دکمه‌های تب */}
-        <div>
-          {loading && !doc ? (
-            <TabButtonsSkeleton />
-          ) : (
-            <TabButtons
-              tabs={tabContent}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-            />
+          <DocTitle title={course.title} />
+          {course.summary && (
+            <p className="text-gray-500 text-sm md:text-base mt-2 leading-relaxed">
+              {course.summary}
+            </p>
           )}
         </div>
       </div>
 
-      {/* محتوای تب‌ها */}
-      {(!loading || doc) && (
-        <TabContent
-          activeTab={activeTab}
-          tabs={tabContent}
-          variants={tabVariants}
-        />
-      )}
-
-      {/* {(!loading || doc) && docId && (
-        <VideoCourseAdEnd doc={doc} />
-      )} */}
+      {/* Course Tabbed Content */}
+      <CourseTabsContainer course={course} outline={outline} />
     </div>
   );
 }

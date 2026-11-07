@@ -25,10 +25,13 @@
     "start:frontend": "npm run start --workspace=@techa/frontend",
     "typecheck": "npm run typecheck --workspace=@techa/shared && npm run typecheck --workspace=@techa/backend && npm run typecheck --workspace=@techa/frontend",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspace=@techa/backend",
+    "test": "npm run test --workspace=@techa/backend && npm run test --workspace=@techa/frontend",
+    "test:backend": "npm run test --workspace=@techa/backend",
+    "test:frontend": "npm run test --workspace=@techa/frontend",
     "verify": "node scripts/verify-step1.cjs",
     "verify:step2": "node scripts/verify-step2.cjs",
-    "verify:step3": "node scripts/verify-step3.cjs"
+    "verify:step3": "node scripts/verify-step3.cjs",
+    "verify:step4": "node scripts/verify-step4.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

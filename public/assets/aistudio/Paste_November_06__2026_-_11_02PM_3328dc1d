@@ -1,0 +1,721 @@
+# TECHA 2.0 — Phase 1 / Step 4
+## Frontend Integration, Server-Side Rendering (SSR) & Public Data Fetching
+
+You are the senior Next.js architect and implementation agent for TECHA 2.0.
+
+Your task is to implement Phase 1 / Step 4 directly in the existing repository.
+
+The backend and shared contracts have been implemented in Steps 1–3. This step connects the existing frontend to the five public read-only APIs and makes the four approved public pages render using real server-fetched data.
+
+This is an implementation task. Inspect the actual repository, implement the changes, run all verification commands, fix introduced issues, and commit the result.
+
+---
+
+# 1. Mandatory Repository Inspection
+
+Before changing any files:
+
+1. Inspect the complete monorepo structure.
+2. Inspect the current Git branch, latest commit, and working-tree status.
+3. Confirm that Step 3 is present and committed.
+4. Read:
+   - `docs/phase-1/STEP-2-IMPLEMENTATION-REPORT.md`
+   - `docs/phase-1/STEP-3-IMPLEMENTATION-REPORT.md`
+   - Existing frontend architecture and all four public page routes.
+   - Existing frontend components, layouts, styles, and design system.
+   - Existing shared Zod schemas and public DTOs.
+   - Backend public controllers, routes, services, and actual response envelopes.
+   - Root and frontend workspace package scripts and dependencies.
+   - `.nvmrc` and environment configuration.
+5. Identify the actual Next.js and React versions. Do not assume the frontend was upgraded merely because the architecture targets Next.js 16.
+6. Inspect whether the four page routes currently use Client Components, static mock data, hardcoded content, or existing API calls.
+
+Do not replace the existing frontend design or rebuild the application from scratch.
+
+Create a new branch from the completed Step 3 branch:
+
+`phase-1-step-4-frontend-ssr-integration`
+
+Preserve all existing work. Do not reset, discard, or overwrite previous commits.
+
+## Step 3 contract audit
+
+Before connecting the frontend, inspect the actual implementation and resolve the following report-level ambiguities:
+
+**A. Homepage response**
+
+The original `SitePage` model contains the `home` configuration, while the Step 3 report describes homepage statistics, featured courses, and latest courses.
+
+Inspect the actual response schema and controller. Determine whether the endpoint returns all of these fields together or uses a different structure.
+
+Use the actual implemented contract. Do not invent missing response fields or silently create a second homepage contract.
+
+**B. Course pagination and sorting**
+
+The Step 3 report describes a maximum limit of 100, while the earlier implementation specification proposed 50.
+
+Inspect the actual Zod schema and controller. Preserve the current valid contract unless there is a demonstrable security or performance issue.
+
+Inspect the actual popularity sort implementation. Verify that its sort field exists and that its query is reasonably supported by the current schema and indexes.
+
+Do not invent a popularity field or silently change the public API contract in this step.
+
+**C. Test inventory**
+
+Inspect the real test files and run the existing verification commands. Report the exact number of test files, suites, and tests.
+
+Do not modify backend implementation merely to make the report look consistent.
+
+---
+
+# 2. Scope and Public Routes
+
+The frontend must use exactly these four public page routes:
+
+1. `/`
+2. `/docs`
+3. `/docs/[courseSlug]`
+4. `/docs/[courseSlug]/[lessonSlug]`
+
+Their data sources are:
+
+| Frontend route | Backend endpoint |
+|---|---|
+| `/` | `GET /api/v1/public/home` |
+| `/docs` | `GET /api/v1/public/courses` |
+| `/docs/[courseSlug]` | Course detail + course outline |
+| `/docs/[courseSlug]/[lessonSlug]` | Lesson detail |
+
+The course outline is API data used for navigation and sidebar rendering. It is not a separate frontend page.
+
+Do not add any additional public page routes.
+
+Do not implement admin, authentication, CMS, payment, exercises, quizzes, blog, media upload, or sandbox execution.
+
+---
+
+# 3. Preserve the Existing UI
+
+The existing frontend design is an approved part of the project.
+
+Preserve:
+
+- Existing page layouts.
+- Typography and font configuration.
+- Colors and theme.
+- Spacing and responsive behavior.
+- Navbar and footer.
+- Existing documentation navigation design.
+- Existing cards and visual components.
+- Existing dark/light theme behavior, if implemented.
+- Existing animations and interactions.
+- Existing accessibility behavior.
+
+Do not redesign the homepage or documentation experience.
+
+Do not replace established components with generic templates.
+
+Refactor components only when necessary to separate server-side data fetching from client-side interactions.
+
+For every component that must become a Client Component, keep the client boundary as small as practical.
+
+Avoid turning an entire page tree into a Client Component just to support one interactive control.
+
+Do not add `useEffect`-based data fetching where Server Components can perform the request directly.
+
+---
+
+# 4. Server-Side Data Access Architecture
+
+Create a dedicated frontend server-side data-access layer.
+
+Follow the existing folder conventions. A possible structure is:
+
+`frontend/src/lib/server/`
+
+or the equivalent existing architecture.
+
+The exact folder structure must follow the actual repository rather than introducing unnecessary parallel conventions.
+
+Responsibilities:
+
+- Centralized API base URL configuration.
+- Typed API fetch functions.
+- Zod validation of response payloads.
+- Consistent error handling.
+- Caching and revalidation configuration.
+- Cache tag definitions.
+- Public DTO conversion only where actually required.
+
+Keep this data-access layer server-only.
+
+Use the `server-only` protection mechanism if compatible with the installed Next.js version.
+
+Never import the database connection, Mongoose models, backend-only modules, or private environment variables into frontend browser bundles.
+
+The browser must not connect directly to MongoDB or fetch internal backend configuration.
+
+## API base URL configuration
+
+Use a server-only environment variable, preferably:
+
+`TECHA_API_BASE_URL`
+
+Example safe development value:
+
+`http://127.0.0.1:5000/api/v1/public`
+
+Use the existing API port and host configuration when they differ.
+
+Requirements:
+
+1. Inspect existing environment conventions before adding variables.
+2. Keep the actual API base URL configurable.
+3. Do not hardcode localhost into production source code.
+4. Do not expose the variable through `NEXT_PUBLIC_*`.
+5. Never place MongoDB credentials or database URIs in frontend environment variables.
+6. Validate that the configured base URL is usable and produce a clear server-side error when it is missing or invalid.
+7. Update the appropriate `.env.example` without adding real secrets.
+
+The frontend must call the backend through server-side HTTP requests.
+
+Do not import the backend Express application directly into Next.js.
+
+---
+
+# 5. Typed Fetch Client and Response Validation
+
+Implement a reusable typed server-side API client.
+
+It must:
+
+- Accept a known endpoint and validated query parameters.
+- Construct URLs safely.
+- Send appropriate request headers.
+- Handle network failures.
+- Handle non-success HTTP responses.
+- Parse JSON safely.
+- Validate responses with the exact shared Zod schemas.
+- Return typed DTOs.
+- Avoid returning raw unvalidated JSON to page components.
+
+Use the actual Step 3 API response envelope. Do not assume every endpoint returns `{ data: ... }` unless the backend actually does so.
+
+Do not create duplicate frontend DTO definitions when a suitable shared contract already exists.
+
+If a response schema is genuinely missing, add the smallest appropriate schema to the shared package and update exports. Do not weaken existing validation.
+
+## Error model
+
+Create or extend a small typed error abstraction that distinguishes:
+
+- 404: requested public content does not exist or is not publicly available.
+- 422: request or response validation failure, handled according to the actual API contract.
+- 503 or equivalent database-unavailable response.
+- Other backend 5xx responses.
+- Network errors and connection failures.
+- Invalid JSON or invalid response contracts.
+
+Important:
+
+**Never convert a backend outage into a 404 page.**
+
+Only an actual not-found response should invoke Next.js `notFound()`.
+
+For network failures, unexpected backend failures, or invalid server responses, render the appropriate error state.
+
+Do not expose internal API error details, stack traces, MongoDB messages, credentials, or internal hostnames to visitors.
+
+Log useful diagnostic information on the server without leaking secrets.
+
+---
+
+# 6. Caching and Revalidation Strategy
+
+Use the installed Next.js version's supported caching APIs.
+
+Do not blindly copy APIs from another Next.js release.
+
+For server-side data fetching, implement explicit caching and revalidation behavior.
+
+Suggested initial strategy:
+
+| Data | Initial revalidation |
+|---|---:|
+| Homepage | 60 seconds |
+| Published course list | 60 seconds |
+| Course detail | 300 seconds |
+| Course outline | 300 seconds |
+| Lesson content | 300 seconds |
+
+These are initial engineering defaults and can be adjusted based on actual behavior and deployment constraints.
+
+Use meaningful cache tags, such as:
+
+- `techa-home`
+- `techa-courses`
+- `techa-course:<courseSlug>`
+- `techa-course-outline:<courseSlug>`
+- `techa-lesson:<courseSlug>:<lessonSlug>`
+
+Requirements:
+
+1. Cache only public data.
+2. Use explicit, deterministic cache configuration.
+3. Never cache private or administrative data.
+4. Do not use `force-dynamic` globally when per-request caching is sufficient.
+5. Do not use `no-store` everywhere simply to avoid understanding the cache.
+6. Avoid introducing a second caching library without a compelling reason.
+7. Avoid duplicate API requests when the same data is requested multiple times during a render.
+8. Document cache behavior and the intended future invalidation mechanism.
+
+There are currently no content-editing endpoints in scope, so do not invent an admin mutation or webhook just to invalidate caches.
+
+If future code requires immediate invalidation, use the correct Next.js API signature for the installed version. In particular, respect the current version's `revalidateTag` semantics rather than relying on deprecated signatures.
+
+---
+
+# 7. Connect the Four Public Pages
+
+## 7.1 Homepage `/`
+
+Connect the existing homepage to:
+
+`GET /api/v1/public/home`
+
+Requirements:
+
+- Use the actual API response schema.
+- Render the homepage configuration from `SitePage` data where provided.
+- Render statistics only when they are returned by the real API contract.
+- Render featured courses only when present.
+- Render latest courses only when present.
+- Preserve the existing homepage component structure and visual design.
+- Replace existing placeholder/mock content with API-driven content where the API contract supports it.
+- Do not fabricate course names, statistics, ratings, counts, or training hours.
+- Do not add permanent seed data.
+- Handle an empty course collection with a deliberate empty state that fits the existing UI.
+- Handle a missing homepage configuration without crashing the entire application.
+
+If the backend correctly returns 404 when the home configuration is absent, follow the established error behavior. Do not silently invent a successful configuration.
+
+## 7.2 Documentation index `/docs`
+
+Connect the page to:
+
+`GET /api/v1/public/courses`
+
+Requirements:
+
+- Render only published courses returned by the backend.
+- Use the existing course card/list components.
+- Support pagination according to the actual backend contract.
+- Preserve existing search and filter UI where present.
+- Map supported query parameters to the actual API query schema.
+- Support `q`, `tag`, `level`, and `sort` only if they are implemented and validated by the backend.
+- Validate query parameters on the server.
+- Preserve query parameters in pagination links.
+- Handle empty results.
+- Handle invalid user-provided query parameters safely.
+- Do not expose database filters or MongoDB operators through the URL.
+- Do not fetch every course and paginate only in the browser.
+
+Use Next.js Server Components for initial page rendering.
+
+For search or filtering controls, follow the existing interaction design. Prefer URL search parameters and server-rendered results where practical. Use a Client Component only for the interaction itself when necessary.
+
+## 7.3 Course page `/docs/[courseSlug]`
+
+Use both:
+
+- `GET /api/v1/public/courses/:courseSlug`
+- `GET /api/v1/public/courses/:courseSlug/outline`
+
+Requirements:
+
+- Fetch both using the typed server-side data-access layer.
+- Verify the course is publicly available.
+- Render the actual course metadata.
+- Render only published chapters and lessons from the outline.
+- Use the existing course page and documentation sidebar components.
+- Preserve configured ordering.
+- Make lesson links resolve to:
+  `/docs/[courseSlug]/[lessonSlug]`
+- Do not render hidden or unpublished content.
+- Do not fetch full lesson content for every item in the outline.
+- Handle a nonexistent or unpublished course with `notFound()`.
+- Handle API outages as errors, not as missing courses.
+
+Where supported by the current frontend design, render the course description, icon, cover, level, and statistics using the actual available DTO fields.
+
+Do not infer or fabricate unavailable metadata.
+
+## 7.4 Lesson page `/docs/[courseSlug]/[lessonSlug]`
+
+Connect to:
+
+`GET /api/v1/public/courses/:courseSlug/lessons/:lessonSlug`
+
+Requirements:
+
+- Fetch the lesson from the server.
+- Validate the response against the shared public lesson contract.
+- Render the existing lesson layout.
+- Render the documentation sidebar from the relevant course outline, using an efficient data-access approach.
+- Highlight the active lesson.
+- Render previous and next lesson navigation from the API's actual navigation DTO.
+- Ensure links use the approved frontend route structure.
+- Preserve heading hierarchy and accessible navigation.
+- Handle missing/unpublished lesson content using `notFound()`.
+- Do not render drafts or content outside the full publication chain.
+
+Avoid requesting the same lesson or outline repeatedly during a single render.
+
+---
+
+# 8. Content Block Renderer
+
+The Lesson model supports 13 typed content blocks.
+
+Implement or adapt a typed frontend renderer for these block types:
+
+1. `heading`
+2. `paragraph`
+3. `richText`
+4. `codeBlock`
+5. `image`
+6. `video`
+7. `table`
+8. `callout`
+9. `quote`
+10. `divider`
+11. `downloadableFile`
+12. `list`
+13. `interactiveExample`
+
+Before implementing, inspect the exact Zod schemas and the actual field structure for every type.
+
+Do not invent a second block data format.
+
+Requirements:
+
+- Use exhaustive type narrowing or an equivalent safe discriminated-union approach.
+- Preserve stable block IDs as React keys.
+- Respect the content schema version.
+- Respect individual block versions.
+- Render code examples as static code.
+- Do not execute SQL, JavaScript, HTML, React, or any user-supplied code.
+- Do not create an interactive sandbox in this step.
+- For unsupported block types or versions, render a safe fallback instead of crashing the entire lesson.
+- Log useful server-side diagnostics when appropriate without logging sensitive content.
+
+## Rich text and HTML safety
+
+Do not render untrusted HTML using `dangerouslySetInnerHTML` without an explicitly reviewed and maintained sanitization strategy.
+
+Prefer the existing safe structured renderer or a safe Markdown rendering pipeline with appropriate sanitization.
+
+Do not allow arbitrary scripts, event handlers, or dangerous URL schemes.
+
+## Image, video, and downloadable content
+
+Inspect the actual media block contracts and current backend behavior.
+
+The data architecture uses stable `storageKey` values, not hardcoded absolute media URLs.
+
+Therefore:
+
+- Do not invent a CDN URL.
+- Do not assume a media delivery route exists.
+- Do not construct arbitrary URLs from user-controlled strings.
+- If a verified media URL is already provided by the backend contract, use it only after validation.
+- If actual media delivery is not implemented, render a deliberate accessible placeholder or unavailable-media presentation rather than a broken image or fabricated link.
+
+## Interactive examples
+
+For `interactiveExample` blocks:
+
+- Render a clearly identifiable static preview or non-executable file summary.
+- Preserve environment, preset, file names, and entry-point metadata when useful.
+- Do not run the code.
+- Do not create iframes with arbitrary `srcDoc`.
+- Do not add `eval`, dynamic script execution, CDN package loading, or user-controlled runtime URLs.
+- Do not implement the sandbox runtime in Step 4.
+
+Actual interactive execution belongs to a later dedicated phase.
+
+---
+
+# 9. SEO and Metadata
+
+Implement server-side metadata for the four approved routes using the actual public DTOs.
+
+Use the Next.js Metadata API supported by the installed version.
+
+Requirements:
+
+## Homepage
+
+Use the homepage SEO metadata when available, with safe defaults only when necessary.
+
+## Documentation index
+
+Use the appropriate documentation title and description.
+
+## Course detail
+
+Use course SEO fields where available. Otherwise use a reasonable title and description derived from the public course metadata.
+
+## Lesson detail
+
+Use lesson SEO fields where available. Otherwise derive a fallback from the lesson and course titles.
+
+Additional requirements:
+
+- Do not expose unpublished content in metadata.
+- Do not produce misleading titles or descriptions.
+- Avoid duplicate metadata logic.
+- Set canonical URLs only when the production site origin is explicitly configured.
+- Do not hardcode a production hostname if a canonical base URL configuration already exists or should be added.
+- Provide appropriate robots metadata for genuinely missing or unavailable content where supported.
+- Do not invent ratings, review counts, structured data, or social images.
+
+Do not implement a complete SEO campaign or unrelated SEO features in this step.
+
+---
+
+# 10. Loading, Empty, Not-Found, and Error States
+
+Use the existing design system for:
+
+- Loading states.
+- Empty course lists.
+- Empty course outlines.
+- Missing homepage configuration.
+- Missing or unpublished courses.
+- Missing or unpublished lessons.
+- Backend unavailable errors.
+- Unexpected rendering failures.
+
+Use Next.js route-level loading and error conventions supported by the installed version where they provide real value.
+
+Do not add new public URL routes.
+
+Do not expose raw error details to visitors.
+
+A backend outage must not be presented as a successful empty result.
+
+A real 404 must not be presented as a generic API failure.
+
+Preserve accessibility and mobile responsiveness in all fallback states.
+
+---
+
+# 11. Performance and Rendering Quality
+
+The goal is a real server-rendered public documentation experience.
+
+Requirements:
+
+1. Initial HTML must contain the main public content, rather than requiring a browser-side API request before meaningful content appears.
+2. Keep data fetching in Server Components.
+3. Keep Client Components limited to actual interactions.
+4. Avoid unnecessary hydration.
+5. Avoid repeated sequential API calls when requests can safely run in parallel.
+6. Avoid unbounded API requests.
+7. Use existing pagination and summary DTOs.
+8. Do not fetch every lesson body when rendering a course outline.
+9. Avoid excessive client-side state for data already owned by the server.
+10. Preserve responsive rendering and accessibility.
+
+Do not claim that implementing SSR automatically guarantees a particular PageSpeed or Core Web Vitals score.
+
+Measure performance only if the project has an existing reliable measurement workflow. Report actual measured values separately from targets.
+
+---
+
+# 12. Automated Tests
+
+Inspect existing frontend test infrastructure first.
+
+Add tests that do not require a live Atlas database.
+
+Mock the backend HTTP responses at the frontend integration boundary.
+
+Test:
+
+### API client
+
+- Correct API base URL configuration.
+- Correct endpoint construction.
+- Correct handling of successful responses.
+- Shared Zod response validation.
+- 404 handling.
+- 503/database-unavailable handling.
+- Network failure handling.
+- Invalid JSON handling.
+- Invalid response contract handling.
+- No exposure of internal errors or credentials.
+
+### Homepage
+
+- Realistic homepage response renders correctly.
+- Empty featured/latest course arrays render safely.
+- Missing or unavailable homepage configuration is handled correctly.
+- No fabricated statistics are rendered.
+
+### Documentation index
+
+- Published course list renders correctly.
+- Pagination works.
+- Supported filters work.
+- Invalid query parameters are handled safely.
+- Empty results render an appropriate state.
+
+### Course page
+
+- Course metadata renders.
+- Published outline is rendered.
+- Unpublished content is absent.
+- Invalid/nonexistent course produces the correct not-found behavior.
+- Backend outage is not converted into a 404.
+
+### Lesson page
+
+- Lesson content renders.
+- All 13 block types are handled safely.
+- Unsupported block versions do not crash the page.
+- Previous/next navigation uses API values.
+- Unpublished or unavailable content is not rendered.
+- Content blocks do not execute user-supplied code.
+
+### Regression
+
+- Existing frontend routes remain available.
+- Existing visual components and design behavior are preserved.
+- No unintended Client Component expansion occurs.
+- No direct MongoDB dependency enters the frontend workspace.
+
+Use the actual project test framework. Do not introduce another test framework without a strong reason.
+
+---
+
+# 13. Environment and Deployment Compatibility
+
+The project targets Windows Server 2025 and IIS deployment.
+
+Do not configure a static export. The application requires server-side rendering and server-side API access.
+
+Inspect the existing deployment and environment architecture.
+
+Requirements:
+
+- Keep backend and frontend API URLs configurable.
+- Do not depend on browser-side access to private backend hosts.
+- Do not assume a production hostname.
+- Do not expose secrets in `.env.example`.
+- Do not alter IIS configuration unnecessarily.
+- Do not upgrade Next.js or React as an incidental part of this step.
+- Verify compatibility with the actual runtime and workspace dependency versions.
+
+Node 24 is the project target. If it is unavailable in the current environment, report the actual runtime and the unverified compatibility rather than claiming Node 24 verification.
+
+---
+
+# 14. Explicitly Forbidden in Step 4
+
+Do not:
+
+- Redesign the website.
+- Rebuild the frontend from scratch.
+- Change the four approved route paths.
+- Add public pages.
+- Add authentication or admin functionality.
+- Add write APIs.
+- Modify MongoDB models without a demonstrated contract defect.
+- Add sample content to the real Atlas database.
+- Publish any courses, chapters, or lessons.
+- Implement a file upload system.
+- Implement a media server or invent media URLs.
+- Implement an interactive code execution engine.
+- Execute SQL or JavaScript examples.
+- Add a separate CMS.
+- Move Mongoose code into the frontend.
+- Use mock data as a production fallback.
+- Hide backend failures by returning fabricated content.
+
+---
+
+# 15. Final Verification
+
+Inspect the repository's actual scripts and run the relevant commands.
+
+At minimum:
+
+- Step 2 verification.
+- Step 3 verification.
+- Shared package build and typecheck.
+- Backend lint, typecheck, and tests.
+- Frontend lint.
+- Frontend typecheck.
+- Frontend tests.
+- Production frontend build.
+- Relevant repository-wide checks.
+
+Verify that all four routes build and render correctly.
+
+Use mocked HTTP responses for automated integration tests.
+
+Do not connect automated tests to the production Atlas database.
+
+Where a real backend smoke test is performed, use only an explicitly configured development environment and do not create, publish, or delete real user content.
+
+Do not suppress errors or weaken TypeScript/Zod contracts to obtain a passing build.
+
+Do not report success for commands that were not actually executed.
+
+---
+
+# 16. Git Commit and Final Report
+
+Commit the completed implementation on:
+
+`phase-1-step-4-frontend-ssr-integration`
+
+Suggested commit:
+
+`feat(phase-1): integrate public APIs with server-rendered frontend`
+
+Do not merge into the main branch.
+
+Create:
+
+`docs/phase-1/STEP-4-IMPLEMENTATION-REPORT.md`
+
+The report must include:
+
+1. Final Git branch and commit hash.
+2. Working-tree status.
+3. Actual Node.js, Next.js, React, TypeScript, and Zod versions.
+4. Step 3 contract audit findings.
+5. All files created or modified.
+6. API client architecture.
+7. Environment variable configuration.
+8. Data fetching and caching strategy.
+9. Mapping of each frontend route to its backend endpoint.
+10. Content-block rendering coverage for all 13 types.
+11. SEO and metadata implementation.
+12. Loading, empty, 404, and error behavior.
+13. Test files and exact test counts.
+14. Exact verification commands and exit codes.
+15. Production build results.
+16. Confirmation that frontend design and four approved routes were preserved.
+17. Confirmation that no production database content was changed.
+18. Any unavailable or unverified functionality, especially media delivery and interactive sandbox execution.
+19. A clear status: fully complete or partially complete.
+
+Do not start Phase 1 / Step 5 automatically.
+
+Stop after the final report.
+
+**Priority order: preserve the existing design, use real validated API data, render meaningful HTML on the server, protect unpublished content, handle failures honestly, and maintain the established architecture.**

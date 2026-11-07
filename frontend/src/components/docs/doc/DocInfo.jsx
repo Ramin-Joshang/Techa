@@ -114,30 +114,30 @@ const ExtraInfoSection = ({ targetAudience, prerequisites }) => {
 // 4. کامپوننت اصلی (DocInfo)
 // ==========================================
 const DocInfo = ({ docDetails }) => {
-    const { loading } = useSelector(state => state.docs);
+    const { loading: reduxLoading } = useSelector(state => state.docs);
+    const isLoading = !docDetails && reduxLoading;
 
     // مدیریت تاریخ جلالی
-    const gregorianDate = docDetails?.LastContentModifiedDate;
+    const gregorianDate = docDetails?.LastContentModifiedDate || docDetails?.publishedAt;
     const faDate = gregorianDate
         ? new Date(gregorianDate).toLocaleDateString('fa-IR', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
         })
-        : 'نامشخص';
+        : 'به‌روز';
 
     // ترجمه سطح دوره
     const translateLevel = (level) => {
-        const levels = {
-            'Beginner': 'مبتدی',
-            'Intermediate': 'متوسط',
-            'Advanced': 'پیشرفته'
-        };
-        return levels[level] || level || 'نامشخص';
+        const raw = (level || '').toLowerCase();
+        if (raw === 'beginner') return 'مبتدی';
+        if (raw === 'intermediate') return 'متوسط';
+        if (raw === 'advanced') return 'پیشرفته';
+        return level || 'عمومی';
     };
 
     // حالت بارگذاری
-    if (loading || !docDetails) {
+    if (isLoading || !docDetails) {
         return (
             <div className="animate-pulse space-y-6">
                 <DocDescriptionSkeleton />
@@ -150,22 +150,32 @@ const DocInfo = ({ docDetails }) => {
         );
     }
 
+    const description = docDetails?.Description || docDetails?.description;
+    const durationSeconds = docDetails?.Duration ?? (docDetails?.stats?.estimatedReadingTimeMinutes ? docDetails.stats.estimatedReadingTimeMinutes * 60 : 0);
+    const levelStr = docDetails?.Level || docDetails?.level;
+    const targetAudienceStr = Array.isArray(docDetails?.targetAudience)
+        ? docDetails.targetAudience.join('، ')
+        : (docDetails?.targetAudience || '');
+    const prerequisitesStr = Array.isArray(docDetails?.prerequisites)
+        ? docDetails.prerequisites.join('، ')
+        : (docDetails?.Prerequisites || '');
+
     return (
         <div className="space-y-6">
             {/* توضیحات مستند */}
-            <ModernDocDescription description={docDetails?.Description} />
+            <ModernDocDescription description={description} />
 
-            {/* کارت‌های اطلاعات کلیدی (به ۳ ستون تغییر یافت) */}
+            {/* کارت‌های اطلاعات کلیدی */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <ModernDocInfoCard
                     icon={<Timer className='w-8 h-8' strokeWidth={2.5} />}
                     label="مدت زمان مطالعه"
-                    value={formatDuration(docDetails?.Duration)}
+                    value={formatDuration(durationSeconds)}
                 />
                 <ModernDocInfoCard
                     icon={<BarChart className='w-8 h-8' strokeWidth={2.5} />}
                     label="سطح دوره"
-                    value={translateLevel(docDetails?.Level)}
+                    value={translateLevel(levelStr)}
                 />
                 <ModernDocInfoCard
                     icon={<CalendarClock className='w-8 h-8' strokeWidth={2.5} />}
@@ -176,8 +186,8 @@ const DocInfo = ({ docDetails }) => {
 
             {/* بخش مخاطبین هدف و پیش‌نیازها */}
             <ExtraInfoSection
-                targetAudience={docDetails?.targetAudience}
-                prerequisites={docDetails?.Prerequisites}
+                targetAudience={targetAudienceStr}
+                prerequisites={prerequisitesStr}
             />
         </div>
     );

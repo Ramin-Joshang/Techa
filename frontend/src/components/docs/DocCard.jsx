@@ -9,18 +9,15 @@ import * as RiIcons from 'react-icons/ri';
 const DefaultIcon = RiIcons.RiBook2Line;
 
 const IconProvider = ({ name, ...props }) => {
-    // اگر نام آیکون در لیست آیکون‌های react-icons/ri وجود داشت، آن را برمی‌گردانیم
-    const IconComponent = RiIcons[name];
+    const iconName = typeof name === 'object' && name ? name.name : name;
+    const IconComponent = RiIcons[iconName];
 
     if (IconComponent) {
         return <IconComponent {...props} />;
     }
 
-    // در غیر این صورت، آیکون پیش‌فرض را نمایش می‌دهیم
     return <DefaultIcon {...props} />;
 };
-
-
 
 // آبجکت برای ترجمه و استایل‌دهی سطوح
 const levelConfig = {
@@ -43,30 +40,37 @@ const levelConfig = {
 };
 
 const DocCard = ({ doc }) => {
-    const levelInfo = levelConfig[doc?.Level] || levelConfig.Unknown;
+    const rawLevel = doc?.level || doc?.Level;
+    const levelKey = rawLevel ? rawLevel.charAt(0).toUpperCase() + rawLevel.slice(1).toLowerCase() : 'Unknown';
+    const levelInfo = levelConfig[levelKey] || levelConfig[rawLevel] || levelConfig.Unknown;
+    const slug = doc?.slug || doc?.Slug;
+    const title = doc?.title || doc?.Title;
+    const summary = doc?.summary || doc?.Summary;
+    const sortIndex = doc?.order ?? doc?.SortIndex ?? '';
+    const icon = doc?.icon || doc?.Icon;
 
     return (
-        <Link href={`/docs/${doc?.Slug}`} className="block h-full">
+        <Link href={`/docs/${slug}`} className="block h-full">
             <div className="group relative flex flex-col h-full p-6 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-50/20 via-white dark:from-emerald-900/10 dark:via-slate-800/50">
 
                 {/* شماره ترتیب (Sort Index) */}
                 <div className="absolute top-5 left-0 text-7xl font-black font-mono text-slate-100 dark:text-slate-900/40 select-none -z-0 transform -translate-y-2 translate-x-4">
-                    {doc?.SortIndex}
+                    {sortIndex}
                 </div>
 
                 {/* هدر کارت: آیکون و عنوان */}
                 <div className="flex items-center gap-4 mb-4 relative z-10">
                     <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
-                        <IconProvider name={doc?.Icon} size={30} />
+                        <IconProvider name={icon} size={30} />
                     </div>
                     <h3 className="text-xl font-bold text-slate-800 dark:text-white line-clamp-1">
-                        {doc?.Title}
+                        {title}
                     </h3>
                 </div>
 
                 {/* بدنه کارت: خلاصه توضیحات */}
                 <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 mb-6 flex-grow relative z-10 leading-relaxed">
-                    {doc?.Summary}
+                    {summary}
                 </p>
 
                 {/* فوتر کارت: سطح و دکمه مطالعه */}
