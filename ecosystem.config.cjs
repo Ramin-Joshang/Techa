@@ -1,17 +1,21 @@
-/**
+﻿/**
  * TECHA 2.0 — PM2 ECOSYSTEM CONFIGURATION
  * Orchestrates Next.js 16 (frontend) and Express 5 (backend) as independent production services.
- * Windows Server 2025 compatible.
+ * Windows Server 2025 & Monorepo compatible.
  */
 
 const path = require('path');
+
+const nextBinPath = require.resolve('next/dist/bin/next', {
+  paths: [path.resolve(__dirname, 'frontend'), __dirname],
+});
 
 module.exports = {
   apps: [
     {
       name: 'techa-frontend',
       cwd: path.resolve(__dirname, 'frontend'),
-      script: 'node_modules/next/dist/bin/next',
+      script: nextBinPath,
       args: `start -p ${process.env.PORT || 3000} -H ${process.env.HOST || '127.0.0.1'}`,
       instances: 1,
       exec_mode: 'fork',
@@ -66,7 +70,7 @@ module.exports = {
         API_HOST: process.env.API_HOST || '127.0.0.1',
         CANONICAL_API_URL: process.env.CANONICAL_API_URL || 'https://techa.ir',
         FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || 'https://techa.ir',
-        CORS_ORIGINS: process.env.CORS_ORIGINS || 'https://techa.ir,https://www.techa.ir',
+        CORS_ORIGINS: process.env.CORS_ORIGINS || 'https://techa.ir,https://www.techa.ir,http://localhost:3000,http://127.0.0.1:3000',
         LOG_LEVEL: process.env.LOG_LEVEL || 'info',
         SWAGGER_ENABLED: process.env.SWAGGER_ENABLED || 'true',
         TRUST_PROXY_HOPS: process.env.TRUST_PROXY_HOPS || '1',
