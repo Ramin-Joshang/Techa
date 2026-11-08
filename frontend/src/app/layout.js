@@ -8,10 +8,15 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 
+import { Providers } from "./Providers";
+
 export const metadata = {
   title: {
     default: "پلتفرم آموزشی تکا | Techa",
     template: "%s | Techa",
+  },
+  icons: {
+    icon: "/images/favicon.svg",
   },
   description: "پلتفرم آموزشی تکا",
   keywords: ["آموزش برنامه‌نویسی", "دوره آنلاین", "Techa"],
@@ -29,18 +34,12 @@ export const metadata = {
   },
 };
 
-
-import { Providers } from "./Providers";
-
 export default function RootLayout({ children }) {
   return (
-    <Providers>
-      <html lang="fa">
-        <head>
-          <link rel="icon" href="/images/favicon.svg" sizes="any" />
-          <meta name="enamad" content="696095" />
-        </head>
-        <body>
+    <html lang="fa">
+      <head />
+      <body>
+        <Providers>
           <AuthProvider>
             <Header />
             <main className="mb-40 md:mb-60">{children}</main>
@@ -59,8 +58,8 @@ export default function RootLayout({ children }) {
             theme="colored"
             transition={Bounce}
           />
-        </body>
-      </html>
-    </Providers>
+        </Providers>
+      </body>
+    </html>
   );
 }

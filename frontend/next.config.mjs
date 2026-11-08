@@ -6,6 +6,10 @@ const nextConfig = {
   env: {
     TLS_REJECT_UNAUTHORIZED: "0",
   },
+  experimental: {
+    staticGenerationRetryCount: 3,
+    staticGenerationMaxConcurrency: 1,
+  },
   images: {
     remotePatterns: [
       {

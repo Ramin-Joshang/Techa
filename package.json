@@ -59,7 +59,10 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@types/cssesc": "^3.0.2",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^10.1.0",
+    "cssesc": "^3.0.0",
     "pm2": "^7.1.2",
     "swagger-ui-express": "^5.0.1"
   }

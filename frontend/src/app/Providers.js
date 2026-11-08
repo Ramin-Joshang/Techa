@@ -1,6 +1,6 @@
 "use client";
+import React, { useEffect } from "react";
 import { Provider } from "react-redux";
-import { useEffect } from "react";
 import { loadFromLocalStorage } from "../features/cart/cartSlice";
 import { loadUserFromCookie } from "../features/auth/authSlice";
 import store from "../store/store";
