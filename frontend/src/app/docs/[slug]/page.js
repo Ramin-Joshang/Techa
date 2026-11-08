@@ -9,7 +9,8 @@ import {
 } from '../../../lib/server';
 
 export async function generateMetadata({ params }) {
-  const courseSlug = params?.courseSlug || params?.slug || '';
+  const resolvedParams = await params;
+  const courseSlug = resolvedParams?.courseSlug || resolvedParams?.slug || '';
   if (!courseSlug) return { title: 'مستندات تکا' };
 
   try {
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function DocDetailsPage({ params }) {
-  const courseSlug = params?.courseSlug || params?.slug || '';
+  const resolvedParams = await params;
+  const courseSlug = resolvedParams?.courseSlug || resolvedParams?.slug || '';
   if (!courseSlug) {
     notFound();
   }

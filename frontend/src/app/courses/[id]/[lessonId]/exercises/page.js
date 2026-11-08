@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import ExerciseCard from "../../../../../components/courses/course/ExerciseCard";
 import ExerciseInstructions from "../../../../../components/courses/course/ExerciseInstructions";
 import ExerciseDetails from "../../../../../components/courses/course/ExerciseDetails";
 import ExerciseCardSkeleton from "../../../../../components/courses/course/ExerciseCardSkeleton"
 
-export default function ExercisePage({ params }) {
+export default function ExercisePage() {
   const router = useRouter(); // ایجاد نمونه روتینگ
+  const params = useParams();
   const [exercises, setExercises] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [loading, setLoading] = useState(true);

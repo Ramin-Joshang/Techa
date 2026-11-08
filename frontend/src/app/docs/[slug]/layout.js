@@ -4,7 +4,8 @@ import { getCourseOutline } from "../../../lib/server";
 import { CourseOutlineProvider } from "../../../context/CourseOutlineContext";
 
 export default async function Layout({ children, params }) {
-  const courseSlug = params?.courseSlug || params?.slug || '';
+  const resolvedParams = await params;
+  const courseSlug = resolvedParams?.courseSlug || resolvedParams?.slug || '';
   const outline = courseSlug ? await getCourseOutline(courseSlug).catch(() => null) : null;
 
   return (

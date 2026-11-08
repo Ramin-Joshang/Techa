@@ -1,10 +1,12 @@
 "use client"
+import { useParams } from 'next/navigation';
 import { BlogSidebar } from '../../../components/blog/BlogSidebar';
 import { motion } from 'framer-motion';
 import Comments from "../../../components/courses/course/Comments"
 import { BookOpenText, Clock, User, Bookmark, Share2, Heart, ArrowUp } from 'lucide-react';
 
-export default function PostPage({ params }) {
+export default function PostPage() {
+    const params = useParams();
     const posts = [
         {
             id: 1,

@@ -1,14 +1,15 @@
 "use client"
 import { motion } from 'framer-motion'
 import { Clock, Users, Rocket, Code2, BrainCircuit, BadgeCheck, Linkedin, Twitter } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useState } from 'react'
 
-export default function ProjectDetail({ params }) {
+export default function ProjectDetail() {
     const router = useRouter()
+    const params = useParams()
     const [activeTab, setActiveTab] = useState('description')
 
-    const project = projects.find(project => project.id == params.id)
+    const project = projects.find(project => project.id == params?.id)
 
     if (!project) {
         return (

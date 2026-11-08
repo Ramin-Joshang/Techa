@@ -3,12 +3,14 @@ import { FiMessageSquare, FiCalendar, FiClock, FiPlus } from 'react-icons/fi'
 import { Editor } from '@tinymce/tinymce-react'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { motion } from "framer-motion"
 
-const QuestionPage = ({ params }) => {
+const QuestionPage = () => {
+    const params = useParams()
     const [answerContent, setAnswerContent] = useState('')
     const question = {
-        id: params.id,
+        id: params?.id,
         title: 'چگونه از useState در ری اکت استفاده کنیم؟',
         content: 'من در حال یادگیری ری اکت هستم و میخواهم state مدیریت کنم...',
         course: 'ری اکت پیشرفته',

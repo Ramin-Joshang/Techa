@@ -15,8 +15,9 @@ import {
 import ContentBlocksRenderer from '../../../../components/docs/content/ContentBlocksRenderer';
 
 export async function generateMetadata({ params }) {
-  const courseSlug = params?.courseSlug || params?.slug || '';
-  const lessonSlug = params?.lessonSlug || params?.lessonId || '';
+  const resolvedParams = await params;
+  const courseSlug = resolvedParams?.courseSlug || resolvedParams?.slug || '';
+  const lessonSlug = resolvedParams?.lessonSlug || resolvedParams?.lessonId || '';
 
   if (!courseSlug || !lessonSlug) return { title: 'مستندات تکا' };
 
@@ -37,8 +38,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function LessonPage({ params }) {
-  const courseSlug = params?.courseSlug || params?.slug || '';
-  const lessonSlug = params?.lessonSlug || params?.lessonId || '';
+  const resolvedParams = await params;
+  const courseSlug = resolvedParams?.courseSlug || resolvedParams?.slug || '';
+  const lessonSlug = resolvedParams?.lessonSlug || resolvedParams?.lessonId || '';
 
   if (!courseSlug || !lessonSlug) {
     notFound();

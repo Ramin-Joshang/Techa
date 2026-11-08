@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "engines": {
-    "node": ">=22.0.0 <25",
+    "node": ">=24.0.0 <25",
     "npm": ">=10.0.0"
   },
   "workspaces": [
@@ -11,6 +11,12 @@
     "backend",
     "frontend"
   ],
+  "overrides": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  },
   "scripts": {
     "dev": "concurrently -n \"shared,backend,frontend\" -c \"blue,green,magenta\" \"npm run dev --workspace=@techa/shared\" \"npm run dev --workspace=@techa/backend\" \"npm run dev --workspace=@techa/frontend\"",
     "dev:backend": "npm run dev --workspace=@techa/backend",
@@ -31,7 +37,8 @@
     "verify": "node scripts/verify-step1.cjs",
     "verify:step2": "node scripts/verify-step2.cjs",
     "verify:step3": "node scripts/verify-step3.cjs",
-    "verify:step4": "node scripts/verify-step4.cjs"
+    "verify:step4": "node scripts/verify-step4.cjs",
+    "verify:step5": "node scripts/verify-step5.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

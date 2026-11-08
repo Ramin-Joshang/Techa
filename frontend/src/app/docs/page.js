@@ -12,17 +12,18 @@ export const metadata = {
 };
 
 export default async function DocsPage({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
   // Normalize and validate incoming query parameters
-  const pageParam = parseInt(searchParams?.page || '1', 10);
+  const pageParam = parseInt(resolvedSearchParams?.page || '1', 10);
   const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
-  const rawLevel = searchParams?.level?.toLowerCase();
+  const rawLevel = resolvedSearchParams?.level?.toLowerCase();
   const validLevel = ['beginner', 'intermediate', 'advanced'].includes(rawLevel || '')
     ? rawLevel
     : undefined;
 
-  const tag = searchParams?.tag ? searchParams.tag.trim() : undefined;
-  const searchQuery = searchParams?.q ? searchParams.q.trim().toLowerCase() : '';
+  const tag = resolvedSearchParams?.tag ? resolvedSearchParams.tag.trim() : undefined;
+  const searchQuery = resolvedSearchParams?.q ? resolvedSearchParams.q.trim().toLowerCase() : '';
 
   let coursesResult;
   let fetchError = null;

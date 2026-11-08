@@ -5,10 +5,6 @@ const nextConfig = {
   env: {
     TLS_REJECT_UNAUTHORIZED: "0",
   },
-
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   async redirects() {
     return [
       {
