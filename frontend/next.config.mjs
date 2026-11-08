@@ -2,17 +2,9 @@
 const nextConfig = {
   output: "standalone",
   reactStrictMode: false,
+  skipTrailingSlashRedirect: true,
   env: {
     TLS_REJECT_UNAUTHORIZED: "0",
-  },
-  async redirects() {
-    return [
-      {
-        source: '/r/:id',
-        destination: '/resume/:id',
-        permanent: true,
-      },
-    ];
   },
   images: {
     remotePatterns: [
