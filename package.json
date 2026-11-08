@@ -26,12 +26,20 @@
     "dev:frontend": "npm run dev --workspace=@techa/frontend",
     "dev:shared": "npm run dev --workspace=@techa/shared",
     "build": "npm run build --workspace=@techa/shared && npm run build --workspace=@techa/backend && npm run build --workspace=@techa/frontend",
+    "build:all": "npm run build --workspace=@techa/shared && npm run build --workspace=@techa/backend && npm run build --workspace=@techa/frontend",
     "build:shared": "npm run build --workspace=@techa/shared",
     "build:backend": "npm run build --workspace=@techa/backend",
     "build:frontend": "npm run build --workspace=@techa/frontend",
     "start": "node backend/dist/server.js",
     "start:backend": "npm run start --workspace=@techa/backend",
     "start:frontend": "npm run start --workspace=@techa/frontend",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete ecosystem.config.cjs",
+    "pm2:status": "pm2 status",
+    "pm2:logs": "pm2 logs",
+    "pm2:save": "pm2 save",
     "typecheck": "npm run typecheck --workspace=@techa/shared && npm run typecheck --workspace=@techa/backend && npm run typecheck --workspace=@techa/frontend",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspace=@techa/backend && npm run test --workspace=@techa/frontend",
@@ -42,9 +50,17 @@
     "verify:step3": "node scripts/verify-step3.cjs",
     "verify:step4": "node scripts/verify-step4.cjs",
     "verify:step5": "node scripts/verify-step5.cjs",
-    "verify:step6": "node scripts/verify-step6.cjs"
+    "verify:step6": "node scripts/verify-step6.cjs",
+    "verify:step7": "node scripts/verify-step7.cjs",
+    "verify:deployment": "node scripts/verify-step7.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "pm2": "^7.1.2",
+    "swagger-ui-express": "^5.0.1"
   }
 }

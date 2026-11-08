@@ -1,0 +1,1339 @@
+# TECHA 2.0 — PHASE 1 / STEP 7
+## Production Deployment Preparation, Environment Configuration, PM2 Orchestration & Complete OpenAPI/Swagger Documentation
+
+You are the principal software architect, DevOps engineer, backend architect, and implementation agent for TECHA 2.0.
+
+Your task is to implement Phase 1 / Step 7 directly in the existing monorepo.
+
+This step prepares the application for deployment on the user's Windows Server 2025 VPS, with both frontend and backend running reliably under PM2, behind IIS, on the same domain.
+
+It also establishes a complete, maintainable, English-language API documentation system using OpenAPI and Swagger UI.
+
+This is an implementation task. Inspect the real repository, modify the required files, run all verifications, and commit the result.
+
+Do not merely provide configuration suggestions. Implement the necessary project-side configuration and create the deployment documentation and templates.
+
+---
+
+# 1. Deployment Context and Approved Decisions
+
+## Server
+
+- Operating system: Windows Server 2025.
+- Public server IPv4: `62.220.123.21`.
+- Main domain: `techa.ir`.
+- Production public website: `https://techa.ir`.
+- HTTPS must be used in production.
+- DNS and SSL certificate are managed separately from this repository.
+
+## Application architecture
+
+The monorepo contains two independent Node.js applications:
+
+**Frontend**
+- Next.js 16.
+- React 19.
+- Server Components and SSR.
+- Existing four approved public routes.
+- Existing server-side API data-access layer.
+
+**Backend**
+- Express 5.
+- Mongoose 9.
+- MongoDB Atlas.
+- Shared Zod 4 contracts.
+- Existing read-only public API.
+- Health/readiness infrastructure where implemented.
+
+Both applications must run independently, use different internal TCP ports, and be managed together by one PM2 ecosystem file.
+
+## Recommended production network architecture
+
+Use IIS as the public HTTPS entry point and reverse proxy.
+
+Preferred architecture:
+
+`Internet → IIS (80/443) → Frontend and Backend`
+
+The internal Node.js processes should listen on separate ports, preferably on loopback only:
+
+- Frontend: `127.0.0.1:<FRONTEND_PORT>`
+- Backend: `127.0.0.1:<BACKEND_PORT>`
+
+Inspect existing project configuration before selecting the actual port numbers.
+
+Use existing valid ports where possible. If they conflict, select unused ports and update all related configuration consistently.
+
+Candidate defaults such as frontend `3000` and backend `5000` may be used only after checking the actual application configuration and available ports.
+
+Do not assume the proposed ports are free on the remote VPS.
+
+## Public URL mapping
+
+The recommended public URLs are:
+
+| Purpose | Public URL |
+|---|---|
+| Frontend | `https://techa.ir/` |
+| Public API | `https://techa.ir/api/v1/public/...` |
+| Swagger UI | `https://techa.ir/api-docs` |
+| OpenAPI JSON | `https://techa.ir/api-docs.json` |
+| Backend landing page | `https://techa.ir/backend` |
+
+IIS should route API and documentation requests to Express and all remaining approved frontend requests to Next.js.
+
+The backend must also serve its own root page at `/` when accessed directly on its internal backend listener.
+
+The IIS `/backend` mapping is the public convenience route to that backend landing page.
+
+**Important:** The Node.js ports should normally remain private. Do not expose raw backend HTTP ports to the public internet merely to make the services appear on different ports.
+
+If a direct public backend port is genuinely required, document it as an optional alternative that requires a dedicated HTTPS binding, firewall rules, and an explicit CORS origin. Never expose an unencrypted production API port without clearly documenting the risk.
+
+---
+
+# 2. Mandatory Repository Inspection
+
+Before modifying anything:
+
+1. Inspect the complete monorepo structure.
+2. Inspect the active Git branch and most recent commit.
+3. Confirm the Step 6 implementation and its commit.
+4. Read all previous Phase 1 implementation reports, particularly Step 3, Step 4, Step 5, and Step 6.
+5. Inspect every workspace `package.json`.
+6. Inspect the current lockfile.
+7. Inspect `.nvmrc` and Node/npm engine constraints.
+8. Inspect the current environment loading strategy.
+9. Search the entire repository for every environment variable reference:
+   - `process.env`
+   - `NEXT_PUBLIC_*`
+   - `import.meta.env`
+   - dotenv loading.
+   - Zod environment configuration schemas.
+   - PM2 environment configuration.
+   - Build and deployment scripts.
+10. Inspect the frontend API client and its exact expected `TECHA_API_BASE_URL` format.
+11. Inspect the backend MongoDB configuration.
+12. Inspect backend server startup and current `app.listen()` logic.
+13. Inspect actual backend route mounts and health endpoints.
+14. Inspect the actual production frontend and backend build outputs.
+15. Inspect all current scripts for building and starting both workspaces.
+16. Inspect the existing IIS-related configuration, if present.
+17. Inspect all current CORS and trusted-proxy configuration.
+18. Inspect the current frontend route enforcement Proxy from Step 6.
+19. Inspect whether PM2 is already a dependency or available in the current environment.
+
+Do not infer runtime values from older reports.
+
+Do not assume that source code, ports, build outputs, or package scripts have remained unchanged.
+
+Create a new feature branch:
+
+`phase-1-step-7-deployment-api-docs`
+
+Base it on the completed Step 6 branch.
+
+Do not reset, discard, overwrite, or rewrite previous commits.
+
+If the working tree is not clean, stop and report the existing changes before modifying anything.
+
+---
+
+# 3. Canonical Environment Configuration — `.env.example`
+
+This is one of the highest-priority deliverables of this step.
+
+The user must be able to inspect `.env.example`, fill in the actual production values, and use the resulting environment configuration without guessing which variables are required.
+
+Create a complete and accurate environment template based on the actual code.
+
+## 3.1 Full environment-variable audit
+
+Inspect every actual environment variable read by:
+
+- Frontend application.
+- Backend application.
+- MongoDB connection module.
+- Frontend API client.
+- Server-side URL generation.
+- SEO metadata.
+- CORS configuration.
+- HTTP server bootstrap.
+- Health and readiness checks.
+- Logging.
+- PM2 ecosystem.
+- Next.js configuration.
+- Build scripts.
+- Production deployment scripts.
+
+Do not add invented variables simply because they are common in other projects.
+
+Do not omit any real variable currently consumed by the code.
+
+For every variable, determine:
+
+- Exact name.
+- Which application consumes it.
+- Whether it is required or optional.
+- Whether it is required at build time or runtime.
+- Whether it may be exposed to the browser.
+- Its actual default value, if one exists.
+- Its purpose.
+- Whether it is development-only or production-only.
+
+## 3.2 Deliverable
+
+Create a comprehensive root-level:
+
+`.env.example`
+
+This must be the canonical, documented environment inventory for the monorepo.
+
+Organize it into clear sections:
+
+1. Global application settings.
+2. Frontend settings.
+3. Backend settings.
+4. MongoDB settings.
+5. Domain and URL settings.
+6. CORS and reverse-proxy settings.
+7. Logging and operational settings.
+8. OpenAPI/Swagger settings, if they require environment variables.
+
+Each variable must have an English description immediately above it.
+
+Use realistic, safe placeholder values and explain what the user must replace.
+
+For example, a MongoDB connection string must be represented by a clearly invalid placeholder, not a real URI.
+
+Never invent passwords, connection strings, API keys, JWT secrets, or credentials.
+
+## 3.3 Workspace environment loading
+
+A monorepo can have different environment-loading behavior in Next.js and Express.
+
+Inspect the real behavior.
+
+The root `.env.example` must be the canonical reference, but do not assume Next.js and Express automatically read a root `.env` when executed from different workspace directories.
+
+If separate runtime files are technically required, create the smallest consistent app-specific templates, such as:
+
+- `frontend/.env.example`
+- `backend/.env.example`
+
+Only do this when justified by the actual application loading behavior.
+
+If app-specific templates are created:
+
+- Document which values belong in each file.
+- Avoid contradictory duplicated defaults.
+- Make the root template the single authoritative inventory.
+- Explain exactly where the real `.env`, `.env.local`, or equivalent file must be placed.
+- Ensure PM2 and production build commands load the correct environment.
+
+Do not put secrets into `ecosystem.config.cjs`.
+
+Do not commit real `.env` files.
+
+Update `.gitignore` if needed.
+
+The production environment must be loaded explicitly and consistently rather than depending on whichever directory happens to be the current working directory.
+
+## 3.4 Security restrictions
+
+Never create:
+
+`NEXT_PUBLIC_MONGODB_URI`
+
+Never expose:
+
+- MongoDB connection strings.
+- Database passwords.
+- Private API credentials.
+- Private backend configuration.
+- Internal filesystem paths.
+- Secret environment variables.
+
+Only intentionally public values may use the Next.js `NEXT_PUBLIC_` prefix.
+
+## 3.5 Environment validation
+
+Add or extend a typed environment validation layer.
+
+Use Zod 4 consistently.
+
+Requirements:
+
+- Validate required variables during startup.
+- Validate URLs and port numbers.
+- Validate domain and origin formats.
+- Provide actionable configuration errors.
+- Never print secret values when validation fails.
+- Avoid validating optional variables as mandatory without justification.
+- Fail fast when a required production variable is missing.
+- Do not silently replace missing production credentials with development defaults.
+
+Add tests for missing and invalid environment variables.
+
+---
+
+# 4. Domain, DNS, IIS and Port Architecture
+
+This section must produce a working project configuration and an accurate deployment guide.
+
+## 4.1 Domain and public IP
+
+The intended mapping is:
+
+- Domain: `techa.ir`
+- Public IP: `62.220.123.21`
+
+Inspect whether the repository already assumes a canonical hostname.
+
+Use `https://techa.ir` as the production canonical URL.
+
+Do not hardcode the IP address as the application's public website URL.
+
+Do not confuse the server IP with a browser Origin.
+
+A browser Origin is composed of:
+
+`scheme + hostname + port`
+
+For example:
+
+`https://techa.ir`
+
+and
+
+`https://techa.ir:7500`
+
+are different origins.
+
+The following is not an Origin:
+
+`62.220.123.21`
+
+Only add an IP-based Origin to the allowlist when a real client is explicitly designed to access the backend through that IP and a specific protocol and port.
+
+## 4.2 Internal port separation
+
+Frontend and backend must have independent configuration values.
+
+The frontend must not bind to the backend port.
+
+The backend must not bind to the frontend port.
+
+Use configurable values in the actual application bootstrap and PM2 configuration.
+
+For the recommended IIS architecture:
+
+- Bind both Node.js applications to `127.0.0.1`.
+- Use different internal ports.
+- Let IIS handle external HTTP/HTTPS.
+- Keep the Node.js internal ports inaccessible from the public network unless there is a specific, documented requirement.
+
+Ensure that backend code reads its actual configured `HOST` and `PORT` rather than hardcoding them.
+
+Ensure Next.js receives the correct hostname and port in its start command.
+
+## 4.3 Remote server port verification
+
+The AI Studio execution environment may not be the user's Windows VPS.
+
+Do not claim that remote ports are free or open unless the actual VPS was accessed and verified.
+
+Create a PowerShell deployment-check script:
+
+`scripts/check-windows-deployment.ps1`
+
+It should accept or read the actual configured:
+
+- Domain.
+- Server IP.
+- Frontend port.
+- Backend port.
+
+It should check:
+
+1. DNS resolution of `techa.ir`.
+2. Whether DNS resolves to the expected IP.
+3. Whether the frontend internal port is listening.
+4. Whether the backend internal port is listening.
+5. Which process owns each selected port.
+6. Whether the frontend and backend local HTTP checks succeed.
+7. Whether public port 80 is reachable.
+8. Whether public port 443 is reachable.
+9. Whether there is an unexpected listener conflict.
+
+Use native PowerShell networking commands such as `Resolve-DnsName`, `Get-NetTCPConnection`, and `Test-NetConnection`.
+
+Do not modify DNS, Windows Firewall, or IIS automatically.
+
+The script should report results without changing the server configuration.
+
+---
+
+# 5. CORS, Same-Origin API Routing and Trusted Proxy
+
+CORS must be configured correctly for the actual deployment topology.
+
+## 5.1 Preferred architecture: Same-origin public routing
+
+The recommended arrangement is:
+
+- Browser loads `https://techa.ir`.
+- Browser API calls use the same public origin.
+- IIS routes `/api/*` to the Express backend.
+- IIS routes `/api-docs*` to the Express backend.
+- Next.js server-side data fetching can call Express through its private loopback address.
+
+Under this architecture, browser requests to `/api/...` are same-origin.
+
+They do not need cross-origin CORS permissions merely because Express uses a different internal port.
+
+## 5.2 Explicit CORS allowlist
+
+Configure an exact production origin allowlist.
+
+At minimum, support:
+
+`https://techa.ir`
+
+Add:
+
+`https://www.techa.ir`
+
+only if the project actually supports the www hostname.
+
+Development origins may include the actual local frontend development origin.
+
+Do not copy all production and development origins into every environment without separation.
+
+Do not use:
+
+`origin: "*"`
+
+with credentials.
+
+Do not reflect every incoming Origin header.
+
+Do not use permissive regular expressions that accept arbitrary subdomains.
+
+Do not add the raw public IP as an Origin without a legitimate HTTPS endpoint using that IP.
+
+## 5.3 Credentials
+
+Inspect the current API behavior.
+
+The present public read-only API does not require authentication cookies.
+
+Do not enable credentialed CORS unnecessarily.
+
+If credentials are required by an existing feature, configure explicit origins and verify the correct preflight behavior.
+
+## 5.4 Trusted proxy
+
+Configure Express proxy trust precisely for the actual IIS-to-Node topology.
+
+Requirements:
+
+- Preserve legitimate original protocol information.
+- Preserve the intended hostname.
+- Support correct `req.protocol` behavior behind IIS.
+- Prevent client-supplied forwarded headers from being blindly trusted.
+- Do not set unrestricted `trust proxy: true` without a documented network-boundary reason.
+- Trust only the known reverse-proxy connection or topology.
+
+Ensure logging and generated absolute URLs use the correct public HTTPS origin.
+
+## 5.5 CORS testing
+
+Add automated tests for:
+
+- Allowed production Origin.
+- Allowed development Origin.
+- Disallowed Origin.
+- Missing Origin.
+- Preflight `OPTIONS`.
+- Exact credentials behavior.
+- Correct `Vary: Origin` behavior where applicable.
+- No wildcard-plus-credentials combination.
+
+Remember that CORS is a browser response-sharing mechanism, not API authentication or access control.
+
+---
+
+# 6. One-Command Production Build for Both Applications
+
+Create a reliable root-level build command.
+
+Required command:
+
+`npm run build:all`
+
+This must build all production workspaces in the correct order.
+
+Expected dependency order:
+
+1. `@techa/shared`
+2. `@techa/backend`
+3. `@techa/frontend`
+
+Inspect the real workspace build dependencies and adjust ordering when necessary.
+
+Requirements:
+
+- Shared contracts must be compiled before consumers.
+- Backend must produce the exact production entry point consumed by PM2.
+- Frontend must run a complete Next.js production build.
+- The command must stop immediately when any workspace fails.
+- It must return a nonzero exit code on failure.
+- It must not hide TypeScript errors.
+- It must not suppress build errors.
+- It must not silently skip a workspace.
+- It must be cross-platform compatible with Windows Server.
+- It must use the repository's actual npm workspace names.
+
+If a root build script already exists, improve it rather than creating a competing command.
+
+Document the exact output paths.
+
+Do not run development servers as part of the production build command.
+
+Add an automated test or verification script ensuring that all expected production outputs exist.
+
+---
+
+# 7. PM2 Production Process Management
+
+Create a root-level:
+
+`ecosystem.config.cjs`
+
+This file must manage the frontend and backend as two independent PM2 applications.
+
+Suggested PM2 process names:
+
+- `techa-frontend`
+- `techa-backend`
+
+Inspect the actual workspace build output before selecting script paths.
+
+## 7.1 Frontend PM2 application
+
+Requirements:
+
+- Use the actual Next.js production server.
+- Execute `next start`, not `next dev`.
+- Bind to the configured internal frontend host.
+- Use the configured frontend port.
+- Run with `NODE_ENV=production`.
+- Use the correct frontend working directory.
+- Run under the approved Node.js 24 runtime.
+- Do not use watch mode.
+
+## 7.2 Backend PM2 application
+
+Requirements:
+
+- Execute the compiled backend production entry point.
+- Do not run TypeScript development tooling in production.
+- Bind to the configured backend host and port.
+- Use the correct backend working directory.
+- Load the validated production environment.
+- Use graceful restart and shutdown behavior.
+- Run under the same approved Node.js runtime.
+- Do not use watch mode.
+
+## 7.3 PM2 reliability
+
+Configure both applications with appropriate:
+
+- `autorestart`
+- `restart_delay`
+- `max_restarts`
+- `min_uptime`
+- `max_memory_restart`
+- `kill_timeout`
+- `listen_timeout`
+- Separate log files.
+- Log timestamps.
+- Production environment.
+- Stable working directories.
+- Consistent environment handling.
+
+Use one instance for each service initially.
+
+Do not start multiple Next.js instances without first designing shared cache coordination and validating the production architecture.
+
+Do not configure automatic `wait_ready` unless the application actually emits the expected PM2 readiness message.
+
+Do not expose internal environment secrets in PM2 logs or process metadata unnecessarily.
+
+Create a log directory and ensure it is ignored by Git.
+
+## 7.4 Environment loading in PM2
+
+The ecosystem file must load the real production configuration reliably.
+
+If a root `.env` is the chosen canonical configuration:
+
+- Load it explicitly and securely.
+- Pass only the required variables to each process.
+- Do not pass backend secrets to the frontend process.
+- Do not expose sensitive values through Next.js browser bundles.
+- Do not hardcode credentials in the ecosystem file.
+
+Use a CJS ecosystem file even if the root package uses ESM, where this is needed for reliable PM2 loading.
+
+Verify Windows path handling.
+
+Do not rely on shell-specific path syntax.
+
+## 7.5 Required root-level PM2 commands
+
+Add scripts that provide the following commands:
+
+| Command | Purpose |
+|---|---|
+| `npm run build:all` | Build all workspaces |
+| `npm run pm2:start` | Start frontend and backend together |
+| `npm run pm2:restart` | Restart both applications |
+| `npm run pm2:stop` | Stop both applications |
+| `npm run pm2:delete` | Remove both applications from PM2 |
+| `npm run pm2:status` | Display process status |
+| `npm run pm2:logs` | Display both application logs |
+| `npm run pm2:save` | Save the current process list |
+
+`npm run pm2:start` must load the production ecosystem file.
+
+Use the supported PM2 commands rather than writing a second process supervisor.
+
+If PM2 is not installed globally or locally, document the exact installation command and verify the executable is available before start.
+
+Do not claim the PM2 start command works merely because the ecosystem file parses.
+
+Actually start both processes in the available test environment where possible.
+
+Verify that both ports listen and that both applications respond.
+
+---
+
+# 8. Windows Server 2025 — PM2 Startup Persistence
+
+This is a critical deployment detail.
+
+PM2 can manage the two processes, but Windows startup persistence must be considered separately.
+
+Inspect current PM2 support and the actual Windows environment.
+
+Do not blindly run:
+
+`pm2 startup`
+
+and claim that automatic startup is configured on Windows.
+
+The official PM2 startup documentation identifies separate Windows startup considerations and external solutions.
+
+Prepare:
+
+`docs/deployment/WINDOWS-SERVICE-SETUP.md`
+
+It must explain:
+
+1. How PM2 starts both processes manually.
+2. How to save the PM2 process list.
+3. How automatic startup after Windows reboot is handled.
+4. Which Windows service manager is recommended for the selected setup.
+5. How the service manager launches PM2 under the correct Windows account.
+6. How `PM2_HOME`, Node.js executable path, npm/PM2 paths, and repository working directory must remain consistent.
+7. How to inspect service logs.
+8. How to restart the applications after a deployment.
+9. How to avoid duplicate PM2 daemons.
+
+Do not add an outdated Windows startup package blindly.
+
+Do not install or register a Windows service automatically without the user's explicit deployment approval.
+
+A PM2 ecosystem file and a Windows boot service are two separate deliverables.
+
+Report whether startup persistence was actually tested on Windows Server 2025 or only documented.
+
+---
+
+# 9. IIS Reverse Proxy Configuration
+
+Prepare the project-side IIS deployment configuration.
+
+Create:
+
+`docs/deployment/IIS-REVERSE-PROXY.md`
+
+If appropriate, create a reusable example configuration under:
+
+`deploy/iis/`
+
+Do not overwrite an existing production IIS configuration.
+
+## Required public routing
+
+Use the following routing model:
+
+| Incoming request | IIS upstream |
+|---|---|
+| `/api/v1/*` | Backend |
+| `/api-docs` | Backend |
+| `/api-docs/*` | Backend |
+| `/api-docs.json` | Backend |
+| `/backend` | Backend root page |
+| All other approved frontend paths | Next.js frontend |
+
+The rules must be ordered correctly.
+
+Requests to `/api/*` must not accidentally pass through the Next.js public page Proxy allowlist.
+
+The Swagger UI must also bypass the frontend route allowlist and reach Express.
+
+## IIS requirements
+
+Document configuration for:
+
+- IIS site binding for `techa.ir`.
+- HTTP port 80.
+- HTTPS port 443.
+- SSL certificate binding.
+- DNS A record pointing `techa.ir` to `62.220.123.21`.
+- URL Rewrite.
+- Application Request Routing (ARR).
+- Reverse-proxy enablement.
+- Forwarded headers.
+- Request timeouts.
+- Request body size limits appropriate to the existing APIs.
+- Correct preservation of URL paths.
+- WebSocket or streaming requirements only where actual application behavior needs them.
+- HTTP-to-HTTPS redirection.
+- Firewall exposure limited to the required public ports.
+
+Do not expose backend/frontend Node.js internal ports publicly under the recommended architecture.
+
+Do not assume IIS or ARR is installed in the AI Studio environment.
+
+Create an accurate configuration template and deployment instructions that the user can apply on the real Windows Server.
+
+Do not claim that DNS, SSL, firewall, or IIS has already been changed.
+
+---
+
+# 10. Complete Swagger / OpenAPI Documentation
+
+Create a full and maintainable API documentation system.
+
+The documentation must be entirely in English.
+
+This includes:
+
+- Documentation homepage.
+- Swagger UI descriptions.
+- Endpoint summaries.
+- Endpoint descriptions.
+- Tags.
+- Parameter descriptions.
+- Request and response descriptions.
+- Schema descriptions.
+- Examples.
+- Error documentation.
+
+## 10.1 Required URLs
+
+Implement:
+
+**Backend root:**
+
+`GET /`
+
+A simple professional HTML landing page in English.
+
+Title:
+
+`TECHA API Service`
+
+Include:
+
+- Short description of the API service.
+- API version.
+- Service availability description.
+- Main button: `Explore API Documentation`.
+- Link to `/api-docs`.
+- Secondary link to `/api-docs.json`.
+- Clean responsive design.
+- Accessible markup.
+- No external scripts or unnecessary frontend framework.
+
+Do not display:
+
+- MongoDB URI.
+- Database password.
+- Internal server IP.
+- Environment secrets.
+- Internal filesystem paths.
+- Sensitive diagnostics.
+
+This root page must work even when opened directly on the backend listener.
+
+When routed through IIS, expose it as:
+
+`https://techa.ir/backend`
+
+**Swagger UI:**
+
+`GET /api-docs`
+
+**Raw OpenAPI specification:**
+
+`GET /api-docs.json`
+
+The browser should display a complete interactive English Swagger interface.
+
+## 10.2 OpenAPI specification
+
+Use OpenAPI 3.1.
+
+Preserve existing API behavior and response contracts.
+
+Do not invent endpoints.
+
+Inspect every registered Express route and document all endpoints currently implemented.
+
+At minimum, verify the existing public API endpoints:
+
+- `GET /api/v1/public/home`
+- `GET /api/v1/public/courses`
+- `GET /api/v1/public/courses/{courseSlug}`
+- `GET /api/v1/public/courses/{courseSlug}/outline`
+- `GET /api/v1/public/courses/{courseSlug}/lessons/{lessonSlug}`
+
+Also document existing health and readiness endpoints if they are actually registered.
+
+Inspect the full backend route inventory before declaring the documentation complete.
+
+Future endpoint groups should be easy to add without redesigning the documentation infrastructure.
+
+## 10.3 Use existing Zod 4 contracts
+
+The shared Zod 4 schemas are the source of truth for request and response validation.
+
+Prefer generating OpenAPI schemas directly from shared Zod schemas to reduce contract duplication.
+
+A compatible implementation candidate is:
+
+`@asteasolutions/zod-to-openapi`
+
+Its modern releases support Zod 4 and OpenAPI 3.1 generation. Verify the exact installed release and peer dependencies before adding it.
+
+Use `OpenApiGeneratorV31` where appropriate.
+
+Use `swagger-ui-express` to serve the generated document through Express if compatible with the installed Express 5 and Node 24 versions.
+
+Check the dependency audit before installing packages.
+
+Do not downgrade Zod.
+
+Do not introduce another competing validation library.
+
+Do not generate a disconnected OpenAPI specification that silently diverges from the real Zod contracts.
+
+## 10.4 Document all existing contract details
+
+Include:
+
+### Course endpoints
+
+- Path parameters.
+- Query parameters.
+- Supported search and filter fields.
+- Pagination.
+- Sort options.
+- Level and tag restrictions.
+- Response envelope.
+- Pagination metadata.
+- Published-content visibility.
+
+### Course outline
+
+- Chapters.
+- Lesson summaries.
+- Ordering.
+- Parent publication requirements.
+- Response shape.
+
+### Lesson endpoint
+
+- Lesson metadata.
+- Content schema version.
+- All 13 content block types.
+- Navigation information.
+- Safe media references.
+- Error behavior for unpublished content.
+
+### Homepage endpoint
+
+- SitePage content.
+- Hero section.
+- CTA configuration.
+- Features.
+- SEO metadata.
+- Actual returned DTO fields.
+
+### Errors
+
+Document actual error responses such as:
+
+- 400 when supported by an actual endpoint.
+- 404.
+- 422.
+- 500.
+- 503.
+
+Do not document status codes that the backend never actually returns.
+
+Use the actual API response envelope and error schema.
+
+## 10.5 Schemas and reusable definitions
+
+Where applicable, expose reusable schemas for:
+
+- Course public DTO.
+- Chapter outline DTO.
+- Lesson public DTO.
+- Course outline DTO.
+- Homepage SitePage DTO.
+- Course statistics.
+- Content blocks.
+- Interactive examples.
+- Pagination.
+- API error responses.
+
+All 13 content block variants must be correctly represented.
+
+Preserve the discriminated union based on `type`.
+
+Do not flatten the content model into a generic untyped JSON object unless the actual Zod/OpenAPI limitations require a documented, accurate representation.
+
+Do not expose internal Mongoose document types, raw `__v`, internal persistence metadata, or secrets.
+
+## 10.6 English-only requirement
+
+All Swagger UI and OpenAPI documentation text must be English.
+
+Descriptions and examples should be written in clear technical English.
+
+Do not simply reuse Persian descriptions from internal Zod schemas when those descriptions would appear in the public documentation.
+
+Add a verification check to detect Persian/Arabic-script text in the generated documentation's human-readable labels and descriptions.
+
+API field names must retain their established exact names and casing.
+
+## 10.7 Server URLs
+
+For production, the public OpenAPI server URL should use the canonical external domain:
+
+`https://techa.ir`
+
+The server URL must not expose private loopback addresses or internal server ports in the public Swagger specification.
+
+For local development, use the actual configurable local backend URL.
+
+If the user deliberately enables direct public backend-port access, document that as a separate server configuration with its own HTTPS URL and port.
+
+Do not blindly derive public server URLs from untrusted `Host` headers.
+
+Use an explicitly configured canonical public API URL.
+
+## 10.8 Swagger security and behavior
+
+- Do not add fake authentication.
+- Do not display non-existent login endpoints.
+- Do not invent bearer tokens or security schemes.
+- Keep `Try it out` functional for currently accessible public endpoints.
+- Do not allow Swagger documentation generation to connect to or mutate the production database.
+- Ensure Swagger itself does not disclose secret environment values.
+- Make the API documentation easy to extend in later phases.
+
+---
+
+# 11. Backend Root Landing Page and Swagger Integration
+
+Implement the landing page as part of the existing Express application.
+
+Do not create another standalone application.
+
+Use the existing backend startup and route architecture.
+
+Requirements:
+
+1. Root `GET /` responds with an English HTML page.
+2. `/api-docs` serves Swagger UI.
+3. `/api-docs.json` serves the generated JSON specification.
+4. Existing `/api/v1/*` routes continue working.
+5. Existing health routes continue working.
+6. The documentation routes do not conflict with the API router.
+7. The backend root page does not interfere with frontend root routing through IIS.
+8. The backend can display its landing page even when MongoDB is temporarily unavailable, provided no database-backed content is requested.
+
+If Express has an existing 404 handler or error middleware, place the new routes in the correct order.
+
+Do not expose debug or internal configuration endpoints.
+
+---
+
+# 12. Automated API Documentation Verification
+
+Add tests to verify that:
+
+- Backend root returns HTTP 200 and HTML.
+- The HTML contains the English service title.
+- The documentation link points to `/api-docs`.
+- Swagger UI returns HTTP 200.
+- OpenAPI JSON returns HTTP 200.
+- The JSON parses correctly.
+- The document declares OpenAPI 3.1.
+- Every actually registered API endpoint is documented.
+- No invented endpoints appear.
+- All currently implemented public API operations are documented.
+- Existing API response shapes match their published schemas.
+- Course query parameter constraints match Zod.
+- Content blocks include all 13 supported variants.
+- Public error response definitions match real backend behavior.
+- The production server URL is correct.
+- No internal IP or private port is leaked into the production OpenAPI specification.
+- No credentials or secrets appear in the document.
+- Documentation descriptions are English.
+
+Create an API route inventory check to detect future backend endpoints that are missing from the OpenAPI specification.
+
+This will be important when later phases add new APIs.
+
+Do not require a developer to remember to manually update an unrelated list of endpoints.
+
+Prefer one source of truth or an automated verification mechanism.
+
+---
+
+# 13. PM2 and Application Integration Tests
+
+Test the actual process configuration.
+
+Requirements:
+
+1. Confirm the ecosystem file can be parsed by PM2.
+2. Confirm it defines exactly the intended two applications.
+3. Confirm their process names are unique.
+4. Confirm their internal ports are different.
+5. Confirm both use the correct production build outputs.
+6. Confirm both use the same approved Node.js runtime.
+7. Confirm frontend and backend environment variables are appropriately separated.
+8. Confirm no secrets are hardcoded in the ecosystem configuration.
+9. Confirm logs are separated.
+10. Confirm a failed backend process does not silently cause PM2 to start a second duplicate backend listener.
+11. Confirm restart and shutdown behavior.
+12. Confirm the processes can be stopped cleanly.
+
+If PM2 is not available in the AI Studio execution environment, still create the correct configuration and provide static validation, but clearly report that live PM2 process execution was not performed.
+
+Do not claim actual PM2 startup success without running it.
+
+---
+
+# 14. Full Build and Deployment Smoke Tests
+
+Add a unified verification command where appropriate, for example:
+
+`npm run verify:deployment`
+
+It should verify:
+
+- Environment configuration.
+- Workspace build outputs.
+- Distinct ports.
+- PM2 ecosystem integrity.
+- Backend root response.
+- Swagger UI response.
+- OpenAPI JSON integrity.
+- Existing public API route registration.
+- Frontend SSR availability.
+- Existing route-boundary enforcement.
+- Health/liveness endpoints.
+- No unintended frontend API origin.
+- No database secret in browser-facing configuration.
+
+When running a local smoke test:
+
+- Use isolated test services.
+- Mock the backend data where appropriate.
+- Do not modify or seed production Atlas.
+- Do not claim that remote DNS, SSL, IIS, or firewall has been verified from a local AI Studio environment.
+
+If live services can be started in the current environment, start both and perform actual HTTP checks against their selected local ports.
+
+Record exact HTTP statuses and process results.
+
+---
+
+# 15. Preserve the Existing Application
+
+This step must not redesign or expand the product.
+
+Preserve:
+
+- Four approved public frontend pages.
+- Phase 1 route enforcement.
+- Existing SSR architecture.
+- Existing backend public APIs.
+- Existing Zod contracts.
+- Existing Mongoose models.
+- Existing database indexes.
+- Existing Next.js 16 and React 19 versions.
+- Existing styling and responsive layouts.
+- Existing Persian typography.
+- Existing homepage and documentation UI.
+
+Do not implement:
+
+- Media storage.
+- Media delivery.
+- File uploads.
+- CMS.
+- Admin dashboard.
+- Authentication.
+- Payments.
+- Exercises.
+- Blog features.
+- New public application pages.
+- Interactive code execution.
+
+The Swagger landing page is backend infrastructure documentation, not a new frontend application page.
+
+---
+
+# 16. Required Files and Deliverables
+
+Create or update the following where appropriate:
+
+| File | Purpose |
+|---|---|
+| `.env.example` | Canonical complete environment template |
+| `frontend/.env.example` | Only if Next.js requires a workspace-specific template |
+| `backend/.env.example` | Only if Express requires a workspace-specific template |
+| `ecosystem.config.cjs` | PM2 frontend/backend orchestration |
+| Root `package.json` | Unified build and PM2 commands |
+| Backend environment validation | Accurate typed startup configuration |
+| Backend CORS configuration | Explicit allowed-origin policy |
+| Backend proxy configuration | Safe trusted-proxy behavior |
+| Backend OpenAPI specification module | Complete OpenAPI 3.1 document |
+| Backend Swagger UI registration | Interactive English API documentation |
+| Backend landing page | Minimal English service homepage |
+| `scripts/check-windows-deployment.ps1` | Windows server diagnostics |
+| Deployment verification scripts | Build and process smoke checks |
+| `docs/deployment/ENVIRONMENT.md` | Complete variable reference |
+| `docs/deployment/IIS-REVERSE-PROXY.md` | IIS and domain routing instructions |
+| `docs/deployment/WINDOWS-SERVICE-SETUP.md` | PM2 Windows persistence instructions |
+| `docs/phase-1/STEP-7-IMPLEMENTATION-REPORT.md` | Complete engineering report |
+
+Adapt names and paths to existing repository conventions where appropriate.
+
+Do not create duplicate modules or multiple competing environment systems.
+
+---
+
+# 17. Deployment Commands — Required User Experience
+
+At the end of this step, the user should have a simple workflow.
+
+The intended production workflow should be:
+
+### Step A — Configure environment
+
+The user copies the correct `.env.example` template and fills in actual values.
+
+### Step B — Build both applications
+
+One command:
+
+`npm run build:all`
+
+### Step C — Start both applications
+
+One command:
+
+`npm run pm2:start`
+
+### Step D — Inspect both processes
+
+`npm run pm2:status`
+
+### Step E — Read logs
+
+`npm run pm2:logs`
+
+### Step F — Restart after deployment
+
+`npm run pm2:restart`
+
+### Step G — Stop both applications
+
+`npm run pm2:stop`
+
+All commands must be implemented and tested as far as the available environment permits.
+
+The exact commands may be adjusted to existing package conventions, but there must be one simple command for building all workspaces and one simple command for starting both production processes through PM2.
+
+Do not require the user to open two terminals and start frontend and backend separately.
+
+---
+
+# 18. Security and Operational Constraints
+
+- Never commit real `.env` files.
+- Never embed credentials in PM2 configuration.
+- Never use wildcard credentialed CORS.
+- Never expose MongoDB credentials to Next.js client bundles.
+- Never trust all forwarded proxy headers without a known topology.
+- Never expose raw internal service ports publicly by default.
+- Never hardcode `62.220.123.21` as the browser-facing website URL.
+- Never generate the OpenAPI server URL from arbitrary untrusted request headers.
+- Never fabricate Swagger endpoints.
+- Never publish internal diagnostic information.
+- Never execute production database modifications as part of deployment tests.
+- Never make destructive changes to IIS or Windows Firewall automatically.
+- Never claim remote server setup is finished when it has only been documented.
+
+---
+
+# 19. Git and Final Verification
+
+Create branch:
+
+`phase-1-step-7-deployment-api-docs`
+
+Suggested commit:
+
+`feat(phase-1): prepare production deployment and API documentation`
+
+Before committing:
+
+1. Review the complete diff.
+2. Verify `.env.example` contains no secrets.
+3. Verify all package scripts.
+4. Verify the PM2 ecosystem configuration.
+5. Verify environment loading.
+6. Verify the OpenAPI document.
+7. Verify all registered API routes are documented.
+8. Verify CORS and proxy tests.
+9. Run all Step 2–6 verification scripts.
+10. Run all existing tests.
+11. Run all workspace typechecks.
+12. Run ESLint.
+13. Run the unified build.
+14. Run available local HTTP smoke tests.
+15. Verify the four public frontend routes remain accessible.
+16. Verify legacy pages remain blocked.
+17. Verify no production database content was changed.
+
+Do not merge into main.
+
+Do not declare complete if the core process configuration, build, or API documentation is broken.
+
+---
+
+# 20. Final Engineering Report
+
+Create:
+
+`docs/phase-1/STEP-7-IMPLEMENTATION-REPORT.md`
+
+The final report must provide:
+
+## A. Git and repository
+
+- Branch name.
+- Commit hash.
+- Working-tree status.
+- List of created and modified files.
+
+## B. Environment configuration
+
+- Complete environment-variable inventory.
+- Which process consumes each variable.
+- Required vs optional classification.
+- Build-time vs runtime classification.
+- Exact location of real environment files.
+- Confirmation that no secret values are committed.
+
+## C. Domain and ports
+
+- Actual frontend port.
+- Actual backend port.
+- Actual binding hosts.
+- Confirmation that the ports are distinct.
+- Local port verification results.
+- Exact IIS routing model.
+- Production public URLs.
+- DNS and certificate verification status.
+- Anything not verifiable without access to the real VPS.
+
+## D. CORS and proxy
+
+- Exact allowed production Origins.
+- Development origins.
+- Credentials policy.
+- Preflight behavior.
+- Trusted proxy configuration.
+- Test results.
+
+## E. Build and PM2
+
+- Exact unified build command.
+- Exact unified PM2 startup command.
+- Frontend PM2 process configuration.
+- Backend PM2 process configuration.
+- Working-directory and environment behavior.
+- Actual PM2 runtime verification results.
+- Windows reboot persistence status.
+
+## F. Swagger and OpenAPI
+
+- Swagger URL.
+- OpenAPI JSON URL.
+- API endpoint inventory.
+- Number of documented endpoints.
+- Number of reusable schemas.
+- Confirmation of all 13 content block variants.
+- Confirmation that documentation is entirely English.
+- Confirmation that no private addresses or secrets leak into the spec.
+
+## G. Tests and builds
+
+- Exact test-file and test counts.
+- All verification script results.
+- TypeScript results.
+- ESLint results.
+- Production build results.
+- HTTP status results.
+- PM2 status and log verification.
+
+## H. Production readiness
+
+Separate results into:
+
+1. Fully implemented and verified in the repository.
+2. Verified locally.
+3. Requires the user's real Windows VPS.
+4. Requires DNS/SSL/IIS configuration by the server administrator.
+5. Optional future configuration.
+
+Do not mark remote deployment tasks as complete when they were not performed.
+
+The final report must make it obvious what the user needs to do after reviewing and filling in `.env.example`.
+
+**Stop after Phase 1 / Step 7. Do not automatically start Media Storage & Delivery or another phase.**
