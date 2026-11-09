@@ -28,12 +28,10 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    "src/components/inline/previews/htmlpreview/HtmlPreview.jsx",
-    "src/components/inline/previews/javascriptpreview/JavascriptPreview.jsx",
-    "src/components/inline/previews/reactpreview/ReactPreview.jsx",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/legacy-archive"
   ]
 }

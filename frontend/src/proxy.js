@@ -66,7 +66,7 @@ function isAllowedPublicRoute(pathname) {
 export function proxy(request) {
   const { pathname } = request.nextUrl;
 
-  // 1. Always allow Next.js internal assets, prefetch, chunks, images, and fonts
+  // 1. Always allow Next.js internal assets, prefetch, chunks, images, fonts, and backend routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/images/') ||
@@ -74,6 +74,10 @@ export function proxy(request) {
     pathname === '/favicon.ico' ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
+    pathname.startsWith('/api/v1/public') ||
+    pathname.startsWith('/api-docs') ||
+    pathname === '/backend' ||
+    pathname.startsWith('/backend/') ||
     /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$/i.test(pathname)
   ) {
     return NextResponse.next();

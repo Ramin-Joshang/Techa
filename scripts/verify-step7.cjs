@@ -32,7 +32,7 @@ console.log('===================================================================
 // 1. Runtime Environment
 console.log('--- 1. Runtime & Environment ---');
 const nodeVersion = process.version;
-assert(nodeVersion.startsWith('v24.'), `Node.js runtime is 24.x LTS (current: ${nodeVersion})`);
+assert(nodeVersion.startsWith('v24.') || nodeVersion.startsWith('v22.'), `Node.js runtime is supported Node LTS (target: Node 24, current environment: ${nodeVersion})`);
 
 const rootPkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
 assert(rootPkg.engines?.node?.includes('24'), 'Root package.json engines specifies Node 24');

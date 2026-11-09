@@ -60,6 +60,7 @@ export async function getPublishedCourses(params?: {
   limit?: number;
   level?: string;
   tag?: string;
+  q?: string;
 }): Promise<PublicCoursesPage> {
   // Validate and sanitize query params
   const parsedQuery = CourseListQuerySchema.safeParse(params || {});

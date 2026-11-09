@@ -17,7 +17,20 @@ export const EnvSchema = z.object({
 export type EnvConfig = z.infer<typeof EnvSchema>;
 
 export function validateEnv(rawEnv: Record<string, unknown> = process.env as Record<string, unknown>): EnvConfig {
-  const result = EnvSchema.safeParse(rawEnv);
+  const normalizedRaw = {
+    ...rawEnv,
+    API_HOST: rawEnv.API_HOST || rawEnv.BACKEND_HOST,
+    API_PORT: rawEnv.API_PORT || rawEnv.BACKEND_PORT,
+    CANONICAL_API_URL: rawEnv.CANONICAL_API_URL || rawEnv.PUBLIC_API_URL,
+    CORS_ORIGINS: rawEnv.CORS_ORIGINS || rawEnv.CORS_ALLOWED_ORIGINS,
+    TRUST_PROXY_HOPS:
+      rawEnv.TRUST_PROXY_HOPS !== undefined
+        ? rawEnv.TRUST_PROXY_HOPS
+        : rawEnv.TRUST_PROXY !== undefined
+          ? rawEnv.TRUST_PROXY
+          : undefined,
+  };
+  const result = EnvSchema.safeParse(normalizedRaw);
   if (!result.success) {
     // Sanitize issues to avoid printing sensitive values
     const safeIssues = result.error.issues.map((issue) => ({

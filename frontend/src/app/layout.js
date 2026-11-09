@@ -1,64 +1,39 @@
-import "../styles/globals.css";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
-import { AuthProvider } from "../components/contexts/AuthContext";
-import "react-loading-skeleton/dist/skeleton.css";
-import { Bounce, ToastContainer } from "react-toastify";
-import "swiper/css";
-import "swiper/css/pagination";
-import "swiper/css/navigation";
-
-import { Providers } from "./Providers";
+import '../styles/globals.css';
+import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
 
 export const metadata = {
   title: {
-    default: "پلتفرم آموزشی تکا | Techa",
-    template: "%s | Techa",
+    default: 'پلتفرم آموزشی تکا | TECHA',
+    template: '%s | TECHA',
   },
   icons: {
-    icon: "/images/favicon.svg",
+    icon: '/images/favicon.svg',
   },
-  description: "پلتفرم آموزشی تکا",
-  keywords: ["آموزش برنامه‌نویسی", "دوره آنلاین", "Techa"],
-  metadataBase: new URL("https://techa.ir"),
+  description: 'پلتفرم مدرن و استاندارد آموزش برنامه‌نویسی وب و مهندسی نرم‌افزار به زبان فارسی',
+  keywords: ['آموزش برنامه‌نویسی', 'تکا', 'Techa', 'پایتون', 'ری‌اکت', 'نکست جی‌اس', 'جاوا اسکریپت'],
+  metadataBase: new URL('https://techa.ir'),
   openGraph: {
-    title: "پلتفرم آموزشی تکا | Techa",
-    description: "پلتفرم آموزشی برای یادگیری برنامه‌نویسی و تکنولوژی",
-    url: "https://techa.ir",
-    siteName: "Techa",
-    locale: "fa_IR",
-    type: "website",
+    title: 'پلتفرم آموزشی تکا | TECHA',
+    description: 'آموزش جامع و استاندارد برنامه‌نویسی با معماری مدرن و درس‌های تعاملی',
+    url: 'https://techa.ir',
+    siteName: 'TECHA',
+    locale: 'fa_IR',
+    type: 'website',
   },
   other: {
-    enamad: "5807521",
+    enamad: '5807521',
   },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fa">
+    <html lang="fa" dir="rtl">
       <head />
-      <body>
-        <Providers>
-          <AuthProvider>
-            <Header />
-            <main className="mb-40 md:mb-60">{children}</main>
-            <Footer />
-          </AuthProvider>
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick={false}
-            rtl={true}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="colored"
-            transition={Bounce}
-          />
-        </Providers>
+      <body className="min-h-screen flex flex-col bg-white text-gray-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
+        <Header />
+        <main className="flex-1 w-full">{children}</main>
+        <Footer />
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * TECHA 2.0 — PM2 ECOSYSTEM CONFIGURATION
  * Orchestrates Next.js 16 (frontend) and Express 5 (backend) as independent production services.
  * Windows Server 2025 & Monorepo compatible.

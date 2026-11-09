@@ -39,15 +39,23 @@ describe('Frontend Architecture, Security & Anti-Regression Guardrails', () => {
   });
 
   it('verifies all 4 approved public route files exist and are present in App Router', () => {
-    const route1 = path.join(frontendSrcDir, 'app/page.js');
-    const route2 = path.join(frontendSrcDir, 'app/docs/page.js');
-    const route3 = path.join(frontendSrcDir, 'app/docs/[slug]/page.js');
-    const route4 = path.join(frontendSrcDir, 'app/docs/[slug]/[lessonId]/page.js');
+    const route1Exists =
+      fs.existsSync(path.join(frontendSrcDir, 'app/page.tsx')) ||
+      fs.existsSync(path.join(frontendSrcDir, 'app/page.js'));
+    const route2Exists =
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/page.tsx')) ||
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/page.js'));
+    const route3Exists =
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/page.tsx')) ||
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/page.js'));
+    const route4Exists =
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonId]/page.tsx')) ||
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonId]/page.js'));
 
-    expect(fs.existsSync(route1)).toBe(true);
-    expect(fs.existsSync(route2)).toBe(true);
-    expect(fs.existsSync(route3)).toBe(true);
-    expect(fs.existsSync(route4)).toBe(true);
+    expect(route1Exists).toBe(true);
+    expect(route2Exists).toBe(true);
+    expect(route3Exists).toBe(true);
+    expect(route4Exists).toBe(true);
   });
 
   it('verifies ContentBlocksRenderer does not use eval, Function constructor, or iframe srcdoc', () => {
