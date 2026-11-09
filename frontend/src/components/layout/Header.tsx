@@ -12,7 +12,6 @@ import {
   X,
   PhoneCall,
   Terminal,
-  Code2,
 } from 'lucide-react';
 
 export default function Header() {
@@ -34,8 +33,7 @@ export default function Header() {
 
   const navLinks = [
     { href: '/', label: 'صفحه اصلی', icon: Home },
-    { href: '/docs', label: 'مستندات و دوره‌ها', icon: BookOpen },
-    { href: '/api-docs', label: 'مستندات API', icon: Code2, external: true },
+    { href: '/docs', label: 'کاتالوگ دوره‌ها', icon: BookOpen },
   ];
 
   const isActive = (path: string) => {
@@ -65,25 +63,11 @@ export default function Header() {
           <nav className="hidden lg:flex items-center gap-1.5 mr-2">
             {navLinks.map((item) => {
               const active = isActive(item.href);
-              if (item.external) {
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-[#7AE36A] hover:bg-white/5 transition-all"
-                  >
-                    <item.icon className="h-4 w-4 text-[#7AE36A]" />
-                    <span>{item.label}</span>
-                  </a>
-                );
-              }
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     active
                       ? 'bg-[#7AE36A]/15 text-[#7AE36A] font-bold border border-[#7AE36A]/30'
                       : 'text-white/80 hover:text-[#7AE36A] hover:bg-white/5'
@@ -181,24 +165,9 @@ export default function Header() {
           </form>
 
           {/* Nav Items */}
-          <div className="space-y-1 pt-2">
+          <div className="space-y-1.5 pt-2">
             {navLinks.map((item) => {
               const active = isActive(item.href);
-              if (item.external) {
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/80 hover:bg-white/5 hover:text-[#7AE36A]"
-                  >
-                    <item.icon className="h-5 w-5 text-[#7AE36A]" />
-                    <span>{item.label}</span>
-                  </a>
-                );
-              }
               return (
                 <Link
                   key={item.href}

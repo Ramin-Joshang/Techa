@@ -109,7 +109,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
         </Link>
         <ChevronLeft className="h-3 w-3 text-gray-400" />
         <Link href={`/docs/${courseSlug}`} className="hover:text-emerald-700 transition-colors">
-          {outline?.courseTitle || courseSlug}
+          {outline?.course?.title || courseSlug}
         </Link>
         <ChevronLeft className="h-3 w-3 text-gray-400" />
         <span className="text-gray-900 font-semibold truncate max-w-xs">{lesson.title}</span>

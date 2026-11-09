@@ -146,15 +146,13 @@ export default async function HomePage() {
                   <span>مشاهده کاتالوگ دوره‌ها</span>
                 </Link>
 
-                <a
-                  href="/api-docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/docs"
                   className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-xl border border-white/20 transition-all"
                 >
-                  <Terminal className="h-4 w-4 text-[#7AE36A]" />
-                  <span>مستندات فنی Swagger</span>
-                </a>
+                  <GraduationCap className="h-4 w-4 text-[#7AE36A]" />
+                  <span>آشنایی با دوره‌ها و سرفصل‌ها</span>
+                </Link>
               </div>
             </div>
 
@@ -371,87 +369,97 @@ export default async function HomePage() {
       </section>
 
       {/* =========================================================================
-          5. DEVELOPER EXPERIENCE & API HUB (OpenAPI 3.1)
+          5. INTERACTIVE LEARNING & STUDENT EXPERIENCE (شیوه یادگیری در تکا)
           ========================================================================= */}
       <section className="py-20 lg:py-24 bg-slate-900 text-white">
         <div className="container mx-auto px-5 xl:px-20">
           <div className="grid lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-6 space-y-5">
               <div className="inline-flex items-center gap-2 text-xs font-bold text-[#7AE36A] bg-[#7AE36A]/10 px-3 py-1 rounded-md border border-[#7AE36A]/20">
-                <Code2 className="h-3.5 w-3.5" />
-                <span>OpenAPI 3.1 & Developer Experience</span>
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>یادگیری عملی و تعاملی</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                پلتفرم باز و مستندسازی دقیق برای توسعه‌دهندگان
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                آموزش عمیق مفاهیم با آزمایش و اجرای زنده کدهای واقعی
               </h2>
               <p className="text-gray-300 text-sm leading-relaxed text-justify">
-                سرویس بک‌اند تکا از معماری شفاف RESTful و مشخصات استاندارد OpenAPI 3.1 بهره می‌برد. کلیه مدل‌ها، بلوک‌های محتوا و قراردادهای داده از طریق Swagger در دسترس توسعه‌دهندگان است.
+                در تکا یادگیری به حفظ کردن خطوط کد محدود نمی‌شود. هر درس با نمونه کدهای شفاف، ساختارمند و آزمایشگاه‌های زنده همراه شده تا دانشجو بتواند تئوری را بلافاصله به مهارت اجرایی تبدیل کند.
               </p>
 
-              <div className="space-y-2.5 text-xs text-gray-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A]" />
-                  <span>تضمین نوع داده با Zod 4 و TypeScript 5.7</span>
+              <div className="space-y-3 text-xs text-gray-300">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A] shrink-0" />
+                  <span>۱۳ قالب محتوایی تفکیک‌شده شامل قطعه کد، جدول، تصویر و ویدیوهای اختصاصی</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A]" />
-                  <span>درگاه داده‌های عمومی با رندرینگ بدون وقفه سرور (SSR)</span>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A] shrink-0" />
+                  <span>میز کار زنده برای تغییر کدها و مشاهده بلادرنگ خروجی کامپوننت‌ها</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A]" />
-                  <span>استقرار مقاوم و پایدار تحت فرآیندهای PM2 و معکوس IIS ARR</span>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-[#7AE36A] shrink-0" />
+                  <span>سرفصل‌های گام‌به‌گام با هدف توانمندسازی جهت ورود موفق به بازار کار</span>
                 </div>
               </div>
 
-              <div className="pt-2 flex flex-wrap gap-3">
-                <a
-                  href="/api-docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-[#7AE36A] text-[#042A1B] rounded-xl font-bold text-xs hover:bg-[#6acf5a] transition-all flex items-center gap-2"
+              <div className="pt-3 flex flex-wrap gap-3">
+                <Link
+                  href="/docs"
+                  className="px-6 py-3 bg-[#7AE36A] text-[#042A1B] rounded-xl font-bold text-xs sm:text-sm hover:bg-[#6acf5a] transition-all flex items-center gap-2 shadow-lg shadow-[#7AE36A]/20"
                 >
-                  <Terminal className="h-4 w-4" />
-                  <span>مشاهده رابط کاربری Swagger</span>
-                </a>
-                <a
-                  href="/api-docs.json"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl font-bold text-xs border border-white/20 transition-all"
+                  <BookOpen className="h-4 w-4" />
+                  <span>شروع یادگیری از کاتالوگ دوره‌ها</span>
+                </Link>
+                <Link
+                  href="/docs/react-foundations/getting-started-with-react-19"
+                  className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center gap-2"
                 >
-                  مشخصات JSON خام
-                </a>
+                  <span>مشاهده نمونه درس تعاملی</span>
+                  <ArrowLeft className="h-4 w-4 text-[#7AE36A]" />
+                </Link>
               </div>
             </div>
 
-            {/* Code Terminal Box */}
-            <div className="lg:col-span-6 bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-2xl font-mono text-xs overflow-x-auto text-left" dir="ltr">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                  <div className="h-3 w-3 rounded-full bg-green-500/80" />
+            {/* Interactive Student Workspace Preview */}
+            <div className="lg:col-span-6 bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-2xl text-left" dir="ltr">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4 text-slate-400">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-red-500/80" />
+                    <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
+                    <div className="h-3 w-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <span className="text-xs font-mono text-slate-300 ml-2">InteractiveDemo.tsx</span>
                 </div>
-                <span className="text-[11px] text-emerald-400">techa-public-api.ts</span>
+                <span className="text-[11px] font-sans font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                  پیش‌نمایش زنده در درس
+                </span>
               </div>
-              <pre className="text-slate-300 leading-relaxed">
-{`// Greenfield Architecture Stack
-export const TECHA_STACK = {
-  runtime: 'Node.js 24 LTS',
-  framework: 'Next.js 16.4.5 (React 19)',
-  backend: 'Express 5.3.0',
-  database: 'MongoDB Atlas (Mongoose 9)',
-  validation: 'Zod 4.6.7',
-  ports: { frontend: 3000, backend: 5000 },
-  endpoints: [
-    'GET /api/v1/public/home',
-    'GET /api/v1/public/courses',
-    'GET /api/v1/public/courses/:courseSlug',
-    'GET /api/v1/public/courses/:courseSlug/outline',
-    'GET /api/v1/public/courses/:courseSlug/lessons/:lessonSlug'
-  ]
-};`}
+
+              {/* Code Snippet */}
+              <pre className="font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto pb-4">
+{`import React, { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(c => c + 1)}>
+      تعداد کلیک: {count}
+    </button>
+  );
+}`}
               </pre>
+
+              {/* Live Rendered Box Preview */}
+              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between bg-slate-900/60 p-3.5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-xs text-slate-400 font-sans">نتیجه اجرای بلادرنگ در مرورگر:</span>
+                </div>
+                <div className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 shadow-sm">
+                  <span>تعداد کلیک: ۱</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

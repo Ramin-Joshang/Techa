@@ -9,10 +9,21 @@ export function assertServerOnly(): void {
   }
 }
 
+export const DEFAULT_TECHA_API_BASE_URL = 'http://127.0.0.1:5000/api/v1/public';
+
 export function getApiBaseUrl(): string {
   assertServerOnly();
 
-  const url = process.env.TECHA_API_BASE_URL || 'http://127.0.0.1:5000/api/v1/public';
+  let url = process.env.TECHA_API_BASE_URL;
+
+  if (!url) {
+    if (process.env.API_PORT && process.env.API_PORT !== '3000') {
+      const host = process.env.API_HOST || '127.0.0.1';
+      url = `http://${host}:${process.env.API_PORT}/api/v1/public`;
+    } else {
+      url = DEFAULT_TECHA_API_BASE_URL;
+    }
+  }
 
   try {
     const parsed = new URL(url);

@@ -5,13 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   BookOpen,
-  Server,
   PhoneCall,
   Mail,
   MapPin,
   CheckCircle2,
   Send,
-  Code2,
+  GraduationCap,
 } from 'lucide-react';
 
 export default function Footer() {
@@ -92,14 +91,6 @@ export default function Footer() {
             <p className="text-white/70 text-xs sm:text-sm leading-relaxed text-justify">
               پلتفرم توانمندسازی و مهارت‌افزایی تکا، بستری سریع و ساختاریافته برای دانشجویان و علاقه‌مندان فراهم نموده تا بتوانند مسیر حرفه‌ای خود را در عرصه توسعه نرم‌افزار و سامانه‌های مدرن وب با استانداردهای واقعی بسازند.
             </p>
-            <div className="flex items-center gap-3 pt-2 text-xs text-[#7AE36A] font-mono">
-              <span className="flex items-center gap-1.5 bg-[#053723] px-2.5 py-1 rounded-md border border-[#7AE36A]/30">
-                <Code2 className="h-3.5 w-3.5" /> Next.js 16 / React 19
-              </span>
-              <span className="flex items-center gap-1.5 bg-[#053723] px-2.5 py-1 rounded-md border border-[#7AE36A]/30">
-                <Server className="h-3.5 w-3.5" /> Express 5 / MongoDB
-              </span>
-            </div>
           </div>
 
           {/* Column 2: Educational Documentation */}
@@ -137,62 +128,37 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Developer & API Access */}
+          {/* Column 3: Student & Educational Guide */}
           <div className="space-y-4">
             <h4 className="text-sm font-bold text-[#7AE36A] uppercase tracking-wider flex items-center gap-2">
-              <Server className="h-4 w-4" />
-              <span>دسترسی‌های توسعه و فنی</span>
+              <GraduationCap className="h-4 w-4" />
+              <span>راهنمای دانشجویان</span>
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm text-white/75">
               <li>
-                <a
-                  href="/api-docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-[#7AE36A] transition-colors"
-                >
-                  <span>مستندات تعاملی Swagger / OpenAPI</span>
-                </a>
+                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                  راهنمای مطالعه سرفصل‌ها
+                </Link>
               </li>
               <li>
-                <a
-                  href="/api-docs.json"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-[#7AE36A] transition-colors"
-                >
-                  <span>مشخصات خام OpenAPI 3.1 (JSON)</span>
-                </a>
+                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                  نقشه راه مهندسی نرم‌افزار
+                </Link>
               </li>
               <li>
-                <a
-                  href="/backend"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-[#7AE36A] transition-colors"
-                >
-                  <span>سرویس بک‌اند و وضعیت درگاه</span>
-                </a>
+                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                  شیوه ارزیابی و تمارین عملی
+                </Link>
               </li>
               <li>
-                <a
-                  href="/api/v1/health/liveness"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-[#7AE36A] transition-colors"
-                >
-                  <span>بررسی زنده بودن سرور (Liveness)</span>
-                </a>
+                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                  پروژه‌های کارآموزی و تجربی
+                </Link>
               </li>
               <li>
-                <a
-                  href="/api/v1/health/readiness"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-[#7AE36A] transition-colors"
-                >
-                  <span>بررسی آمادگی دیتابیس (Readiness)</span>
-                </a>
+                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                  پرسش‌های متداول یادگیری
+                </Link>
               </li>
             </ul>
           </div>
