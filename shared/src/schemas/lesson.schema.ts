@@ -43,17 +43,29 @@ export const UpdateLessonDtoSchema = CreateLessonDtoSchema.partial().extend({
   status: PublicationStatusSchema.optional(),
 });
 
+export const LessonNavigationItemSchema = z.object({
+  slug: SlugSchema,
+  title: z.string(),
+});
+
+export const LessonNavigationSchema = z.object({
+  previous: LessonNavigationItemSchema.nullable(),
+  next: LessonNavigationItemSchema.nullable(),
+});
+
 export const LessonPublicDtoSchema = z.object({
   id: ObjectIdSchema,
   courseId: ObjectIdSchema,
   chapterId: ObjectIdSchema,
   title: z.string(),
   slug: SlugSchema,
+  summary: z.string().optional(),
   order: z.number().int(),
   readingTimeMinutes: z.number().int(),
   contentSchemaVersion: LessonContentSchemaVersion,
   contentBlocks: z.array(ContentBlockSchema),
   seo: SeoMetadataSchema,
+  navigation: LessonNavigationSchema.optional(),
   publishedAt: z.string().datetime().nullable().optional(),
 });
 

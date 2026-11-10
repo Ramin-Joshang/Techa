@@ -34,6 +34,11 @@ import {
   CourseListQuerySchema,
   CourseSlugParamSchema,
   LessonSlugParamsSchema,
+  SearchQuerySchema,
+  SearchResultDtoSchema,
+  PublicSiteSettingsDtoSchema,
+  PublicSitePageDtoSchema,
+  PageKeyParamSchema,
 } from '@techa/shared';
 import { env } from '../config/env';
 
@@ -96,6 +101,18 @@ export function buildOpenApiDocument() {
   const LessonDetailResponseSchema = reg(
     'LessonDetailResponse',
     ApiResponseSchema(LessonPublicDtoSchema)
+  );
+  const SearchResponseSchema = reg(
+    'SearchResponse',
+    ApiResponseSchema(SearchResultDtoSchema)
+  );
+  const SettingsResponseSchema = reg(
+    'SettingsResponse',
+    ApiResponseSchema(PublicSiteSettingsDtoSchema)
+  );
+  const SitePageResponseSchema = reg(
+    'SitePageResponse',
+    ApiResponseSchema(PublicSitePageDtoSchema)
   );
 
   // ---------------------------------------------------------------------------
@@ -342,6 +359,101 @@ export function buildOpenApiDocument() {
       },
       500: {
         description: 'Internal server error.',
+        content: {
+          'application/json': {
+            schema: ApiErrorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  // Public: Search
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/public/search',
+    summary: 'Search published courses and lessons',
+    description: 'Searches published catalog items with regex escaping and rate limiting protection.',
+    tags: ['Public Content'],
+    request: {
+      query: ensureOpenApi(SearchQuerySchema),
+    },
+    responses: {
+      200: {
+        description: 'Search results returned successfully.',
+        content: {
+          'application/json': {
+            schema: SearchResponseSchema,
+          },
+        },
+      },
+      422: {
+        description: 'Validation failed (e.g. query length under 2 characters).',
+        content: {
+          'application/json': {
+            schema: ApiErrorResponseSchema,
+          },
+        },
+      },
+      429: {
+        description: 'Rate limit exceeded.',
+        content: {
+          'application/json': {
+            schema: ApiErrorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  // Public: Settings
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/public/settings',
+    summary: 'Get public site settings',
+    description: 'Returns publicly viewable website branding, navigation, footer, and default SEO.',
+    tags: ['Public Content'],
+    responses: {
+      200: {
+        description: 'Public settings retrieved successfully.',
+        content: {
+          'application/json': {
+            schema: SettingsResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Site settings not configured.',
+        content: {
+          'application/json': {
+            schema: ApiErrorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  // Public: Pages
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/public/pages/{pageKey}',
+    summary: 'Get published site page content',
+    description: 'Retrieves published page content by its unique page key.',
+    tags: ['Public Content'],
+    request: {
+      params: ensureOpenApi(PageKeyParamSchema),
+    },
+    responses: {
+      200: {
+        description: 'Page content retrieved successfully.',
+        content: {
+          'application/json': {
+            schema: SitePageResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Page not found.',
         content: {
           'application/json': {
             schema: ApiErrorResponseSchema,

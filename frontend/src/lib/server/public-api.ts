@@ -64,7 +64,16 @@ export async function getPublishedCourses(params?: {
 }): Promise<PublicCoursesPage> {
   // Validate and sanitize query params
   const parsedQuery = CourseListQuerySchema.safeParse(params || {});
-  const queryParams = parsedQuery.success ? parsedQuery.data : { page: 1, limit: 20 };
+  const queryParams = parsedQuery.success
+    ? parsedQuery.data
+    : {
+        page: 1,
+        limit: 20,
+        sort: 'order' as const,
+        level: undefined,
+        tag: undefined,
+        q: undefined,
+      };
 
   const result = await fetchFromPublicApi(
     '/courses',
@@ -159,3 +168,76 @@ export const getPublishedLessonDetail = reactCache(
     return result.data;
   }
 );
+
+/**
+ * 6. GET /api/v1/public/search
+ * Searches published courses and lessons.
+ */
+export async function searchPublicContent(params: {
+  q: string;
+  type?: 'all' | 'courses' | 'lessons';
+  limit?: number;
+}) {
+  const { SearchQuerySchema, SearchResultDtoSchema } = await import('@techa/shared');
+  const validQuery = SearchQuerySchema.parse(params);
+
+  const result = await fetchFromPublicApi(
+    '/search',
+    SearchResultDtoSchema,
+    {
+      searchParams: {
+        q: validQuery.q,
+        type: validQuery.type,
+        limit: validQuery.limit,
+      },
+      revalidate: 30,
+      tags: ['techa-search'],
+    }
+  );
+
+  return result.data;
+}
+
+/**
+ * 7. GET /api/v1/public/settings
+ * Fetches public site settings (branding, navigation, footer, seo).
+ */
+export const getPublicSiteSettings = reactCache(async () => {
+  const { PublicSiteSettingsDtoSchema } = await import('@techa/shared');
+  try {
+    const result = await fetchFromPublicApi(
+      '/settings',
+      PublicSiteSettingsDtoSchema,
+      {
+        revalidate: 300,
+        tags: ['techa-settings'],
+      }
+    );
+    return result.data;
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return null;
+    }
+    throw error;
+  }
+});
+
+/**
+ * 8. GET /api/v1/public/pages/:pageKey
+ * Fetches published custom site page.
+ */
+export const getPublishedSitePage = reactCache(async (pageKey: string) => {
+  const { PublicSitePageDtoSchema, PageKeyParamSchema } = await import('@techa/shared');
+  const { pageKey: validKey } = PageKeyParamSchema.parse({ pageKey });
+
+  const result = await fetchFromPublicApi(
+    `/pages/${validKey}`,
+    PublicSitePageDtoSchema,
+    {
+      revalidate: 120,
+      tags: ['techa-pages', `techa-page:${validKey}`],
+    }
+  );
+
+  return result.data;
+});

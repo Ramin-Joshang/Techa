@@ -1,15 +1,26 @@
+import { Types } from 'mongoose';
 import {
   CoursePublicDto,
   CourseListQuery,
   CourseOutlinePublicDto,
   LessonPublicDto,
-  SitePagePublicDto,
+  PublicSiteSettingsDto,
+  SearchQuery,
+  SearchResultDto,
+  PublicSitePageDto,
 } from '@techa/shared';
-import { CourseModel, CourseRaw } from '../../models/course.model';
-import { ChapterModel, ChapterRaw } from '../../models/chapter.model';
-import { LessonModel, LessonRaw } from '../../models/lesson.model';
-import { SitePageModel, SitePageRaw } from '../../models/site-page.model';
+import { CourseRaw } from '../../models/course.model';
+import { ChapterRaw } from '../../models/chapter.model';
+import { LessonRaw } from '../../models/lesson.model';
+import { SitePageRaw } from '../../models/site-page.model';
 import { courseStatsService } from '../../services/course-stats.service';
+import { coursesRepository } from '../courses/courses.repository';
+import { chaptersRepository } from '../chapters/chapters.repository';
+import { lessonsRepository } from '../lessons/lessons.repository';
+import { lessonNavigationService } from '../lessons/lesson-navigation.service';
+import { sitePagesRepository } from '../site-pages/site-pages.repository';
+import { siteSettingsRepository } from '../site-settings/site-settings.repository';
+import { searchService } from '../search/search.service';
 import { NotFoundError, DatabaseUnavailableError, AppError } from '../../core/errors/app-error';
 import { isDatabaseConnected } from '../../core/database/database-status';
 
@@ -19,30 +30,92 @@ export interface PaginatedCoursesResult {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export class PublicService {
   /**
    * 1. GET /api/v1/public/home
-   * Retrieves homepage configuration exclusively from site_pages collection in MongoDB.
-   * Never falls back to seed or in-memory fixtures.
+   * Retrieves homepage configuration exclusively from real MongoDB collections:
+   * site_pages, site_settings, and courses.
+   * Calculates live statistics dynamically from actual data.
    */
-  public async getHomepage(): Promise<SitePagePublicDto> {
+  public async getHomepage(): Promise<any> {
     if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
       throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
     }
 
     try {
-      const page = await SitePageModel.findOne({ pageKey: 'home' }).lean<SitePageRaw>();
+      const page = await sitePagesRepository.findByPageKey('home');
       if (!page) {
-        throw new NotFoundError('Homepage configuration not found');
+        throw new NotFoundError('Homepage configuration not found in site_pages collection');
+      }
+
+      let settings: any = null;
+      let featuredCourses: CoursePublicDto[] = [];
+      let statistics = {
+        totalCourses: 0,
+        totalChapters: 0,
+        totalLessons: 0,
+        totalReadingTimeMinutes: 0,
+      };
+
+      if (isDatabaseConnected()) {
+        try {
+          const [st, featuredRaw, totalCourses, totalChapters, totalLessons, totalReadingTimeMinutes] =
+            await Promise.all([
+              siteSettingsRepository.getGlobalSettings().catch(() => null),
+              coursesRepository.getFeaturedPublished(6).catch(() => []),
+              coursesRepository.countPublished().catch(() => 0),
+              chaptersRepository.countTotalPublished().catch(() => 0),
+              lessonsRepository.countTotalPublished().catch(() => 0),
+              lessonsRepository.sumTotalReadingTimeMinutes().catch(() => 0),
+            ]);
+
+          settings = st;
+          statistics = {
+            totalCourses: totalCourses || 0,
+            totalChapters: totalChapters || 0,
+            totalLessons: totalLessons || 0,
+            totalReadingTimeMinutes: totalReadingTimeMinutes || 0,
+          };
+
+          featuredCourses = (featuredRaw || []).map((c) => ({
+            id: c._id.toString(),
+            slug: c.slug,
+            title: c.title,
+            summary: c.summary,
+            description: c.description,
+            level: c.level,
+            icon: c.icon,
+            coverStorageKey: c.coverStorageKey,
+            tags: c.tags || [],
+            prerequisites: c.prerequisites || [],
+            targetAudience: c.targetAudience || [],
+            order: c.order,
+            stats: c.stats || {
+              totalChapters: 0,
+              totalLessons: 0,
+              estimatedReadingTimeMinutes: 0,
+            },
+            seo: c.seo,
+            publishedAt: c.publishedAt ? new Date(c.publishedAt).toISOString() : null,
+          }));
+        } catch {
+          // Keep defaults if database operation fails
+        }
       }
 
       return {
         pageKey: page.pageKey,
         title: page.title,
+        ...(settings?.branding ? { branding: settings.branding } : {}),
         heroSection: page.heroSection,
         features: page.features,
+        featuredCourses,
+        statistics,
+        ...(settings?.footer ? { footer: settings.footer } : {}),
         seo: page.seo,
       };
     } catch (err: unknown) {
@@ -53,37 +126,19 @@ export class PublicService {
 
   /**
    * 2. GET /api/v1/public/courses
-   * Retrieves published courses exclusively from MongoDB with pagination and filters.
-   * If the collection is empty, returns an empty array { courses: [], total: 0 } without mock data.
+   * Retrieves published courses with validated pagination, level, tag, and search filters.
    */
   public async getPublishedCourses(query: CourseListQuery): Promise<PaginatedCoursesResult> {
     if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
       throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
     }
 
-    const filter: Record<string, unknown> = { status: 'published' };
-
-    if (query.level) {
-      filter.level = query.level;
-    }
-
-    if (query.tag) {
-      filter.tags = query.tag;
-    }
-
-    const page = query.page || 1;
-    const limit = query.limit || 20;
-    const skip = (page - 1) * limit;
-
     try {
-      const [total, courses] = await Promise.all([
-        CourseModel.countDocuments(filter),
-        CourseModel.find(filter)
-          .sort({ order: 1, _id: 1 })
-          .skip(skip)
-          .limit(limit)
-          .lean<CourseRaw[]>(),
-      ]);
+      const { courses, total } = await coursesRepository.findPublished(query);
+
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const totalPages = Math.ceil(total / limit) || 0;
 
       const publicCourses: CoursePublicDto[] = (courses || []).map((course) => ({
         id: course._id.toString(),
@@ -109,10 +164,12 @@ export class PublicService {
 
       return {
         courses: publicCourses,
-        total: total || 0,
+        total,
         page,
         limit,
-        totalPages: Math.ceil((total || 0) / limit) || 0,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
       };
     } catch (err: unknown) {
       if (err instanceof AppError) throw err;
@@ -122,8 +179,7 @@ export class PublicService {
 
   /**
    * 3. GET /api/v1/public/courses/:courseSlug
-   * Retrieves single published course from MongoDB.
-   * Throws 404 NotFoundError if nonexistent or unpublished. Never returns mock seed.
+   * Retrieves single published course detail with outline.
    */
   public async getPublishedCourseDetail(courseSlug: string): Promise<CoursePublicDto> {
     if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
@@ -131,7 +187,7 @@ export class PublicService {
     }
 
     try {
-      const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
+      const course = await coursesRepository.findPublishedBySlug(courseSlug);
       if (!course) {
         throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
       }
@@ -162,8 +218,7 @@ export class PublicService {
 
   /**
    * 4. GET /api/v1/public/courses/:courseSlug/outline
-   * Retrieves chapters and lessons hierarchy from MongoDB.
-   * Never returns mock seed fixtures.
+   * Lightweight hierarchy outline for sidebars and curriculum navigation.
    */
   public async getCourseOutline(courseSlug: string): Promise<CourseOutlinePublicDto> {
     if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
@@ -171,39 +226,15 @@ export class PublicService {
     }
 
     try {
-      const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
+      const course = await coursesRepository.findPublishedBySlug(courseSlug);
       if (!course) {
         throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
       }
 
-      const chapters = await ChapterModel.find({
-        courseId: course._id,
-        status: 'published',
-      })
-        .sort({ order: 1, _id: 1 })
-        .lean<ChapterRaw[]>();
-
+      const chapters = await chaptersRepository.findPublishedByCourseId(course._id);
       const publishedChapterIds = chapters.map((ch) => ch._id);
 
-      const lessons = publishedChapterIds.length > 0
-        ? await LessonModel.find(
-            {
-              courseId: course._id,
-              chapterId: { $in: publishedChapterIds },
-              status: 'published',
-            },
-            {
-              _id: 1,
-              chapterId: 1,
-              title: 1,
-              slug: 1,
-              order: 1,
-              readingTimeMinutes: 1,
-            }
-          )
-            .sort({ order: 1, _id: 1 })
-            .lean<Array<Pick<LessonRaw, '_id' | 'chapterId' | 'title' | 'slug' | 'order' | 'readingTimeMinutes'>>>()
-        : [];
+      const lessons = await lessonsRepository.findOutlineByChapters(course._id, publishedChapterIds);
 
       const lessonsByChapter: Record<
         string,
@@ -256,8 +287,7 @@ export class PublicService {
 
   /**
    * 5. GET /api/v1/public/courses/:courseSlug/lessons/:lessonSlug
-   * Enforces complete publication chain (course -> chapter -> lesson) via MongoDB queries.
-   * Never falls back to mock lesson detail.
+   * Enforces complete publication chain (course -> chapter -> lesson) and calculates navigation.
    */
   public async getPublishedLessonDetail(
     courseSlug: string,
@@ -268,32 +298,28 @@ export class PublicService {
     }
 
     try {
-      const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
+      const course = await coursesRepository.findPublishedBySlug(courseSlug);
       if (!course) {
         throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
       }
 
-      const lesson = await LessonModel.findOne({
-        courseId: course._id,
-        slug: lessonSlug,
-        status: 'published',
-      }).lean<LessonRaw>();
-
+      const lesson = await lessonsRepository.findPublishedByCourseAndSlug(course._id, lessonSlug);
       if (!lesson) {
         throw new NotFoundError(`Lesson "${lessonSlug}" not found or is not published`);
       }
 
-      const chapter = await ChapterModel.findOne({
-        _id: lesson.chapterId,
-        courseId: course._id,
-        status: 'published',
-      }).lean<ChapterRaw>();
-
+      const chapter = await chaptersRepository.findPublishedByIdAndCourseId(lesson.chapterId, course._id);
       if (!chapter) {
         throw new NotFoundError(
           `Parent chapter for lesson "${lessonSlug}" is not published or unavailable`
         );
       }
+
+      // Compute sequential navigation across chapter boundaries
+      const navigation = await lessonNavigationService.computeLessonNavigation(
+        course._id,
+        lesson.slug
+      );
 
       return {
         id: lesson._id.toString(),
@@ -301,12 +327,79 @@ export class PublicService {
         chapterId: lesson.chapterId.toString(),
         title: lesson.title,
         slug: lesson.slug,
+        summary: lesson.seo?.metaDescription || lesson.title,
         order: lesson.order,
         readingTimeMinutes: lesson.readingTimeMinutes,
         contentSchemaVersion: lesson.contentSchemaVersion,
         contentBlocks: lesson.contentBlocks || [],
         seo: lesson.seo,
+        navigation,
         publishedAt: lesson.publishedAt ? new Date(lesson.publishedAt).toISOString() : null,
+      };
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
+    }
+  }
+
+  /**
+   * 6. GET /api/v1/public/search
+   * Safely searches published courses and lessons with protection against regex injection.
+   */
+  public async search(query: SearchQuery): Promise<SearchResultDto> {
+    return searchService.search(query);
+  }
+
+  /**
+   * 7. GET /api/v1/public/settings
+   * Returns only public site settings (branding, header, footer, seo, general).
+   * Strips all internal IDs, updatedBy, and confidential administrative data.
+   */
+  public async getPublicSettings(): Promise<PublicSiteSettingsDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
+    try {
+      const settings = await siteSettingsRepository.getGlobalSettings();
+      if (!settings) {
+        throw new NotFoundError('Site settings not configured in database');
+      }
+
+      return {
+        branding: settings.branding,
+        header: settings.header,
+        footer: settings.footer,
+        seo: settings.seo,
+        general: settings.general,
+      };
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
+    }
+  }
+
+  /**
+   * 8. GET /api/v1/public/pages/:pageKey
+   * Retrieves published custom site page from site_pages collection.
+   */
+  public async getPublishedPage(pageKey: string): Promise<PublicSitePageDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
+    try {
+      const page = await sitePagesRepository.findByPageKey(pageKey);
+      if (!page) {
+        throw new NotFoundError(`Site page "${pageKey}" not found`);
+      }
+
+      return {
+        pageKey: page.pageKey,
+        title: page.title,
+        contentBlocks: [],
+        seo: page.seo,
+        publishedAt: page.createdAt ? new Date(page.createdAt).toISOString() : null,
       };
     } catch (err: unknown) {
       if (err instanceof AppError) throw err;

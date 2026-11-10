@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const ApiMetaSchema = z.object({
+  requestId: z.string().optional(),
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().optional(),
   total: z.number().int().nonnegative().optional(),
@@ -27,4 +28,5 @@ export const ApiErrorResponseSchema = z.object({
   success: z.literal(false),
   statusCode: z.number().int(),
   error: ApiErrorDetailSchema,
+  meta: ApiMetaSchema.optional(),
 });

@@ -72,8 +72,17 @@ export const UpdateSiteSettingsDtoSchema = SiteSettingsSchema.omit({
   updatedAt: true,
 }).partial();
 
+export const PublicSiteSettingsDtoSchema = SiteSettingsSchema.pick({
+  branding: true,
+  header: true,
+  footer: true,
+  seo: true,
+  general: true,
+});
+
 export type NavigationItem = z.infer<typeof NavigationItemSchema>;
 export type SocialLink = z.infer<typeof SocialLinkSchema>;
 export type FooterLinkGroup = z.infer<typeof FooterLinkGroupSchema>;
 export type SiteSettings = z.infer<typeof SiteSettingsSchema>;
 export type UpdateSiteSettingsDto = z.infer<typeof UpdateSiteSettingsDtoSchema>;
+export type PublicSiteSettingsDto = z.infer<typeof PublicSiteSettingsDtoSchema>;

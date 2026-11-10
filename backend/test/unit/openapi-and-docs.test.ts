@@ -59,7 +59,7 @@ describe('OpenAPI 3.1 & Documentation Endpoints', () => {
       expect(openApiDocument.info.version).toBe('1.0.0');
     });
 
-    it('should document exactly all 7 registered backend endpoints', () => {
+    it('should document exactly all 10 registered backend endpoints', () => {
       const paths = Object.keys(openApiDocument.paths || {});
       expect(paths).toContain('/api/v1/health/liveness');
       expect(paths).toContain('/api/v1/health/readiness');
@@ -68,7 +68,10 @@ describe('OpenAPI 3.1 & Documentation Endpoints', () => {
       expect(paths).toContain('/api/v1/public/courses/{courseSlug}');
       expect(paths).toContain('/api/v1/public/courses/{courseSlug}/outline');
       expect(paths).toContain('/api/v1/public/courses/{courseSlug}/lessons/{lessonSlug}');
-      expect(paths.length).toBe(7);
+      expect(paths).toContain('/api/v1/public/search');
+      expect(paths).toContain('/api/v1/public/settings');
+      expect(paths).toContain('/api/v1/public/pages/{pageKey}');
+      expect(paths.length).toBe(10);
     });
 
     it('should register all 13 supported content block variant schemas', () => {
