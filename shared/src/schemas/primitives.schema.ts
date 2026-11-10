@@ -126,3 +126,64 @@ export const CourseStatsSchema = z.object({
   totalLessons: z.number().int().nonnegative().default(0),
   estimatedReadingTimeMinutes: z.number().int().nonnegative().default(0),
 });
+
+export const PhoneE164Schema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{1,14}$/, 'Phone number must be in valid E.164 format (e.g. +989123456789)');
+
+export const UserRoleSchema = z.enum([
+  'student',
+  'content_editor',
+  'content_manager',
+  'admin',
+  'super_admin',
+]);
+
+export const AccountStatusSchema = z.enum([
+  'pending_verification',
+  'active',
+  'suspended',
+  'disabled',
+]);
+
+export const OtpPurposeSchema = z.enum([
+  'registration_verification',
+  'passwordless_login',
+  'password_reset',
+  'phone_change',
+]);
+
+export const OtpStatusSchema = z.enum([
+  'pending',
+  'consumed',
+  'expired',
+  'locked',
+  'failed',
+  'invalidated',
+]);
+
+export const RevisionResourceTypeSchema = z.enum([
+  'course',
+  'chapter',
+  'lesson',
+  'site_page',
+  'site_settings',
+]);
+
+export const AuditActionSchema = z.enum([
+  'create',
+  'update',
+  'publish',
+  'unpublish',
+  'archive',
+  'delete',
+  'restore',
+  'role_change',
+  'login',
+  'logout',
+  'security_action',
+  'settings_update',
+]);
+
+export const AuditResultSchema = z.enum(['success', 'failure', 'denied']);

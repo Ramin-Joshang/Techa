@@ -25,6 +25,8 @@
                     "dev:backend":  "npm run dev --workspace=@techa/backend",
                     "dev:frontend":  "npm run dev --workspace=@techa/frontend",
                     "dev:shared":  "npm run dev --workspace=@techa/shared",
+                    "db:provision":  "npm run db:provision --workspace=@techa/backend",
+                    "db:inspect":  "npm run db:inspect --workspace=@techa/backend",
                     "seed":  "npm run seed --workspace=@techa/backend",
                     "build":  "npm run build --workspace=@techa/shared && npm run build --workspace=@techa/backend && npm run build --workspace=@techa/frontend",
                     "build:all":  "npm run build --workspace=@techa/shared \u0026\u0026 npm run build --workspace=@techa/backend \u0026\u0026 npm run build --workspace=@techa/frontend",

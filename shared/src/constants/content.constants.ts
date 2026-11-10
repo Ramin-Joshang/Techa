@@ -10,8 +10,90 @@ export const MEDIA_CATEGORIES = [
   'lesson_image',
   'lesson_video',
   'downloadable_asset',
+  'site_asset',
 ] as const;
 export type MediaCategory = (typeof MEDIA_CATEGORIES)[number];
+
+export const MEDIA_STATUSES = ['uploading', 'ready', 'failed', 'archived'] as const;
+export type MediaStatus = (typeof MEDIA_STATUSES)[number];
+
+export const USER_ROLES = [
+  'student',
+  'content_editor',
+  'content_manager',
+  'admin',
+  'super_admin',
+] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const ACCOUNT_STATUSES = [
+  'pending_verification',
+  'active',
+  'suspended',
+  'disabled',
+] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
+export const OTP_PURPOSES = [
+  'registration_verification',
+  'passwordless_login',
+  'password_reset',
+  'phone_change',
+] as const;
+export type OtpPurpose = (typeof OTP_PURPOSES)[number];
+
+export const OTP_STATUSES = [
+  'pending',
+  'consumed',
+  'expired',
+  'locked',
+  'failed',
+  'invalidated',
+] as const;
+export type OtpStatus = (typeof OTP_STATUSES)[number];
+
+export const REVISION_RESOURCE_TYPES = [
+  'course',
+  'chapter',
+  'lesson',
+  'site_page',
+  'site_settings',
+] as const;
+export type RevisionResourceType = (typeof REVISION_RESOURCE_TYPES)[number];
+
+export const AUDIT_ACTIONS = [
+  'create',
+  'update',
+  'publish',
+  'unpublish',
+  'archive',
+  'delete',
+  'restore',
+  'role_change',
+  'login',
+  'logout',
+  'security_action',
+  'settings_update',
+] as const;
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+export const AUDIT_RESULTS = ['success', 'failure', 'denied'] as const;
+export type AuditResult = (typeof AUDIT_RESULTS)[number];
+
+export const TARGET_COLLECTIONS = [
+  'courses',
+  'chapters',
+  'lessons',
+  'media_assets',
+  'site_pages',
+  'site_settings',
+  'users',
+  'auth_sessions',
+  'otp_challenges',
+  'content_revisions',
+  'admin_audit_logs',
+] as const;
+export type TargetCollection = (typeof TARGET_COLLECTIONS)[number];
 
 export const CONTENT_BLOCK_TYPES = [
   'heading',
