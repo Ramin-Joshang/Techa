@@ -88,20 +88,20 @@ describe('Legacy Backend Exclusion and Architecture Cutover Tests', () => {
     expect(allDeps.tedious).toBeUndefined();
   });
 
-  it('verifies root .env.example does not contain pool.techa.ir and specifies port 5000 for backend and 3000 for frontend', () => {
+  it('verifies root .env.example does not contain pool.techa.ir and specifies port 3500 for backend and 3000 for frontend', () => {
     const envExamplePath = path.resolve(rootDir, '.env.example');
     if (fs.existsSync(envExamplePath)) {
       const content = fs.readFileSync(envExamplePath, 'utf8');
       expect(content).not.toContain('pool.techa.ir');
-      expect(content).toContain('5000');
+      expect(content).toContain('3500');
       expect(content).toContain('3000');
     }
   });
 
-  it('verifies frontend public API client points exclusively to Greenfield backend port 5000', () => {
+  it('verifies frontend public API client points exclusively to Greenfield backend port 3500', () => {
     const apiConfigPath = path.resolve(frontendSrcDir, 'lib/server/api-config.ts');
     const content = fs.readFileSync(apiConfigPath, 'utf8');
-    expect(content).toContain('http://127.0.0.1:5000/api/v1/public');
+    expect(content).toContain('http://127.0.0.1:3500/api/v1/public');
     expect(content).not.toContain('pool.techa.ir');
   });
 });

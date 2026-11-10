@@ -69,11 +69,11 @@ describe('CORS, Trusted Proxy & Environment Validation', () => {
     it('should pass with valid development defaults', () => {
       const valid = validateEnv({
         NODE_ENV: 'development',
-        API_PORT: '5000',
+        API_PORT: '3500',
         API_HOST: '127.0.0.1',
       });
       expect(valid.NODE_ENV).toBe('development');
-      expect(valid.API_PORT).toBe(5000);
+      expect(valid.API_PORT).toBe(3500);
       expect(valid.API_HOST).toBe('127.0.0.1');
     });
 
@@ -81,7 +81,7 @@ describe('CORS, Trusted Proxy & Environment Validation', () => {
       expect(() => {
         validateEnv({
           NODE_ENV: 'production',
-          API_PORT: '5000',
+          API_PORT: '3500',
           API_HOST: '127.0.0.1',
           MONGODB_URI: '',
         });
@@ -91,7 +91,7 @@ describe('CORS, Trusted Proxy & Environment Validation', () => {
     it('should succeed in production mode when valid MONGODB_URI is provided', () => {
       const valid = validateEnv({
         NODE_ENV: 'production',
-        API_PORT: '5000',
+        API_PORT: '3500',
         API_HOST: '127.0.0.1',
         MONGODB_URI: 'mongodb+srv://user:pass@cluster.mongodb.net/techa_prod',
       });

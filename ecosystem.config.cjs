@@ -39,7 +39,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
         HOST: process.env.HOST || '127.0.0.1',
-        TECHA_API_BASE_URL: process.env.TECHA_API_BASE_URL || 'http://127.0.0.1:5000/api/v1/public',
+        TECHA_API_BASE_URL: process.env.TECHA_API_BASE_URL || 'http://127.0.0.1:3500/api/v1/public',
       },
     },
     {
@@ -61,12 +61,12 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       env: {
         NODE_ENV: 'development',
-        API_PORT: 5000,
+        API_PORT: 3500,
         API_HOST: '127.0.0.1',
       },
       env_production: {
         NODE_ENV: 'production',
-        API_PORT: process.env.API_PORT ? parseInt(process.env.API_PORT, 10) : 5000,
+        API_PORT: process.env.API_PORT ? parseInt(process.env.API_PORT, 10) : 3500,
         API_HOST: process.env.API_HOST || '127.0.0.1',
         CANONICAL_API_URL: process.env.CANONICAL_API_URL || 'https://techa.ir',
         FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || 'https://techa.ir',

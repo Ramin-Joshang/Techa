@@ -24,13 +24,13 @@ describe('Frontend Server-Only API Config & Error Abstractions', () => {
     it('returns default fallback URL when TECHA_API_BASE_URL is not set', () => {
       delete process.env.TECHA_API_BASE_URL;
       const url = getApiBaseUrl();
-      expect(url).toBe('http://127.0.0.1:5000/api/v1/public');
+      expect(url).toBe('http://127.0.0.1:3500/api/v1/public');
     });
 
     it('returns configured URL without trailing slashes', () => {
-      process.env.TECHA_API_BASE_URL = 'http://127.0.0.1:5000/api/v1/public///';
+      process.env.TECHA_API_BASE_URL = 'http://127.0.0.1:3500/api/v1/public///';
       const url = getApiBaseUrl();
-      expect(url).toBe('http://127.0.0.1:5000/api/v1/public');
+      expect(url).toBe('http://127.0.0.1:3500/api/v1/public');
     });
 
     it('throws when configured URL protocol is invalid', () => {

@@ -105,7 +105,7 @@ describe('Frontend Server-Side API Client (fetchFromPublicApi)', () => {
   });
 
   it('wraps fetch network exceptions into NetworkError without credential leakage', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:5000'));
+    global.fetch = vi.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:3500'));
 
     await expect(fetchFromPublicApi('/home', TestPayloadSchema)).rejects.toThrow(NetworkError);
   });
