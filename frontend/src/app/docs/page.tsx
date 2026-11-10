@@ -99,41 +99,59 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
         )}
 
         {/* Results Count & Active Filters Indicator */}
-        <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 border-b border-gray-200/80 pb-3 gap-2">
-          <span>
-            نمایش <strong className="text-gray-900 font-semibold">{courses.length}</strong> از{' '}
-            <strong className="text-gray-900 font-semibold">{total}</strong> دوره منتشر شده
-          </span>
+        {!fetchError && (
+          <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 border-b border-gray-200/80 pb-3 gap-2">
+            <span>
+              نمایش <strong className="text-gray-900 font-semibold">{courses.length}</strong> از{' '}
+              <strong className="text-gray-900 font-semibold">{total}</strong> دوره منتشر شده
+            </span>
 
-          {(validLevel || tag || searchQuery) && (
-            <Link
-              href="/docs"
-              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-semibold"
-            >
-              <RotateCcw className="h-3 w-3" />
-              <span>پاک‌سازی تمام فیلترها</span>
-            </Link>
-          )}
-        </div>
+            {(validLevel || tag || searchQuery) && (
+              <Link
+                href="/docs"
+                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-semibold"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>پاک‌سازی تمام فیلترها</span>
+              </Link>
+            )}
+          </div>
+        )}
 
-        {/* Courses Grid */}
-        {courses.length === 0 ? (
+        {/* Courses Grid / Database Unavailable State / Empty State */}
+        {fetchError ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-12 text-center space-y-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 mx-auto">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-amber-950">پایگاه داده در حال حاضر در دسترس نیست</h3>
+            <p className="text-xs text-amber-800 max-w-md mx-auto leading-relaxed">
+              ارتباط با سرور داده‌ها برقرار نشده است. لطفاً تنظیمات پایگاه داده را بررسی نمایید یا دقایقی دیگر تلاش کنید.
+            </p>
+          </div>
+        ) : courses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center space-y-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400 mx-auto">
               <Search className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-bold text-gray-900">دوره‌ای با این مشخصات یافت نشد</h3>
+            <h3 className="text-base font-bold text-gray-900">
+              {searchQuery || validLevel || tag ? 'دوره‌ای با این مشخصات یافت نشد' : 'هنوز دوره‌ای در سیستم ثبت نشده است'}
+            </h3>
             <p className="text-xs text-gray-500 max-w-md mx-auto">
-              لطفاً فیلترها یا عبارت جستجوی خود را تغییر دهید تا سرفصل‌های دیگر پلتفرم را مشاهده کنید.
+              {searchQuery || validLevel || tag
+                ? 'لطفاً فیلترها یا عبارت جستجوی خود را تغییر دهید تا سرفصل‌های دیگر پلتفرم را مشاهده کنید.'
+                : 'در حال حاضر هیچ دوره‌ای در وضعیت منتشر شده وجود ندارد.'}
             </p>
-            <div className="pt-2">
-              <Link
-                href="/docs"
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
-              >
-                نمایش تمام دوره‌ها
-              </Link>
-            </div>
+            {(searchQuery || validLevel || tag) && (
+              <div className="pt-2">
+                <Link
+                  href="/docs"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                >
+                  نمایش تمام دوره‌ها
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

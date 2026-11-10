@@ -14,8 +14,9 @@ import {
   Briefcase,
   FileCode2,
   Terminal,
+  AlertTriangle,
 } from 'lucide-react';
-import { getHomepage, getPublishedCourses } from '../lib/server';
+import { getHomepage, getPublishedCourses, isServiceUnavailable } from '../lib/server';
 import DocCard from '../components/docs/DocCard';
 
 export const revalidate = 60;
@@ -44,17 +45,17 @@ export async function generateMetadata() {
 }
 
 export default async function HomePage() {
-  const [coursesResult] = await Promise.all([
-    getPublishedCourses({ limit: 6 }).catch(() => ({
-      courses: [],
-      total: 0,
-      page: 1,
-      limit: 6,
-      totalPages: 1,
-    })),
-  ]);
+  let courses: any[] = [];
+  let totalCourses = 0;
+  let isDatabaseError = false;
 
-  const courses = coursesResult?.courses || [];
+  try {
+    const coursesResult = await getPublishedCourses({ limit: 6 });
+    courses = coursesResult?.courses || [];
+    totalCourses = coursesResult?.total || 0;
+  } catch (err: unknown) {
+    isDatabaseError = isServiceUnavailable(err) || true;
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-gray-900 overflow-hidden">
@@ -196,13 +197,21 @@ export default async function HomePage() {
               href="/docs"
               className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
             >
-              <span>مشاهده همه دوره‌ها ({coursesResult?.total || courses.length})</span>
+              <span>مشاهده همه دوره‌ها ({totalCourses})</span>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </div>
 
-          {/* Courses Grid */}
-          {courses.length > 0 ? (
+          {/* Courses Grid: Distinct Database Error vs. Empty Data vs. Real Data */}
+          {isDatabaseError ? (
+            <div className="bg-amber-50/90 rounded-3xl p-10 text-center border border-amber-200 text-amber-950 space-y-2 max-w-2xl mx-auto shadow-xs">
+              <AlertTriangle className="h-10 w-10 text-amber-600 mx-auto mb-1" />
+              <h3 className="text-base font-bold text-amber-900">سرویس پایگاه داده در حال حاضر در دسترس نمی‌باشد</h3>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                ارتباط با سرور پایگاه داده برقرار نیست یا در حال بازیابی اتصال است.
+              </p>
+            </div>
+          ) : courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((course) => (
                 <DocCard key={course.id} course={course} />
@@ -212,7 +221,7 @@ export default async function HomePage() {
             <div className="bg-gray-50 rounded-3xl p-12 text-center border border-dashed border-gray-300">
               <BookOpen className="h-10 w-10 text-gray-400 mx-auto mb-3" />
               <h3 className="text-base font-bold text-gray-800">هیچ دوره‌ای در حال حاضر منتشر نشده است</h3>
-              <p className="text-xs text-gray-500 mt-1">به زودی دوره‌های جدید به سامانه اضافه خواهند شد.</p>
+              <p className="text-xs text-gray-500 mt-1">هنوز رکوردی در پایگاه داده ثبت و منتشر نشده است.</p>
             </div>
           )}
         </div>

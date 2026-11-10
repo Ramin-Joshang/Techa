@@ -1,0 +1,1276 @@
+# TECHA 2.0 — COMPREHENSIVE TECHNICAL AUDIT
+## Full Repository, Frontend, Backend, Database, API, Content Architecture & Deployment Assessment
+
+You are acting as an independent Principal Software Architect, Senior Full-Stack Engineer, Database Architect, Security Engineer, and DevOps Auditor.
+
+Your task is to perform a complete, evidence-based technical audit of the CURRENT STATE of the TECHA 2.0 project.
+
+This is an inspection and reporting task ONLY.
+
+**DO NOT IMPLEMENT ANYTHING. DO NOT MODIFY ANY SOURCE CODE. DO NOT REFACTOR. DO NOT UPDATE DEPENDENCIES. DO NOT CHANGE CONFIGURATION. DO NOT CREATE COMMITS. DO NOT MODIFY THE DATABASE.**
+
+The objective is to establish exactly what has actually been developed, what is operational, what remains from the legacy system, and what is missing.
+
+We will use your report to decide the next development steps.
+
+Previous implementation reports may contain incorrect, outdated, incomplete, or optimistic claims. Treat them as historical evidence, not as proof of current implementation.
+
+Your primary source of truth must be the actual repository and the results of safe verification commands.
+
+---
+
+# 1. General Audit Rules
+
+Follow these rules throughout the audit:
+
+1. Inspect the actual current repository.
+2. Do not trust previous reports without checking their claims.
+3. Never infer that a feature exists just because its file exists.
+4. Trace actual imports, runtime execution paths, API calls, and component usage.
+5. Distinguish implemented source code from working functionality.
+6. Distinguish frontend data models from actual MongoDB collections.
+7. Distinguish schema definitions from records actually stored in the database.
+8. Distinguish local development success from production deployment readiness.
+9. Do not invent missing information.
+10. Cite exact file paths and line ranges as evidence wherever possible.
+11. Report contradictions between source code and previous documentation.
+12. Clearly identify areas that cannot be verified from the current environment.
+13. Do not hide incomplete features.
+14. Do not describe a feature as complete merely because it compiles.
+
+## 1.1 Repository safety
+
+Inspect the current Git state before doing anything else.
+
+Report:
+
+- Current branch.
+- Current commit hash.
+- Latest commit message.
+- Working-tree status.
+- Staged modifications.
+- Unstaged modifications.
+- Untracked files.
+
+Do not switch branches.
+
+Do not create a branch.
+
+Do not reset or checkout files.
+
+Do not commit anything.
+
+Do not delete anything.
+
+Do not create or modify files during this audit.
+
+The final report should be returned directly in your response. Do not write it into the repository unless explicitly instructed later.
+
+## 1.2 Safe command execution
+
+You may execute non-destructive inspection commands, such as:
+
+- `git status`
+- `git log`
+- `git diff`
+- `git ls-files`
+- `find`
+- `grep` or equivalent repository search.
+- `npm ls`
+- Existing lint commands.
+- Existing typecheck commands.
+- Existing test commands.
+- Existing verification commands.
+- Build commands only if they do not overwrite valuable uncommitted files or interfere with running services.
+
+Do not execute:
+
+- Database migrations.
+- Index creation.
+- Database seed scripts.
+- Content import scripts.
+- Deletion commands.
+- Production deployments.
+- Environment mutations.
+- PM2 restart/delete operations.
+- IIS configuration changes.
+- Firewall changes.
+- DNS changes.
+- Package installation or dependency updates.
+- Git commit or reset operations.
+
+Never print secrets.
+
+Never output complete MongoDB connection strings.
+
+Never expose passwords, private API keys, tokens, or credentials.
+
+---
+
+# 2. Git and Project Structure Audit
+
+Inspect the repository and provide its actual directory tree.
+
+Identify the purpose and current state of:
+
+- Root workspace.
+- Frontend.
+- Backend.
+- Shared package.
+- Scripts.
+- Documentation.
+- Deployment configurations.
+- Tests.
+- Legacy code and archives.
+- Build output directories.
+
+Provide a concise architectural diagram.
+
+Identify whether the project is genuinely organized as a monorepo or only has multiple folders.
+
+Inspect:
+
+- npm workspaces.
+- Root scripts.
+- Workspace scripts.
+- Package dependency relationships.
+- Shared package exports.
+- Build dependency order.
+
+Report actual runtime and library versions from installed packages and manifests.
+
+At minimum verify:
+
+- Node.js.
+- npm.
+- Next.js.
+- React.
+- React DOM.
+- TypeScript.
+- Zod.
+- Mongoose.
+- Express.
+- PM2, if installed.
+- ESLint.
+- Vitest.
+- MongoDB driver.
+- API documentation dependencies.
+
+Highlight version mismatches between manifests, installed dependencies, and previous reports.
+
+---
+
+# 3. Frontend Comprehensive Audit
+
+Inspect the complete `frontend` workspace.
+
+## 3.1 Frontend routes
+
+Generate the actual route inventory from:
+
+- Next.js App Router files.
+- Production build route manifest, if available.
+- Proxy/middleware configuration.
+- Route handlers.
+- Rewrite and redirect configuration.
+
+Identify:
+
+- All existing page routes.
+- All dynamic routes.
+- All route handlers.
+- All layouts.
+- Loading boundaries.
+- Error boundaries.
+- Not-found boundaries.
+
+The approved public Phase 1 application routes are:
+
+1. `/`
+2. `/docs`
+3. `/docs/[courseSlug]`
+4. `/docs/[courseSlug]/[lessonSlug]`
+
+Determine exactly which routes currently exist.
+
+For each route report:
+
+- Source file.
+- Main components.
+- Data source.
+- Rendering mode.
+- Authentication requirements, if any.
+- Public/private behavior.
+- Whether it actually builds.
+- Whether it is reachable.
+
+Determine whether old application routes are still active.
+
+Do not assume Proxy restrictions are effective simply because a Proxy file exists.
+
+## 3.2 Frontend page-by-page inspection
+
+For each of the four approved pages, describe:
+
+### Homepage `/`
+
+- Actual sections.
+- Data source.
+- Hero structure.
+- Course listing.
+- Statistics.
+- Features.
+- CTA links.
+- Footer.
+- Loading and error states.
+- Whether content is static, mocked, or API-driven.
+
+### Documentation index `/docs`
+
+- Course cards.
+- Search.
+- Filters.
+- Pagination.
+- Sorting.
+- URL query behavior.
+- Empty state.
+- Actual API integration.
+
+### Course detail `/docs/[courseSlug]`
+
+- Course metadata.
+- Course description.
+- Chapter list.
+- Lesson list.
+- Sidebar.
+- Ordering.
+- Publication visibility.
+- Data-fetching strategy.
+
+### Lesson detail `/docs/[courseSlug]/[lessonSlug]`
+
+- Lesson title and summary.
+- Lesson metadata.
+- Content renderer.
+- All supported block types.
+- Course sidebar.
+- Current lesson state.
+- Previous/next navigation.
+- Table of contents.
+- Media handling.
+- Error handling.
+
+For each page, classify every significant section as:
+
+- Fully implemented.
+- Partially implemented.
+- Placeholder.
+- Mock data.
+- Missing.
+
+## 3.3 Frontend design and UX audit
+
+Inspect actual components and styling.
+
+Report:
+
+- Design system.
+- Fonts.
+- Persian RTL behavior.
+- LTR code presentation.
+- Color system.
+- Typography hierarchy.
+- Responsive breakpoints.
+- Desktop behavior.
+- Tablet behavior.
+- Mobile behavior.
+- Dark/light theme.
+- Accessibility.
+- Loading skeletons.
+- Error and empty states.
+- Navigation experience.
+
+Determine whether the frontend is genuinely redesigned around the new Course → Chapter → Lesson architecture or still contains old presentation logic.
+
+Do not provide only subjective design feedback. Refer to actual components.
+
+If browser/screenshot tools are available, inspect the real running application and report visible issues.
+
+Do not claim visual inspection if screenshots or browser rendering were not inspected.
+
+## 3.4 Frontend data fetching
+
+Trace all actual frontend requests.
+
+Inspect:
+
+- API clients.
+- Axios instances.
+- Fetch wrappers.
+- Server Components.
+- Client Components.
+- React cache usage.
+- Redux actions.
+- Context providers.
+- Custom hooks.
+- Environment variables.
+- Next.js rewrites.
+- Proxy behavior.
+
+Determine the exact destination of each API request.
+
+Search for:
+
+- `pool.techa.ir`
+- Old SQL API domains.
+- Hardcoded legacy URLs.
+- Old API endpoints.
+- Stored procedure integrations.
+- Old data adapters.
+- Legacy fallbacks.
+
+**Critical requirement:**
+
+Determine whether any active runtime path still calls the old system.
+
+Do not rely on string search alone. Trace actual execution paths and imports.
+
+Report:
+
+- Number of active legacy references.
+- File locations.
+- Runtime impact.
+- Which pages trigger them.
+- Whether the request is server-side or browser-side.
+- Whether legacy fallback logic still exists.
+
+Also verify whether the current frontend actually uses the new backend at:
+
+`127.0.0.1:5000`
+
+or another configured address.
+
+Do not assume the port is correct without checking.
+
+---
+
+# 4. Backend Comprehensive Audit
+
+Inspect the entire backend workspace.
+
+## 4.1 Backend architecture
+
+Identify:
+
+- Express application bootstrap.
+- Server entry point.
+- Configuration management.
+- Environment validation.
+- Database connection module.
+- Middleware.
+- Error handling.
+- Routing.
+- Controllers.
+- Services.
+- Models.
+- Logging.
+- Health and readiness endpoints.
+- Background processes, if any.
+
+Describe the actual request lifecycle:
+
+HTTP request → middleware → router → controller → service → Mongoose → response.
+
+Identify whether the backend is genuinely modular or contains duplicated/legacy layers.
+
+## 4.2 API inventory
+
+Inspect every registered backend endpoint.
+
+Generate a complete table:
+
+| HTTP method | Path | Module | Controller | Service | Authentication | Actual status |
+|---|---|---|---|---|---|---|
+
+Do not list endpoints merely because they are described in old reports.
+
+Verify actual router mounting.
+
+Separate:
+
+- Public API.
+- Health/readiness API.
+- Internal API.
+- Authentication API, if any.
+- Legacy API.
+- Unimplemented routes.
+
+Inspect the five expected public endpoints:
+
+1. `GET /api/v1/public/home`
+2. `GET /api/v1/public/courses`
+3. `GET /api/v1/public/courses/:courseSlug`
+4. `GET /api/v1/public/courses/:courseSlug/outline`
+5. `GET /api/v1/public/courses/:courseSlug/lessons/:lessonSlug`
+
+For each describe:
+
+- Request parameters.
+- Query parameters.
+- Request validation.
+- Response structure.
+- Business logic.
+- Database collections queried.
+- Publication checks.
+- Error behavior.
+- Pagination.
+- Sorting.
+- Index usage.
+
+Identify endpoints that exist but are not consumed by the frontend.
+
+Identify frontend requests for endpoints that do not exist.
+
+## 4.3 Legacy backend audit
+
+Search the complete backend codebase for:
+
+- SQL Server dependencies.
+- Stored procedure execution.
+- `mssql`.
+- `tedious`.
+- Legacy connection pools.
+- Old SQL service implementations.
+- Old API hostnames.
+- Legacy models.
+- Legacy response structures.
+- Compatibility adapters.
+
+Determine whether any of these remain in executable backend paths.
+
+Classify remaining code as:
+
+- Active runtime dependency.
+- Imported but currently unused.
+- Dead legacy code.
+- Archived source.
+- Dependency retained for a valid reason.
+
+Do not confuse an old file existing in Git with the application executing that file.
+
+---
+
+# 5. Database Architecture Audit
+
+This section must be particularly detailed.
+
+Inspect actual Mongoose model files, schemas, indexes, and services.
+
+The intended Greenfield database architecture currently contains five collections:
+
+1. `courses`
+2. `chapters`
+3. `lessons`
+4. `media_assets`
+5. `site_pages`
+
+Verify whether these five collections are actually defined and registered.
+
+## 5.1 Course model
+
+Inspect all real Course fields.
+
+Report:
+
+- Field name.
+- Type.
+- Required/optional.
+- Default value.
+- Enum restrictions.
+- Nested structure.
+- Validation.
+- Indexes.
+- References.
+- Public DTO mapping.
+
+Pay attention to:
+
+- title
+- slug
+- description
+- level
+- tags
+- icon
+- cover/media references
+- order
+- status
+- stats
+- SEO
+- publishedAt
+- lastPublishedAt
+- timestamps
+
+Only report fields actually present in the code.
+
+## 5.2 Chapter model
+
+Inspect and document all fields, types, defaults, constraints, references, and indexes.
+
+Pay special attention to:
+
+- courseId
+- title
+- slug
+- description
+- order
+- status
+- publication dates
+- timestamps
+
+## 5.3 Lesson model
+
+Inspect and document all fields, types, defaults, constraints, references, and indexes.
+
+Pay special attention to:
+
+- courseId
+- chapterId
+- title
+- slug
+- summary
+- order
+- estimatedReadingTimeMinutes
+- contentSchemaVersion
+- contentBlocks
+- status
+- SEO
+- publication dates
+- timestamps
+
+## 5.4 Content block model
+
+Inspect all 13 actual block schemas and their Mongoose implementations.
+
+For every block report:
+
+- Block type.
+- `data` schema structure.
+- Required fields.
+- Optional fields.
+- Nested objects and arrays.
+- Constraints.
+- Version support.
+- Frontend renderer availability.
+
+The 13 expected types are:
+
+- heading
+- paragraph
+- richText
+- codeBlock
+- image
+- video
+- table
+- callout
+- quote
+- divider
+- downloadableFile
+- list
+- interactiveExample
+
+Verify whether Mongoose embedded discriminators are actually implemented.
+
+Verify that no `Schema.Types.Mixed` is used in these content blocks.
+
+Inspect whether the discriminated Mongoose shape matches the shared Zod contracts.
+
+Do not merely state that all 13 are supported because constants contain their names.
+
+## 5.5 Interactive examples
+
+Inspect the actual schema.
+
+Report:
+
+- Environment variants.
+- Preset variants.
+- File array structure.
+- Entry-point representation.
+- Path validation.
+- Extension validation.
+- Maximum file count.
+- Per-file size.
+- Total project byte limit.
+- UTF-8 size calculation.
+- Unsafe path rejection.
+- Duplicate path rejection.
+- Runtime execution status.
+
+Clearly state whether interactive examples are only stored and displayed or actually executed.
+
+Do not assume execution exists because a schema exists.
+
+## 5.6 MediaAsset model
+
+Report actual fields and storage behavior.
+
+Determine:
+
+- Whether storageKey is used.
+- Whether full URLs are stored.
+- Whether unique indexes exist.
+- Whether local storage exists.
+- Whether a storage provider interface exists.
+- Whether any files are actually uploaded.
+- Whether the backend serves media.
+- Whether range requests support video playback.
+- Whether the frontend can resolve storageKey into a working URL.
+
+Classify each separately.
+
+## 5.7 SitePage model
+
+Report actual homepage configuration structure.
+
+Inspect:
+
+- pageKey.
+- title.
+- heroSection.
+- primaryCta.
+- secondaryCta.
+- features.
+- SEO.
+
+Determine whether homepage UI actually uses every available field.
+
+---
+
+# 6. Actual Database State vs. Model Definitions
+
+This distinction is mandatory.
+
+A Mongoose model definition does not prove that a collection exists or contains records.
+
+Inspect the database configuration and determine which environment is currently configured.
+
+Report separately:
+
+**A. Code-defined database schema**
+
+What models and collections are defined in source code?
+
+**B. Database connection status**
+
+Is the database currently connected?
+
+What does the connection configuration indicate?
+
+**C. Actual database collections and data**
+
+Can the current environment safely inspect actual collections?
+
+Do not connect to an unspecified production database.
+
+Never write, migrate, index, seed, or delete anything.
+
+If a safe, explicitly designated development or staging URI already exists and the connection user is read-only:
+
+- A read-only metadata inspection may be performed.
+- Report collection names.
+- Report document counts where permitted.
+- Report index definitions.
+- Do not output actual document contents containing personal or confidential data.
+- Never reveal the URI or credentials.
+
+If the only configured URI points to production or its environment is unclear:
+
+- Do not connect.
+- Report that actual live database state remains unverified.
+- Report only the structures defined by source code.
+
+Never claim that five collections contain data based only on Mongoose model files.
+
+## 6.1 Database relationship map
+
+Document the actual relationships:
+
+Course → Chapters → Lessons → Content Blocks
+
+Also document:
+
+- MediaAsset references.
+- SitePage homepage configuration.
+- ObjectId references.
+- Unique indexes.
+- Compound indexes.
+- Publication fields.
+
+Identify any missing relationship constraints or integrity checks.
+
+## 6.2 Seed and migration status
+
+Determine:
+
+- Whether seed scripts exist.
+- Whether any sample content exists.
+- Whether seed data is draft or published.
+- Whether a SQL-to-MongoDB migration tool exists.
+- Whether old course content has actually been migrated.
+- Whether the new database contains real educational material.
+
+Clearly separate implemented migration tooling from actual completed data migration.
+
+---
+
+# 7. Publication and Content Integrity
+
+Inspect the actual publication service.
+
+Verify:
+
+- Course publishing rules.
+- Chapter publishing rules.
+- Lesson publishing rules.
+- Complete parent-child publication chain.
+- Draft visibility.
+- Archived content visibility.
+- Parent unpublish behavior.
+- Orphaned records.
+- Course statistics consistency.
+
+Inspect CourseStatsService.
+
+Determine whether its counts correctly include only published chapters and lessons whose full parent chain is published.
+
+Determine when and how statistics are recalculated.
+
+Report whether stale statistics are possible.
+
+---
+
+# 8. Shared Contracts and Type Safety
+
+Inspect the shared workspace.
+
+Inventory all shared Zod schemas and exported TypeScript types.
+
+Verify:
+
+- Zod 4 consistency.
+- Schema exports.
+- Create DTOs.
+- Update DTOs.
+- Public DTOs.
+- Query schemas.
+- Response schemas.
+- Content block discriminated union.
+- Import package schema.
+- Cross-reference validation.
+- Primitive validation.
+- Slug validation.
+- ObjectId validation.
+- StorageKey validation.
+
+Find areas where backend and frontend define duplicate or divergent DTOs.
+
+Report actual use of `any`, `z.any()`, `z.unknown()`, unsafe type casts, and `Schema.Types.Mixed`.
+
+Distinguish legitimate safe uses from actual contract weaknesses.
+
+---
+
+# 9. Frontend ↔ Backend ↔ Database Integration Map
+
+Provide an end-to-end data flow table.
+
+| Frontend page/section | Frontend function | Backend endpoint | Backend service | Mongoose model | Collection |
+|---|---|---|---|---|---|
+
+Cover:
+
+- Homepage.
+- Homepage course preview.
+- Docs catalogue.
+- Course detail.
+- Course outline.
+- Lesson detail.
+- Previous/next navigation.
+- All content block types.
+- Media references.
+- SEO metadata.
+
+For every element classify integration as:
+
+- Fully connected.
+- Partially connected.
+- Static.
+- Mocked.
+- Missing.
+- Legacy-connected.
+
+This section must reveal exactly which frontend components are backed by the new database.
+
+---
+
+# 10. Swagger and API Documentation Audit
+
+Determine whether Swagger/OpenAPI is actually implemented.
+
+Inspect:
+
+- OpenAPI generation code.
+- OpenAPI version.
+- Swagger UI routes.
+- OpenAPI JSON route.
+- Express root landing page.
+- Zod-to-OpenAPI integration.
+- Endpoint documentation completeness.
+- Content block schema definitions.
+- English-language requirement.
+- Production server URL.
+- Actual accessibility of the documentation endpoints.
+
+If it does not exist, report it as missing.
+
+Do not implement it now.
+
+Do not invent a Swagger URL.
+
+---
+
+# 11. Production and Deployment Audit
+
+Inspect the actual deployment configuration.
+
+## Runtime
+
+Report actual:
+
+- Node version target.
+- Node version used by recent tests, if recorded.
+- npm version.
+- Frontend port.
+- Backend port.
+- Host binding.
+- Build entry points.
+
+## PM2
+
+Verify whether the following actually exist and work:
+
+- `ecosystem.config.cjs`.
+- Frontend PM2 app.
+- Backend PM2 app.
+- Separate logs.
+- Correct working directories.
+- Environment isolation.
+- Production start commands.
+- Restart commands.
+- Stop commands.
+- Save commands.
+
+Do not claim that PM2 works merely because an ecosystem file exists.
+
+If it can be safely tested locally, parse the configuration without taking over existing production processes.
+
+Never restart or stop the user's live processes.
+
+## IIS
+
+Inspect existing deployment files and documentation.
+
+Determine whether:
+
+- IIS URL Rewrite is configured.
+- ARR reverse proxy is documented.
+- `/api/*` points to backend port 5000.
+- Remaining public paths point to frontend port 3000.
+- Swagger routes reach backend.
+- HTTPS forwarding is handled.
+- Forwarded headers are configured.
+- Internal ports are protected.
+
+Separate documentation from actual configuration applied to the real VPS.
+
+## Environment
+
+Inspect `.env.example`.
+
+Report every actual variable:
+
+| Variable | Consumer | Required | Purpose | Current default | Secret? | Status |
+|---|---|---|---|---|---|---|
+
+Identify:
+
+- Missing variables.
+- Obsolete variables.
+- Duplicate names.
+- Unused variables.
+- Incorrect defaults.
+- Legacy host references.
+- Build-time/runtime mismatches.
+
+Never print actual secrets.
+
+---
+
+# 12. Security Audit
+
+Inspect:
+
+- Dependency vulnerabilities.
+- CORS policy.
+- Trusted proxy behavior.
+- Public route restrictions.
+- Input validation.
+- Content HTML rendering.
+- Media path validation.
+- Upload restrictions.
+- Interactive example validation.
+- Secret exposure.
+- Error handling.
+- Logging.
+- Rate limiting, if present.
+- Helmet or HTTP security headers, if present.
+- API abuse controls.
+
+Do not modify dependencies.
+
+Do not execute `npm audit fix`.
+
+Use existing audit outputs or safe read-only commands to determine the current security state.
+
+Separate:
+
+- Confirmed vulnerabilities.
+- Potential risks.
+- Unverified risks.
+- Development-only issues.
+- Production runtime issues.
+
+---
+
+# 13. Tests, Typecheck and Production Build
+
+Inspect the current test suite.
+
+Report actual:
+
+- Test file count.
+- Test suite count.
+- Test count.
+- Passed tests.
+- Failed tests.
+- Skipped tests.
+- Backend tests.
+- Frontend tests.
+- Shared tests.
+
+Inspect existing verification scripts for Steps 2–7 where available.
+
+Run non-destructive verification commands if safe.
+
+At minimum inspect or execute:
+
+- Shared typecheck.
+- Backend typecheck.
+- Frontend typecheck.
+- Backend tests.
+- Frontend tests.
+- Lint.
+- Production build.
+- Existing step verification scripts.
+
+If execution is not possible, report the reason.
+
+Do not claim tests passed based on previous implementation reports.
+
+Never connect tests to production Atlas.
+
+Do not run scripts that seed or mutate the database.
+
+---
+
+# 14. Feature Completeness Matrix
+
+Create a comprehensive feature matrix.
+
+Use these statuses:
+
+- COMPLETE: implemented and verified.
+- PARTIAL: implementation exists but behavior is incomplete.
+- CODE ONLY: code exists but no real runtime integration is demonstrated.
+- STATIC: hardcoded content or static UI.
+- MOCKED: uses mocked/test data.
+- LEGACY: still depends on old infrastructure.
+- MISSING: not implemented.
+- UNVERIFIED: evidence unavailable.
+
+The matrix must include at least:
+
+### Frontend
+
+- Homepage.
+- Docs index.
+- Course detail.
+- Lesson detail.
+- Course cards.
+- Course filters.
+- Search.
+- Pagination.
+- Chapter navigation.
+- Lesson navigation.
+- Content block renderer.
+- Syntax highlighting.
+- Copy code.
+- Interactive example display.
+- Interactive code execution.
+- Image delivery.
+- Video delivery.
+- Downloadable files.
+- SEO.
+- Sitemap.
+- Robots.
+- Responsive UI.
+- Error/loading states.
+
+### Backend
+
+- Express bootstrap.
+- MongoDB connection.
+- Environment validation.
+- Course model.
+- Chapter model.
+- Lesson model.
+- MediaAsset model.
+- SitePage model.
+- Publication service.
+- Course stats service.
+- Public API.
+- Health/readiness.
+- CORS.
+- Trusted proxy.
+- Root landing page.
+- Swagger/OpenAPI.
+- Media APIs.
+- Upload support.
+- Authentication.
+- CMS.
+- Exercises.
+- Payments.
+
+### Database
+
+- Five collection definitions.
+- Actual collection existence.
+- Actual record counts, only if safely verified.
+- Index definitions.
+- Relationship integrity.
+- Seed status.
+- Legacy migration status.
+- Data publication status.
+- Media storage references.
+
+### Deployment
+
+- Environment templates.
+- Production build.
+- PM2.
+- Frontend process.
+- Backend process.
+- Unified start command.
+- Unified build command.
+- IIS reverse proxy.
+- HTTPS readiness.
+- Windows boot persistence.
+- Logging.
+- Health checks.
+
+Do not label future-phase features as missing defects when they are deliberately out of scope. Mark them as not implemented / future scope.
+
+---
+
+# 15. Technical Debt, Contradictions and Risks
+
+Create a prioritized findings list.
+
+For every finding include:
+
+- ID.
+- Title.
+- Severity: Critical / High / Medium / Low / Informational.
+- Affected layer.
+- File path.
+- Evidence.
+- Actual consequence.
+- Recommended resolution.
+- Dependencies on other work.
+
+Pay special attention to contradictions between previous reports and actual code.
+
+Examples to investigate, not assume:
+
+- Old `pool.techa.ir` references.
+- Stored procedure execution.
+- Multiple environment configurations.
+- Frontend using old models.
+- Next.js routes outside the approved scope.
+- Incorrect API base URLs.
+- Mismatch between Zod versions.
+- Incomplete media implementation.
+- Missing real course content.
+- Swagger missing or incomplete.
+- PM2 commands that only work on Linux.
+- Backend and frontend port conflicts.
+- Inconsistent production environment loading.
+- Stale course statistics.
+- Content Blocks implemented in the database but missing renderers in the frontend.
+- A renderer exists but the actual lesson API is not connected.
+- Old legacy components still referenced by active pages.
+
+Do not exaggerate. Include only findings supported by evidence.
+
+---
+
+# 16. Final Report Structure
+
+Produce the final report in Persian.
+
+Use the following exact organization.
+
+## A. خلاصه مدیریتی
+
+Explain in clear terms:
+
+- What TECHA 2.0 currently is.
+- What is genuinely complete.
+- What works end to end.
+- What still depends on the legacy system.
+- What is not yet production-ready.
+
+## B. وضعیت Git و محیط اجرا
+
+Branch, commit, working tree, runtime versions, packages.
+
+## C. ساختار واقعی پروژه
+
+Show the actual folder tree and architecture.
+
+## D. گزارش کامل فرانت‌اند
+
+All four pages, components, design state, rendering, data fetching, legacy references.
+
+## E. گزارش کامل بک‌اند
+
+All modules, API endpoints, services, validation, security and runtime status.
+
+## F. گزارش کامل دیتابیس
+
+All five model definitions, every field, indexes, relationships, publication rules, and actual database verification status.
+
+## G. محتوای آموزشی و Content Engine
+
+All 13 block types, interactive examples, actual data availability, rendering coverage, media status.
+
+## H. نقشه ارتباط فرانت‌اند و بک‌اند و دیتابیس
+
+An explicit end-to-end mapping table.
+
+## I. بررسی سیستم قدیمی
+
+Every remaining legacy reference and whether it executes.
+
+## J. زیرساخت استقرار
+
+Ports, environment, PM2, IIS, Swagger, build and start commands.
+
+## K. تست‌ها و شواهد
+
+Exact test counts, build results, typecheck results, actual command outputs.
+
+## L. ماتریس تکمیل قابلیت‌ها
+
+Use all required completion statuses.
+
+## M. مشکلات و بدهی فنی
+
+Prioritized severity list.
+
+## N. پیشنهاد نقشه راه بعدی
+
+Propose a logical sequence of next development steps based on actual findings.
+
+Do not start implementing these recommendations.
+
+## O. جمع‌بندی و نقطه فعلی پروژه
+
+Give a precise conclusion:
+
+- What stage the project is genuinely at.
+- What is safe to build next.
+- What must be fixed first.
+- What is not necessary to revisit.
+- What decisions should be made before the next implementation phase.
+
+---
+
+# 17. Evidence Requirements
+
+Every important claim must be supported by at least one of:
+
+- Exact source file path and relevant line range.
+- Actual package manifest entry.
+- Actual API route/controller/service.
+- Actual model/schema.
+- Actual test result.
+- Actual HTTP response.
+- Actual build manifest.
+- Actual read-only database metadata.
+
+If a claim cannot be verified, explicitly label it UNVERIFIED.
+
+Do not create fictional test counts.
+
+Do not invent database collection counts.
+
+Do not infer real content migration from the existence of import-package schemas.
+
+Do not assume IIS deployment is complete because a guide exists.
+
+Do not assume PM2 process management is functional because an ecosystem file exists.
+
+Do not assume Swagger exists because a package is installed.
+
+Do not assume the frontend is connected to MongoDB because the backend uses MongoDB.
+
+---
+
+# 18. Final Instruction
+
+This audit must be strictly read-only.
+
+DO NOT:
+
+- Change any source file.
+- Update packages.
+- Modify `.env`.
+- Modify `.env.example`.
+- Modify package locks.
+- Reformat files.
+- Create files.
+- Modify MongoDB.
+- Connect to production Atlas.
+- Run seed scripts.
+- Run migrations.
+- Start or stop existing production processes.
+- Change Git branches.
+- Commit changes.
+- Begin another development phase.
+
+Return the complete Persian engineering report directly in your response.
+
+The report must describe the CURRENT actual state of the project, not the intended state or the claims of previous reports.
+
+**Our goal is to know exactly what has been built before deciding what to build next.**

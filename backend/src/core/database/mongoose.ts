@@ -104,4 +104,4 @@ export async function disconnectFromDatabase(): Promise<void> {
 // Canonical aliases
 export const connectDatabase = connectToDatabase;
 export const disconnectDatabase = disconnectFromDatabase;
-export { isDatabaseConnected, getDatabaseStatus };
+export { isDatabaseConnected, getDatabaseStatus, assertDatabaseConnected } from './database-status';

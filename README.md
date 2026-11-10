@@ -1,36 +1,38 @@
 <div dir="rtl">
 
-# 🚀 پلتفرم آموزشی تکا
+# 🚀 پلتفرم آموزشی تکا (TECHA 2.0)
 
-![Next.js](https://img.shields.io/badge/Next.js-14.1.0-000000?style=flat&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-4.5-3178C6?style=flat&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-5.0-0055FF?style=flat&logo=framer&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16.4.5-000000?style=flat&logo=next.js)
+![React](https://img.shields.io/badge/React-19.3.1-61DAFB?style=flat&logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-24-339933?style=flat&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5.3.0-000000?style=flat&logo=express)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.2-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_/_Mongoose_9-47A248?style=flat&logo=mongodb&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-## **نسخه نمایشی زنده:** [مشاهده آنلاین](http://45.139.10.84:3000/)
+## **معماری سیستم:** مونو‌ریپوی جامع مهندسی نرم‌افزار وب با جداسازی سخت‌گیرانه مسیرهای عمومی و ارتباط Database-Only
 
-## ✨ ویژگی‌های پروژه
-
-- **انیمیشن‌های حرفه‌ای** با استفاده از **Framer Motion**
-- **طراحی مدرن و واکنش‌گرا** با بهره‌گیری از **Tailwind CSS**
-- **بهینه‌سازی برای SEO** و عملکرد بالا
-- افکت‌های بصری جذاب مانند **پارتیکل‌ها** و **گرادیانت‌های پویا**
-- **رندر سمت سرور** با **Next.js** برای بهبود سرعت بارگذاری صفحات
-- استفاده از **TypeScript** برای افزایش قابلیت اطمینان و نگهداری کد
+## ✨ ویژگی‌های کلیدی سامانه
+- **موتور محتوای ۱۳ بلوکی:** رندر کاملاً ساختاریافته تیترها، پاراگراف‌ها، کدها، جداول، ویدیوها و آزمایشگاه زنده تعاملی
+- **معماری بدون Mock:** استخراج ۱۰۰٪ داده‌ها از MongoDB واقعی بدون Fallback در حافظه
+- **چهار مسیر عمومی فاز ۱:** لندینگ (`/`)، فهرست مستندات (`/docs`)، سرفصل دوره (`/docs/[slug]`)، درس تعاملی (`/docs/[slug]/[lessonId]`)
+- **تفکیک پورت‌ها:** فرانت‌اند روی پورت ۳۰۰۰ و وب‌سرویس بک‌اند روی پورت ۳۵۰۰
+- **قراردادهای تایپ یکپارچه:** اعتبارسنجی دوطرفه با Zod 4 و استانداردهای TypeScript
 
 ---
 
-## 🛠 فناوری‌های استفاده‌شده
+## 🛠 پشته فناوری (Technology Stack)
 
-| بخش            | تکنولوژی‌ها       |
-| -------------- | ----------------- |
-| فریمورک        | Next.js 14        |
-| زبان           | TypeScript        |
-| استایل‌دهی     | Tailwind CSS      |
-| انیمیشن        | Framer Motion     |
-| مدیریت حالت    | React Context API |
-| کتابخانه آیکون | Lucide React      |
+| بخش | تکنولوژی | نسخه |
+| :--- | :--- | :--- |
+| **فرانت‌اند** | Next.js App Router | 16.4.5 |
+| **واسط کاربری** | React & React DOM | 19.3.1 |
+| **وب‌سرویس** | Express.js | 5.3.0 |
+| **پایگاه‌داده** | MongoDB Atlas / Mongoose | 9.12.0 |
+| **سیستم تایپ** | TypeScript | 5.9 |
+| **اعتبارسنجی** | Zod | 4.6.7 |
+| **مدیریت فرآیند** | PM2 | 7.1.2 |
 
 ---
 

@@ -5,3 +5,4 @@ export const healthRoutes = Router();
 
 healthRoutes.get('/liveness', healthController.getLiveness);
 healthRoutes.get('/readiness', healthController.getReadiness);
+healthRoutes.get('/', healthController.getLiveness);

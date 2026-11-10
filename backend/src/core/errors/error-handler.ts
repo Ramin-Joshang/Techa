@@ -64,6 +64,17 @@ export function errorHandler(
       sendError(res, 422, 'DATABASE_VALIDATION_ERROR', 'Database validation constraint failed', undefined, reqId);
       return;
     }
+
+    if (
+      errorName === 'MongoServerSelectionError' ||
+      errorName === 'MongoNetworkError' ||
+      errorName === 'MongoTimeoutError' ||
+      errorName === 'MongooseServerSelectionError' ||
+      errorName === 'MongoNotConnectedError'
+    ) {
+      sendError(res, 503, 'DATABASE_UNAVAILABLE', 'پایگاه داده در حال حاضر در دسترس نمی‌باشد.', undefined, reqId);
+      return;
+    }
   }
 
   // 5. Unexpected / Unhandled Error

@@ -15,7 +15,11 @@ async function bootstrap(): Promise<void> {
       }
     }
   } else {
-    logger.info('[Bootstrap] Starting server without database connection (MONGODB_URI not configured).');
+    if (env.NODE_ENV === 'production') {
+      logger.fatal('[Bootstrap] MONGODB_URI is required in production environment. Aborting startup.');
+      process.exit(1);
+    }
+    logger.warn('[Bootstrap] Starting server without database connection (MONGODB_URI not configured).');
   }
 
   const server = app.listen(env.API_PORT, env.API_HOST, () => {

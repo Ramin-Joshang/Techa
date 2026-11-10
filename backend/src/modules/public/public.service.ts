@@ -10,13 +10,8 @@ import { ChapterModel, ChapterRaw } from '../../models/chapter.model';
 import { LessonModel, LessonRaw } from '../../models/lesson.model';
 import { SitePageModel, SitePageRaw } from '../../models/site-page.model';
 import { courseStatsService } from '../../services/course-stats.service';
-import { NotFoundError } from '../../core/errors/app-error';
-import {
-  SEED_HOMEPAGE,
-  SEED_COURSES,
-  SEED_OUTLINES,
-  SEED_LESSON_DETAIL,
-} from './public.seed';
+import { NotFoundError, DatabaseUnavailableError, AppError } from '../../core/errors/app-error';
+import { isDatabaseConnected } from '../../core/database/database-status';
 
 export interface PaginatedCoursesResult {
   courses: CoursePublicDto[];
@@ -27,42 +22,45 @@ export interface PaginatedCoursesResult {
 }
 
 export class PublicService {
-  private isTestMode(): boolean {
-    return process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
-  }
-
   /**
    * 1. GET /api/v1/public/home
-   * Retrieves homepage configuration from site_pages collection or fallback seed.
+   * Retrieves homepage configuration exclusively from site_pages collection in MongoDB.
+   * Never falls back to seed or in-memory fixtures.
    */
   public async getHomepage(): Promise<SitePagePublicDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
     try {
       const page = await SitePageModel.findOne({ pageKey: 'home' }).lean<SitePageRaw>();
-      if (page) {
-        return {
-          pageKey: page.pageKey,
-          title: page.title,
-          heroSection: page.heroSection,
-          features: page.features,
-          seo: page.seo,
-        };
+      if (!page) {
+        throw new NotFoundError('Homepage configuration not found');
       }
+
+      return {
+        pageKey: page.pageKey,
+        title: page.title,
+        heroSection: page.heroSection,
+        features: page.features,
+        seo: page.seo,
+      };
     } catch (err: unknown) {
-      if (this.isTestMode()) throw err;
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
     }
-
-    if (this.isTestMode()) {
-      throw new NotFoundError('Homepage configuration not found');
-    }
-
-    return SEED_HOMEPAGE;
   }
 
   /**
    * 2. GET /api/v1/public/courses
-   * Retrieves published courses only, with pagination, sorting, and validated filters.
+   * Retrieves published courses exclusively from MongoDB with pagination and filters.
+   * If the collection is empty, returns an empty array { courses: [], total: 0 } without mock data.
    */
   public async getPublishedCourses(query: CourseListQuery): Promise<PaginatedCoursesResult> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
     const filter: Record<string, unknown> = { status: 'published' };
 
     if (query.level) {
@@ -87,213 +85,191 @@ export class PublicService {
           .lean<CourseRaw[]>(),
       ]);
 
-      if (courses.length > 0 || this.isTestMode()) {
-        const publicCourses: CoursePublicDto[] = courses.map((course) => ({
-          id: course._id.toString(),
-          slug: course.slug,
-          title: course.title,
-          summary: course.summary,
-          description: course.description,
-          level: course.level,
-          icon: course.icon,
-          coverStorageKey: course.coverStorageKey,
-          tags: course.tags || [],
-          prerequisites: course.prerequisites || [],
-          targetAudience: course.targetAudience || [],
-          order: course.order,
-          stats: course.stats || {
-            totalChapters: 0,
-            totalLessons: 0,
-            estimatedReadingTimeMinutes: 0,
-          },
-          seo: course.seo,
-          publishedAt: course.publishedAt ? new Date(course.publishedAt).toISOString() : null,
-        }));
+      const publicCourses: CoursePublicDto[] = (courses || []).map((course) => ({
+        id: course._id.toString(),
+        slug: course.slug,
+        title: course.title,
+        summary: course.summary,
+        description: course.description,
+        level: course.level,
+        icon: course.icon,
+        coverStorageKey: course.coverStorageKey,
+        tags: course.tags || [],
+        prerequisites: course.prerequisites || [],
+        targetAudience: course.targetAudience || [],
+        order: course.order,
+        stats: course.stats || {
+          totalChapters: 0,
+          totalLessons: 0,
+          estimatedReadingTimeMinutes: 0,
+        },
+        seo: course.seo,
+        publishedAt: course.publishedAt ? new Date(course.publishedAt).toISOString() : null,
+      }));
 
-        return {
-          courses: publicCourses,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit) || 1,
-        };
-      }
+      return {
+        courses: publicCourses,
+        total: total || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((total || 0) / limit) || 0,
+      };
     } catch (err: unknown) {
-      if (this.isTestMode()) throw err;
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
     }
-
-    // Fallback to rich seed courses in non-test mode
-    let filteredSeed = [...SEED_COURSES];
-    if (query.level) {
-      filteredSeed = filteredSeed.filter((c) => c.level === query.level);
-    }
-    if (query.tag) {
-      filteredSeed = filteredSeed.filter((c) => c.tags.includes(query.tag as string));
-    }
-
-    return {
-      courses: filteredSeed.slice(skip, skip + limit),
-      total: filteredSeed.length,
-      page,
-      limit,
-      totalPages: Math.ceil(filteredSeed.length / limit) || 1,
-    };
   }
 
   /**
    * 3. GET /api/v1/public/courses/:courseSlug
-   * Retrieves detailed metadata and public statistics for a single published course.
+   * Retrieves single published course from MongoDB.
+   * Throws 404 NotFoundError if nonexistent or unpublished. Never returns mock seed.
    */
   public async getPublishedCourseDetail(courseSlug: string): Promise<CoursePublicDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
     try {
       const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
-      if (course) {
-        const publicStats = await courseStatsService.getPublicCourseStats(course._id);
-        return {
-          id: course._id.toString(),
-          slug: course.slug,
-          title: course.title,
-          summary: course.summary,
-          description: course.description,
-          level: course.level,
-          icon: course.icon,
-          coverStorageKey: course.coverStorageKey,
-          tags: course.tags || [],
-          prerequisites: course.prerequisites || [],
-          targetAudience: course.targetAudience || [],
-          order: course.order,
-          stats: publicStats,
-          seo: course.seo,
-          publishedAt: course.publishedAt ? new Date(course.publishedAt).toISOString() : null,
-        };
+      if (!course) {
+        throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
       }
+
+      const publicStats = await courseStatsService.getPublicCourseStats(course._id);
+      return {
+        id: course._id.toString(),
+        slug: course.slug,
+        title: course.title,
+        summary: course.summary,
+        description: course.description,
+        level: course.level,
+        icon: course.icon,
+        coverStorageKey: course.coverStorageKey,
+        tags: course.tags || [],
+        prerequisites: course.prerequisites || [],
+        targetAudience: course.targetAudience || [],
+        order: course.order,
+        stats: publicStats,
+        seo: course.seo,
+        publishedAt: course.publishedAt ? new Date(course.publishedAt).toISOString() : null,
+      };
     } catch (err: unknown) {
-      if (this.isTestMode()) throw err;
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
     }
-
-    if (!this.isTestMode()) {
-      const seedCourse = SEED_COURSES.find((c) => c.slug === courseSlug);
-      if (seedCourse) {
-        return seedCourse;
-      }
-    }
-
-    throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
   }
 
   /**
    * 4. GET /api/v1/public/courses/:courseSlug/outline
-   * Retrieves the course hierarchy outline with published chapters and lesson summaries only.
+   * Retrieves chapters and lessons hierarchy from MongoDB.
+   * Never returns mock seed fixtures.
    */
   public async getCourseOutline(courseSlug: string): Promise<CourseOutlinePublicDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
     try {
       const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
-      if (course) {
-        const chapters = await ChapterModel.find({
-          courseId: course._id,
-          status: 'published',
-        })
-          .sort({ order: 1, _id: 1 })
-          .lean<ChapterRaw[]>();
+      if (!course) {
+        throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
+      }
 
-        const publishedChapterIds = chapters.map((ch) => ch._id);
+      const chapters = await ChapterModel.find({
+        courseId: course._id,
+        status: 'published',
+      })
+        .sort({ order: 1, _id: 1 })
+        .lean<ChapterRaw[]>();
 
-        const lessons = publishedChapterIds.length > 0
-          ? await LessonModel.find(
-              {
-                courseId: course._id,
-                chapterId: { $in: publishedChapterIds },
-                status: 'published',
-              },
-              {
-                _id: 1,
-                chapterId: 1,
-                title: 1,
-                slug: 1,
-                order: 1,
-                readingTimeMinutes: 1,
-              }
-            )
-              .sort({ order: 1, _id: 1 })
-              .lean<Array<Pick<LessonRaw, '_id' | 'chapterId' | 'title' | 'slug' | 'order' | 'readingTimeMinutes'>>>()
-          : [];
+      const publishedChapterIds = chapters.map((ch) => ch._id);
 
-        const lessonsByChapter: Record<
-          string,
-          Array<{
-            id: string;
-            title: string;
-            slug: string;
-            order: number;
-            readingTimeMinutes: number;
-          }>
-        > = {};
+      const lessons = publishedChapterIds.length > 0
+        ? await LessonModel.find(
+            {
+              courseId: course._id,
+              chapterId: { $in: publishedChapterIds },
+              status: 'published',
+            },
+            {
+              _id: 1,
+              chapterId: 1,
+              title: 1,
+              slug: 1,
+              order: 1,
+              readingTimeMinutes: 1,
+            }
+          )
+            .sort({ order: 1, _id: 1 })
+            .lean<Array<Pick<LessonRaw, '_id' | 'chapterId' | 'title' | 'slug' | 'order' | 'readingTimeMinutes'>>>()
+        : [];
 
-        for (const lesson of lessons) {
-          const chId = lesson.chapterId.toString();
-          if (!lessonsByChapter[chId]) {
-            lessonsByChapter[chId] = [];
-          }
-          lessonsByChapter[chId].push({
-            id: lesson._id.toString(),
-            title: lesson.title,
-            slug: lesson.slug,
-            order: lesson.order,
-            readingTimeMinutes: lesson.readingTimeMinutes,
-          });
+      const lessonsByChapter: Record<
+        string,
+        Array<{
+          id: string;
+          title: string;
+          slug: string;
+          order: number;
+          readingTimeMinutes: number;
+        }>
+      > = {};
+
+      for (const lesson of lessons) {
+        const chId = lesson.chapterId.toString();
+        if (!lessonsByChapter[chId]) {
+          lessonsByChapter[chId] = [];
         }
-
-        const publicStats = await courseStatsService.getPublicCourseStats(course._id);
-
-        return {
-          course: {
-            id: course._id.toString(),
-            slug: course.slug,
-            title: course.title,
-            stats: publicStats,
-          },
-          chapters: chapters.map((ch) => ({
-            id: ch._id.toString(),
-            title: ch.title,
-            slug: ch.slug,
-            summary: ch.summary,
-            order: ch.order,
-            lessons: lessonsByChapter[ch._id.toString()] || [],
-          })),
-        };
+        lessonsByChapter[chId].push({
+          id: lesson._id.toString(),
+          title: lesson.title,
+          slug: lesson.slug,
+          order: lesson.order,
+          readingTimeMinutes: lesson.readingTimeMinutes,
+        });
       }
+
+      const publicStats = await courseStatsService.getPublicCourseStats(course._id);
+
+      return {
+        course: {
+          id: course._id.toString(),
+          slug: course.slug,
+          title: course.title,
+          stats: publicStats,
+        },
+        chapters: chapters.map((ch) => ({
+          id: ch._id.toString(),
+          title: ch.title,
+          slug: ch.slug,
+          summary: ch.summary,
+          order: ch.order,
+          lessons: lessonsByChapter[ch._id.toString()] || [],
+        })),
+      };
     } catch (err: unknown) {
-      if (this.isTestMode()) throw err;
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
     }
-
-    if (!this.isTestMode()) {
-      const seedOutline = SEED_OUTLINES[courseSlug];
-      if (seedOutline) {
-        return seedOutline;
-      }
-    }
-
-    throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
   }
 
   /**
    * 5. GET /api/v1/public/courses/:courseSlug/lessons/:lessonSlug
-   * Enforces complete publication chain (course -> chapter -> lesson) and returns LessonPublicDto.
+   * Enforces complete publication chain (course -> chapter -> lesson) via MongoDB queries.
+   * Never falls back to mock lesson detail.
    */
   public async getPublishedLessonDetail(
     courseSlug: string,
     lessonSlug: string
   ): Promise<LessonPublicDto> {
+    if (!isDatabaseConnected() && process.env.NODE_ENV === 'production') {
+      throw new DatabaseUnavailableError('پایگاه داده در دسترس نیست.');
+    }
+
     try {
       const course = await CourseModel.findOne({ slug: courseSlug, status: 'published' }).lean<CourseRaw>();
       if (!course) {
-        if (
-          !this.isTestMode() &&
-          courseSlug === 'react-foundations' &&
-          lessonSlug === 'getting-started-with-react-19'
-        ) {
-          return SEED_LESSON_DETAIL;
-        }
         throw new NotFoundError(`Course "${courseSlug}" not found or is not published`);
       }
 
@@ -304,13 +280,6 @@ export class PublicService {
       }).lean<LessonRaw>();
 
       if (!lesson) {
-        if (
-          !this.isTestMode() &&
-          courseSlug === 'react-foundations' &&
-          lessonSlug === 'getting-started-with-react-19'
-        ) {
-          return SEED_LESSON_DETAIL;
-        }
         throw new NotFoundError(`Lesson "${lessonSlug}" not found or is not published`);
       }
 
@@ -340,17 +309,8 @@ export class PublicService {
         publishedAt: lesson.publishedAt ? new Date(lesson.publishedAt).toISOString() : null,
       };
     } catch (err: unknown) {
-      if (err instanceof NotFoundError) throw err;
-      if (this.isTestMode()) throw err;
-
-      if (
-        courseSlug === 'react-foundations' &&
-        lessonSlug === 'getting-started-with-react-19'
-      ) {
-        return SEED_LESSON_DETAIL;
-      }
-
-      throw err;
+      if (err instanceof AppError) throw err;
+      throw new DatabaseUnavailableError('ارتباط با پایگاه داده برقرار نیست یا سرویس در دسترس نمی‌باشد.', err);
     }
   }
 }

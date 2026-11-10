@@ -65,6 +65,12 @@ export class TooManyRequestsError extends AppError {
   }
 }
 
+export class DatabaseUnavailableError extends AppError {
+  constructor(message = 'پایگاه داده در حال حاضر در دسترس نمی‌باشد.', details?: unknown) {
+    super(message, 503, 'DATABASE_UNAVAILABLE', true, details);
+  }
+}
+
 export class InternalServerError extends AppError {
   constructor(message = 'Internal server error occurred', details?: unknown) {
     super(message, 500, 'INTERNAL_SERVER_ERROR', false, details);

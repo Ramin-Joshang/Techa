@@ -64,8 +64,11 @@ export function createApp(): Express {
     );
   }
 
-  // 3. API v1 Routes
+  // 3. Health & Observability Probes
+  app.get('/health', healthRoutes);
   app.use('/api/v1/health', healthRoutes);
+
+  // 4. API v1 Public Routes
   app.use('/api/v1/public', publicRoutes);
 
   // 4. 404 Fallback

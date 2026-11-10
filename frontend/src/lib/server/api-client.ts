@@ -115,7 +115,7 @@ export async function fetchFromPublicApi<T>(
     if (response.status === 422) {
       throw new ValidationError(errorMessage, errorDetails);
     }
-    if (response.status === 503 || errorCode === 'DATABASE_NOT_READY') {
+    if (response.status === 503 || errorCode === 'DATABASE_NOT_READY' || errorCode === 'DATABASE_UNAVAILABLE') {
       throw new ServiceUnavailableError(errorMessage, errorDetails);
     }
 
