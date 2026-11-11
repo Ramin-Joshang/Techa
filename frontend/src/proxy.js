@@ -60,6 +60,11 @@ function isAllowedPublicRoute(pathname) {
     return false;
   }
 
+  // 4. Phase 4 Auth pages: /login and /register
+  if (normalized === '/login' || normalized === '/register') {
+    return true;
+  }
+
   return false;
 }
 
@@ -75,6 +80,7 @@ export function proxy(request) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname.startsWith('/api/v1/public') ||
+    pathname.startsWith('/api/v1/auth') ||
     pathname.startsWith('/api-docs') ||
     pathname === '/backend' ||
     pathname.startsWith('/backend/') ||

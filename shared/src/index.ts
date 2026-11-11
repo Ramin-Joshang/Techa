@@ -18,5 +18,6 @@ export * from './schemas/content-revision.schema';
 export * from './schemas/audit-log.schema';
 export * from './schemas/public-query.schema';
 export * from './schemas/import-package.schema';
+export * from './schemas/auth.schema';
 export * from './types/api.types';
 export * from './types/common.types';

@@ -19,6 +19,7 @@ export interface IUserDocument extends Document {
   lockedUntil?: Date | null;
   lastLoginAt?: Date | null;
   lastPasswordResetAt?: Date | null;
+  authVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +86,12 @@ const UserSchema = new Schema<IUserDocument>(
     lastPasswordResetAt: {
       type: Date,
       default: null,
+    },
+    authVersion: {
+      type: Number,
+      default: 1,
+      min: 1,
+      required: true,
     },
   },
   {

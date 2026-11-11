@@ -72,7 +72,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header Section */}
         <div className="space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
             <BookOpen className="h-3.5 w-3.5" />
             <span>کاتالوگ آموزش‌ها</span>
           </div>

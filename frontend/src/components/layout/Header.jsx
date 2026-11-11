@@ -22,10 +22,9 @@ import {
   Link2,
   BookOpenText,
   LayoutDashboard,
+  Search,
 } from "lucide-react";
-import { RiShoppingCartLine } from "react-icons/ri";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../features/auth/authSlice";
+import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
   const [mounted, setMounted] = useState(false);
@@ -34,16 +33,22 @@ const Header = () => {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
 
-  const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-
-  const { user } = useSelector(state => state.auth);
-  console.log(user)
+  const { user, logout: authLogout } = useAuth();
   const isLoggedIn = !!user;
+  const items = [];
 
-  const items = useSelector(state => state.cart.items);
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (headerSearchQuery.trim()) {
+      setIsSearchOpen(false);
+      router.push(`/docs?q=${encodeURIComponent(headerSearchQuery.trim())}`);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -75,9 +80,13 @@ const Header = () => {
     document.body.style.overflow = (isMenuOpen || isProfileOpen) ? "hidden" : "auto";
   }, [isMenuOpen, isProfileOpen, isSubMenuOpen]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.replace("/auth/login");
+  const handleLogout = async () => {
+    try {
+      await authLogout();
+      router.push("/login");
+    } catch {
+      router.push("/login");
+    }
   };
 
   return (
@@ -358,6 +367,16 @@ const Header = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Quick Search Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="p-2 text-white hover:text-[#7AE36A] rounded-xl transition-colors hover:bg-white/10 flex items-center justify-center"
+                aria-label="جستجو در دوره‌ها"
+                title="جستجو در دوره‌ها"
+              >
+                <Search className="w-5 h-5" />
+              </button>
               {mounted && items.length > 0 && (
                 <Link
                   href="/cart"
@@ -406,21 +425,14 @@ const Header = () => {
                           { }
                           <ChevronDown className={`text-white w-5 group-hover:text-[#7AE36A] ${isProfileOpen ? 'rotate-180' : 'rotate-0'} transition-all duration-200`} />
                           <span className="hidden sm:block text-white font-medium group-hover:text-[#7AE36A] transition-colors text-sm">
-                            {user?.FirstName && user?.LastName
-                              ? `${user.FirstName} ${user.LastName}`
-                              : "کاربر مهمان"}
+                            {user?.firstName
+                              ? `${user.firstName} ${user.lastName || ''}`.trim()
+                              : (user?.phoneMasked || "کاربر")}
                           </span>
 
                         </div>
-                        <div className="relative w-12 h-12">
-                          <Image
-                            src={user?.avatarUrl ?? "/images/user.png"} // اگر avatar موجود نبود، پیش‌فرض
-                            alt={user?.FirstName && user?.LastName
-                              ? `${user.FirstName} ${user.LastName}`
-                              : "کاربر مهمان"}
-                            fill
-                            className="rounded-full object-cover border-2 border-[#7AE36A]"
-                          />
+                        <div className="relative w-10 h-10 rounded-full bg-[#053723] flex items-center justify-center text-[#7AE36A] font-bold border-2 border-[#7AE36A] text-sm">
+                          {user?.firstName ? user.firstName.charAt(0) : "ک"}
                         </div>
                       </button>
 
@@ -434,26 +446,18 @@ const Header = () => {
                           >
                             <div className="p-4 border-b-2 border-[#7AE36A]/20">
                               <div className="flex items-center gap-3">
-                                <div className="relative w-12 h-12">
-                                  <Image
-                                    src={user?.avatarUrl ?? "/images/user.png"} // اگر avatar موجود نبود، پیش‌فرض
-                                    alt={user?.FirstName && user?.LastName
-                                      ? `${user.FirstName} ${user.LastName}`
-                                      : "کاربر مهمان"}
-                                    fill
-                                    className="rounded-full object-cover border-2 border-[#7AE36A]"
-                                  />
-
+                                <div className="relative w-10 h-10 rounded-full bg-[#053723] flex items-center justify-center text-[#7AE36A] font-bold border-2 border-[#7AE36A] text-sm shrink-0">
+                                  {user?.firstName ? user.firstName.charAt(0) : "ک"}
                                 </div>
-                                <div>
-                                  <p className="text-white font-medium">
-                                    {user?.FirstName && user?.LastName
-                                      ? `${user.FirstName} ${user.LastName}`
-                                      : "کاربر مهمان"}
+                                <div className="min-w-0">
+                                  <p className="text-white font-medium text-sm truncate">
+                                    {user?.firstName
+                                      ? `${user.firstName} ${user.lastName || ''}`.trim()
+                                      : (user?.phoneMasked || "کاربر")}
                                   </p>
 
-                                  <p className="text-[#7AE36A] text-sm">
-                                    {user.Mobile}
+                                  <p className="text-[#7AE36A] text-xs font-mono" dir="ltr">
+                                    {user?.phoneMasked || user?.phoneE164}
                                   </p>
                                 </div>
                               </div>
@@ -488,13 +492,14 @@ const Header = () => {
                                 </Link>
                               </li>
                               <li>
-                                <p
-                                  className="px-4 py-3 hover:bg-red-500/10 text-red-400 flex items-center gap-3 transition-colors cursor-pointer"
+                                <button
+                                  type="button"
+                                  className="w-full text-right px-4 py-3 hover:bg-red-500/10 text-red-400 flex items-center gap-3 transition-colors cursor-pointer"
                                   onClick={handleLogout}
                                 >
                                   <LogOut className="w-5 h-5" />
                                   خروج از حساب
-                                </p>
+                                </button>
                               </li>
                             </ul>
                           </motion.div>
@@ -503,8 +508,8 @@ const Header = () => {
                     </div>
                   ) : (
                     <Link
-                      href="/auth/login"
-                      className="flex items-center gap-2 bg-[#7AE36A] text-[#042A1B] px-6 py-2 rounded-full font-medium hover:bg-[#6acf5a] transition-all shadow-lg shadow-[#7AE36A]/20 group-hover:rounded-b-none group-hover:rounded-t-full"
+                      href="/login"
+                      className="flex items-center gap-2 bg-[#7AE36A] text-[#042A1B] px-6 py-2 rounded-xl font-bold hover:bg-[#6acf5a] transition-all shadow-lg shadow-[#7AE36A]/20"
                     >
                       <LogIn className="rotate-180 w-5 h-5" />
                       ورود
@@ -514,8 +519,43 @@ const Header = () => {
               </div>
             </div>
           </nav>
-        </div >
-      </header >
+
+          {/* Quick Header Search Dropdown */}
+          <AnimatePresence>
+            {isSearchOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden pt-3 pb-1 border-t border-[#7AE36A]/20"
+              >
+                <form
+                  onSubmit={handleSearchSubmit}
+                  className="flex items-center gap-2 max-w-xl mx-auto"
+                >
+                  <div className="relative w-full flex items-center">
+                    <Search className="w-4 h-4 text-[#7AE36A] absolute right-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={headerSearchQuery}
+                      onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                      placeholder="جستجوی سریع در دوره‌ها و درس‌ها..."
+                      className="w-full bg-[#053723] text-white text-sm pr-10 pl-4 py-2.5 rounded-xl border border-[#7AE36A]/30 focus:outline-none focus:border-[#7AE36A] placeholder-white/50"
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 bg-[#7AE36A] text-[#042A1B] text-xs font-bold rounded-xl hover:bg-[#6acf5a] transition-colors whitespace-nowrap shrink-0"
+                  >
+                    جستجو
+                  </button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </header>
     </>
   );
 };

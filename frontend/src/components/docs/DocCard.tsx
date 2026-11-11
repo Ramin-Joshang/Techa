@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { CoursePublicDto } from '@techa/shared';
 import { BookOpen, Clock, Tag, ArrowLeft, Layers } from 'lucide-react';
 
-const LEVEL_MAP: Record<string, { label: string; className: string }> = {
-  beginner: { label: 'مقدماتی', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-  intermediate: { label: 'متوسط', className: 'bg-blue-50 text-blue-800 border-blue-200' },
-  advanced: { label: 'پیشرفته', className: 'bg-purple-50 text-purple-800 border-purple-200' },
+const LEVEL_MAP: Record<string, string> = {
+  beginner: 'مقدماتی',
+  intermediate: 'متوسط',
+  advanced: 'پیشرفته',
 };
 
 interface DocCardProps {
@@ -14,10 +14,7 @@ interface DocCardProps {
 }
 
 export default function DocCard({ course }: DocCardProps) {
-  const levelInfo = LEVEL_MAP[course.level] || {
-    label: course.level,
-    className: 'bg-gray-50 text-gray-700 border-gray-200',
-  };
+  const levelLabel = LEVEL_MAP[course.level] || course.level;
 
   return (
     <Link
@@ -25,20 +22,19 @@ export default function DocCard({ course }: DocCardProps) {
       className="group relative flex flex-col justify-between h-full rounded-2xl border border-gray-200/90 bg-white p-6 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all duration-300"
     >
       <div className="space-y-4">
-        {/* Header with Level & Chapter Count */}
-        <div className="flex items-center justify-between">
-          <span
-            className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border ${levelInfo.className}`}
-          >
-            {levelInfo.label}
+        {/* Header with Unboxed Level & Chapter Count (Zero-Pill Discipline) */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            سطح {levelLabel}
           </span>
 
-          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
             <span className="flex items-center gap-1">
               <Layers className="h-3.5 w-3.5 text-gray-400" />
               <span>{course.stats?.totalChapters ?? 0} فصل</span>
             </span>
-            <span>•</span>
+            <span className="text-gray-300">·</span>
             <span className="flex items-center gap-1">
               <BookOpen className="h-3.5 w-3.5 text-gray-400" />
               <span>{course.stats?.totalLessons ?? 0} درس</span>
@@ -52,7 +48,7 @@ export default function DocCard({ course }: DocCardProps) {
         </h3>
 
         {/* Summary */}
-        <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+        <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed text-justify">
           {course.summary}
         </p>
       </div>

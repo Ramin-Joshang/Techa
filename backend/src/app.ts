@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from 'express';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './core/config/env';
 import { requestIdMiddleware } from './core/middleware/request-id';
@@ -9,6 +10,7 @@ import { notFoundHandler } from './core/middleware/not-found';
 import { errorHandler } from './core/errors/error-handler';
 import { healthRoutes } from './modules/health/health.routes';
 import { publicRoutes } from './modules/public/public.routes';
+import authRoutes from './modules/auth/auth.routes';
 import { openApiDocument } from './core/docs/openapi';
 import { getLandingPageHtml } from './core/docs/landing-page';
 
@@ -30,9 +32,10 @@ export function createApp(): Express {
   // Rate limiting
   app.use(globalRateLimiter);
 
-  // Body parsers
+  // Body parsers & Cookie parser
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(cookieParser());
 
   // 1. Root & Backend Landing Page (GET / and GET /backend)
   const landingHandler = (_req: Request, res: Response) => {
@@ -68,8 +71,9 @@ export function createApp(): Express {
   app.get('/health', healthRoutes);
   app.use('/api/v1/health', healthRoutes);
 
-  // 4. API v1 Public Routes
+  // 4. API v1 Public & Auth Routes
   app.use('/api/v1/public', publicRoutes);
+  app.use('/api/v1/auth', authRoutes);
 
   // 4. 404 Fallback
   app.use(notFoundHandler);

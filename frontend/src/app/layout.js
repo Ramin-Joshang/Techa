@@ -1,6 +1,7 @@
 import '../styles/globals.css';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import { AuthProvider } from '../context/AuthContext';
 
 export const metadata = {
   title: {
@@ -31,9 +32,11 @@ export default function RootLayout({ children }) {
     <html lang="fa" dir="rtl">
       <head />
       <body className="min-h-screen flex flex-col bg-white text-gray-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
-        <Header />
-        <main className="flex-1 w-full">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Header />
+          <main className="flex-1 w-full">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

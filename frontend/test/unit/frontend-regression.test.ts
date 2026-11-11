@@ -49,6 +49,8 @@ describe('Frontend Architecture, Security & Anti-Regression Guardrails', () => {
       fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/page.tsx')) ||
       fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/page.js'));
     const route4Exists =
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonSlug]/page.tsx')) ||
+      fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonSlug]/page.js')) ||
       fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonId]/page.tsx')) ||
       fs.existsSync(path.join(frontendSrcDir, 'app/docs/[slug]/[lessonId]/page.js'));
 

@@ -143,7 +143,7 @@ const Footer = () => {
                     strokeWidth="1.5"
                   />
                 </svg>
-                <Link href="/courses">دوره های ما</Link>
+                <Link href="/docs">مستندات و دوره‌ها</Link>
               </li>
               <li className="flex items-center gap-3">
                 <svg

@@ -57,8 +57,28 @@ export default async function HomePage() {
     isDatabaseError = isServiceUnavailable(err) || true;
   }
 
+  const firstCourseSlug = courses[0]?.slug;
+  const sampleExploreUrl = firstCourseSlug ? `/docs/${firstCourseSlug}` : '/docs';
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'TECHA',
+    alternateName: 'پلتفرم آموزشی تکا',
+    url: 'https://techa.ir',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://techa.ir/docs?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-gray-900 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* =========================================================================
           1. AUTHENTIC HERO / BANNER SECTION (Dark Emerald #042A1B)
           ========================================================================= */}
@@ -419,10 +439,10 @@ export default async function HomePage() {
                   <span>شروع یادگیری از کاتالوگ دوره‌ها</span>
                 </Link>
                 <Link
-                  href="/docs/react-foundations/getting-started-with-react-19"
+                  href={sampleExploreUrl}
                   className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center gap-2"
                 >
-                  <span>مشاهده نمونه درس تعاملی</span>
+                  <span>مشاهده سرفصل‌های آموزشی</span>
                   <ArrowLeft className="h-4 w-4 text-[#7AE36A]" />
                 </Link>
               </div>

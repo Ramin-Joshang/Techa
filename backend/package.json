@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "db:provision": "tsx src/scripts/db-provision.ts",
     "db:inspect": "tsx src/scripts/db-inspect.ts",
+    "auth:bootstrap-admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "seed": "tsx src/scripts/seed.ts",
     "test": "vitest run"
   },
