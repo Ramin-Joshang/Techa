@@ -36,7 +36,7 @@ export async function seedDatabase(force = false): Promise<void> {
       features: SEED_HOMEPAGE.features,
       seo: SEED_HOMEPAGE.seo,
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   logger.info('[Seeder] Seeded site_pages collection (home page).');
 

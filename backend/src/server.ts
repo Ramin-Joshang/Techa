@@ -4,22 +4,9 @@ import { logger } from './core/logger/logger';
 import { connectToDatabase, disconnectFromDatabase } from './core/database/mongoose';
 
 async function bootstrap(): Promise<void> {
-  // Connect to database if URI is provided
-  if (env.MONGODB_URI) {
-    try {
-      await connectToDatabase();
-    } catch (err) {
-      logger.error({ err }, '[Bootstrap] Initial database connection failed.');
-      if (env.NODE_ENV === 'production') {
-        process.exit(1);
-      }
-    }
-  } else {
-    if (env.NODE_ENV === 'production') {
-      logger.fatal('[Bootstrap] MONGODB_URI is required in production environment. Aborting startup.');
-      process.exit(1);
-    }
-    logger.warn('[Bootstrap] Starting server without database connection (MONGODB_URI not configured).');
+  if (!env.MONGODB_URI && env.NODE_ENV === 'production') {
+    logger.fatal('[Bootstrap] MONGODB_URI is required in production environment. Aborting startup.');
+    process.exit(1);
   }
 
   const server = app.listen(env.API_PORT, env.API_HOST, () => {
@@ -27,6 +14,17 @@ async function bootstrap(): Promise<void> {
       `[Server] Backend API is running on http://${env.API_HOST}:${env.API_PORT} in ${env.NODE_ENV} mode`
     );
   });
+
+  if (env.MONGODB_URI) {
+    connectToDatabase().catch((err) => {
+      logger.error({ err }, '[Bootstrap] Initial database connection failed.');
+      if (env.NODE_ENV === 'production') {
+        server.close(() => process.exit(1));
+      }
+    });
+  } else {
+    logger.warn('[Bootstrap] Starting server without database connection (MONGODB_URI not configured).');
+  }
 
   const shutdown = async (signal: string) => {
     logger.info(`[Server] Received ${signal}. Initiating graceful shutdown...`);

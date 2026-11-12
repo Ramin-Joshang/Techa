@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ApiResponseSchema, ApiErrorResponseSchema } from '@techa/shared';
-import { getApiBaseUrl } from './api-config';
+import { getApiBaseUrl, getInternalBackendApiBaseUrl } from './api-config';
 import {
   ApiError,
   NotFoundError,
@@ -28,6 +28,18 @@ export interface FetchResult<T> {
   };
 }
 
+function buildTargetUrl(baseUrl: string, cleanEndpoint: string, searchParams?: FetchOptions['searchParams']): URL {
+  const url = new URL(`${baseUrl}${cleanEndpoint}`);
+  if (searchParams) {
+    for (const [key, val] of Object.entries(searchParams)) {
+      if (val !== undefined && val !== null && val !== '') {
+        url.searchParams.set(key, String(val));
+      }
+    }
+  }
+  return url;
+}
+
 /**
  * Low-level typed fetcher for Techa public APIs.
  * Validates request parameters and enforces the shared Zod response contracts.
@@ -43,18 +55,9 @@ export async function fetchFromPublicApi<T>(
   // Build target URL safely
   let targetUrl: URL;
   try {
-    targetUrl = new URL(`${baseUrl}${cleanEndpoint}`);
+    targetUrl = buildTargetUrl(baseUrl, cleanEndpoint, options.searchParams);
   } catch {
     throw new ServerError(`خطا در ایجاد نشانی سرویس: ${cleanEndpoint}`);
-  }
-
-  // Append query parameters safely
-  if (options.searchParams) {
-    for (const [key, val] of Object.entries(options.searchParams)) {
-      if (val !== undefined && val !== null && val !== '') {
-        targetUrl.searchParams.set(key, String(val));
-      }
-    }
   }
 
   // Next.js caching options
@@ -83,9 +86,21 @@ export async function fetchFromPublicApi<T>(
   try {
     response = await fetch(targetUrl.toString(), fetchInit);
   } catch (err: unknown) {
-    const errorDetails = err instanceof Error ? err.message : String(err);
-    // Never leak internal hostnames or credentials to clients
-    throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', errorDetails);
+    const internalBaseUrl = getInternalBackendApiBaseUrl();
+    const isLoopback = targetUrl.hostname === '127.0.0.1' || targetUrl.hostname === 'localhost';
+    if (isLoopback && baseUrl !== internalBaseUrl) {
+      try {
+        const fallbackUrl = buildTargetUrl(internalBaseUrl, cleanEndpoint, options.searchParams);
+        response = await fetch(fallbackUrl.toString(), fetchInit);
+      } catch (fallbackErr: unknown) {
+        const fallbackDetails = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', fallbackDetails);
+      }
+    } else {
+      const errorDetails = err instanceof Error ? err.message : String(err);
+      // Never leak internal hostnames or credentials to clients
+      throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', errorDetails);
+    }
   }
 
   // Parse JSON response body

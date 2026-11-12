@@ -28,7 +28,6 @@ const AuthSessionSchema = new Schema<IAuthSessionDocument>(
     tokenHash: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       length: 64,
     },
@@ -36,7 +35,6 @@ const AuthSessionSchema = new Schema<IAuthSessionDocument>(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     jti: {
       type: String,

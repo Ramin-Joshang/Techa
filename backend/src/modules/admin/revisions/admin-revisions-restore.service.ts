@@ -104,7 +104,7 @@ export class AdminRevisionsRestoreService {
               },
               $inc: { version: 1 },
             },
-            { new: true, runValidators: true, session }
+            { returnDocument: 'after', runValidators: true, session }
           );
           if (!updated) throw new ConflictError('دوره همزمان تغییر کرده است');
 
@@ -164,7 +164,7 @@ export class AdminRevisionsRestoreService {
               },
               $inc: { version: 1 },
             },
-            { new: true, runValidators: true, session }
+            { returnDocument: 'after', runValidators: true, session }
           );
           if (!updated) throw new ConflictError('فصل همزمان تغییر کرده است');
 
@@ -243,7 +243,7 @@ export class AdminRevisionsRestoreService {
               },
               $inc: { version: 1 },
             },
-            { new: true, runValidators: true, session }
+            { returnDocument: 'after', runValidators: true, session }
           );
           if (!updated) throw new ConflictError('درس همزمان تغییر کرده است');
 
@@ -312,7 +312,7 @@ export class AdminRevisionsRestoreService {
               },
               $inc: { version: 1 },
             },
-            { new: true, runValidators: true, session }
+            { returnDocument: 'after', runValidators: true, session }
           );
           if (!updated) throw new ConflictError('صفحه همزمان تغییر کرده است');
 
@@ -375,7 +375,7 @@ export class AdminRevisionsRestoreService {
               },
               $inc: { version: 1 },
             },
-            { new: true, runValidators: true, session }
+            { returnDocument: 'after', runValidators: true, session }
           );
           if (!updated) throw new ConflictError('تنظیمات همزمان تغییر کرده است');
 

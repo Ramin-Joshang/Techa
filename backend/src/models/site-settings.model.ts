@@ -104,7 +104,6 @@ export const SiteSettingsSchema = new Schema<SiteSettingsRaw>(
     settingsKey: {
       type: String,
       required: true,
-      unique: true,
       default: 'global',
       immutable: true,
     },

@@ -139,4 +139,38 @@ describe('Frontend Server-Side API Client (fetchFromPublicApi)', () => {
       ContractValidationError
     );
   });
+
+  it('recovers automatically when TECHA_API_BASE_URL points to an unreachable stale loopback port (5000 -> 3500)', async () => {
+    const prevUrl = process.env.TECHA_API_BASE_URL;
+    process.env.TECHA_API_BASE_URL = 'http://127.0.0.1:5000/api/v1/public';
+
+    try {
+      const mockEnvelope = {
+        success: true,
+        statusCode: 200,
+        data: { id: 'course_1', name: 'Recovered Course' },
+      };
+
+      global.fetch = vi.fn(async (url: string) => {
+        if (url.includes(':5000')) {
+          throw new Error('connect ECONNREFUSED 127.0.0.1:5000');
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => mockEnvelope,
+        } as unknown as Response;
+      }) as unknown as typeof fetch;
+
+      const result = await fetchFromPublicApi('/courses', TestPayloadSchema);
+      expect(result.data).toEqual({ id: 'course_1', name: 'Recovered Course' });
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    } finally {
+      if (prevUrl === undefined) {
+        delete process.env.TECHA_API_BASE_URL;
+      } else {
+        process.env.TECHA_API_BASE_URL = prevUrl;
+      }
+    }
+  });
 });

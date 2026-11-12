@@ -142,28 +142,28 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm text-white/75">
               <li>
-                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
-                  راهنمای مطالعه سرفصل‌ها
-                </Link>
-              </li>
-              <li>
-                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
+                <Link href="/roadmap" className="hover:text-[#7AE36A] transition-colors">
                   نقشه راه مهندسی نرم‌افزار
                 </Link>
               </li>
               <li>
-                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
-                  شیوه ارزیابی و تمارین عملی
+                <Link href="/about" className="hover:text-[#7AE36A] transition-colors">
+                  درباره آکادمی و ماموریت تکا
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-[#7AE36A] transition-colors">
+                  پرسش‌های متداول و راهنما
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-[#7AE36A] transition-colors">
+                  تماس با ما و مشاوره آموزشی
                 </Link>
               </li>
               <li>
                 <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
-                  پروژه‌های کارآموزی و تجربی
-                </Link>
-              </li>
-              <li>
-                <Link href="/docs" className="hover:text-[#7AE36A] transition-colors">
-                  پرسش‌های متداول یادگیری
+                  فهرست مستندات ساختاریافته
                 </Link>
               </li>
             </ul>

@@ -104,7 +104,6 @@ export const SitePageSchema = new Schema<SitePageRaw>(
     pageKey: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
       minlength: 1,

@@ -45,6 +45,14 @@ describe('Phase 1 Public Route Boundary Enforcement Guard', () => {
       expect(res.allowed).toBe(true);
       expect(res.is404).toBe(false);
     });
+
+    it('allows dedicated public informational routes (/about, /contact, /roadmap, /faq)', () => {
+      for (const route of ['/about', '/contact', '/roadmap', '/faq']) {
+        const res = testProxy(route);
+        expect(res.allowed).toBe(true);
+        expect(res.is404).toBe(false);
+      }
+    });
   });
 
   describe('Negative Tests — Legacy & Out-of-Scope Application Routes', () => {

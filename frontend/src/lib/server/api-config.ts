@@ -11,7 +11,7 @@ export function assertServerOnly(): void {
 
 export const DEFAULT_TECHA_API_BASE_URL = 'http://127.0.0.1:3500/api/v1/public';
 
-function getInternalBackendApiBaseUrl(): string {
+export function getInternalBackendApiBaseUrl(): string {
   if (process.env.BACKEND_INTERNAL_URL) {
     return `${process.env.BACKEND_INTERNAL_URL.replace(/\/+$/, '')}/api/v1/public`;
   }

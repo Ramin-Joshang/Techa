@@ -51,7 +51,7 @@ export class AuthRepository {
     id: string | Types.ObjectId,
     update: Partial<IUserDocument>
   ): Promise<IUserDocument | null> {
-    return UserModel.findByIdAndUpdate(id, update, { new: true }) as unknown as Promise<IUserDocument | null>;
+    return UserModel.findByIdAndUpdate(id, update, { returnDocument: 'after' }) as unknown as Promise<IUserDocument | null>;
   }
 
   async createSession(data: CreateSessionData): Promise<IAuthSessionDocument> {
@@ -98,7 +98,7 @@ export class AuthRepository {
         revokeReason: reason,
         replacedBySessionId: replacedBySessionId || null,
       },
-      { new: true }
+      { returnDocument: 'after' }
     ) as unknown as Promise<IAuthSessionDocument | null>;
   }
 

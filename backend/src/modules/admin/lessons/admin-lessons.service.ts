@@ -292,7 +292,7 @@ export class AdminLessonsService {
           $set: updateSet,
           $inc: { version: 1 },
         },
-        { new: true, runValidators: true, session }
+        { returnDocument: 'after', runValidators: true, session }
       );
       if (!doc) {
         throw new ConflictError('درس همزمان توسط کاربر دیگری ویرایش شده است');
@@ -419,7 +419,7 @@ export class AdminLessonsService {
           },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) throw new ConflictError('درس همزمان تغییر کرده است');
 
@@ -486,7 +486,7 @@ export class AdminLessonsService {
           $set: { status: 'draft', updatedBy: actor.objectId },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) throw new ConflictError('درس همزمان تغییر کرده است');
 
@@ -556,7 +556,7 @@ export class AdminLessonsService {
           $set: { status: 'archived', archivedAt: new Date(), updatedBy: actor.objectId },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) throw new ConflictError('درس همزمان تغییر کرده است');
 

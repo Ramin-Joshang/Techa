@@ -81,13 +81,16 @@ describe('Public Auth Client & Header Navigation Controls', () => {
     expect(loginCall?.[1]?.credentials).toBe('include');
   });
 
-  it('renders login and register links in public Header when unauthenticated', () => {
+  it('renders unified login/register button and public navigation links in Header when unauthenticated', () => {
     const html = renderToStaticMarkup(
       React.createElement(AuthProvider, null, React.createElement(Header))
     );
     expect(html).toContain('href="/login"');
-    expect(html).toContain('href="/register"');
-    expect(html).toContain('ورود');
-    expect(html).toContain('ثبت‌نام');
+    expect(html).toContain('ورود / ثبت‌نام');
+    expect(html).toContain('href="/docs"');
+    expect(html).toContain('href="/about"');
+    expect(html).toContain('href="/contact"');
+    expect(html).toContain('href="/roadmap"');
+    expect(html).toContain('href="/faq"');
   });
 });

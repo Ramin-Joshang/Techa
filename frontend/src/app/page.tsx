@@ -182,7 +182,7 @@ export default async function HomePage() {
             {/* Left Column: Authentic Aster Visual Graphic */}
             <div className="lg:col-span-5 flex justify-center">
               <div className="relative w-72 sm:w-96 h-72 sm:h-96">
-                <div className="absolute inset-0 bg-[#7AE36A]/20 rounded-full blur-2xl animate-pulse" />
+                <div className="absolute inset-0 bg-[#7AE36A]/20 rounded-full blur-2xl" />
                 <Image
                   src="/images/aster.png"
                   alt="نشان پلتفرم تکا"
@@ -328,10 +328,10 @@ export default async function HomePage() {
             </div>
             <div className="mt-6 flex justify-center">
               <Link
-                href="/docs"
+                href="/roadmap"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#7AE36A] text-[#042A1B] rounded-xl font-bold text-sm shadow-md hover:bg-[#6acf5a] transition-all"
               >
-                <span>مشاهده سرفصل‌های نقشه راه در کاتالوگ</span>
+                <span>مشاهده نقشه راه کامل یادگیری</span>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>
@@ -490,7 +490,7 @@ export default function Counter() {
               {/* Live Rendered Box Preview */}
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between bg-slate-900/60 p-3.5 rounded-xl">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                   <span className="text-xs text-slate-400 font-sans">نتیجه اجرای بلادرنگ در مرورگر:</span>
                 </div>
                 <div className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 shadow-sm">

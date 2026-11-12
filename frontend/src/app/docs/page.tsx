@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { BookOpen, AlertCircle, ChevronLeft, ChevronRight, Search, RotateCcw } from 'lucide-react';
 import { getPublishedCourses } from '../../lib/server';
 import DocCard from '../../components/docs/DocCard';
 import DocsFilterBar from '../../components/docs/DocsFilterBar';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'کاتالوگ دوره‌ها و مستندات آموزشی | TECHA',
@@ -85,7 +87,9 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
         </div>
 
         {/* Filter Bar */}
-        <DocsFilterBar currentLevel={validLevel || 'all'} currentSearch={searchQuery || ''} />
+        <Suspense fallback={<div className="h-16 rounded-2xl bg-gray-100 border border-gray-200/70" />}>
+          <DocsFilterBar currentLevel={validLevel || 'all'} currentSearch={searchQuery || ''} />
+        </Suspense>
 
         {/* Error Alert */}
         {fetchError && (

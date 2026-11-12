@@ -105,7 +105,7 @@ export class AdminSettingsService {
             $set: updatePayload,
             $inc: { version: 1 },
           },
-          { new: true, runValidators: true, session }
+          { returnDocument: 'after', runValidators: true, session }
         );
         if (!doc) {
           throw new ConflictError('تنظیمات سایت همزمان توسط مدیر دیگری تغییر کرده است');

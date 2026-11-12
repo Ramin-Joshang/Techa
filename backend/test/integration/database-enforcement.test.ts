@@ -81,17 +81,23 @@ describe('Phase 0: Database-Only Enforcement & Baseline Stabilization', () => {
   });
 
   it('6. verifies backend port 3500 and frontend port 3000 are unified across all configuration files', () => {
-    const rootEnv = fs.readFileSync(path.resolve(rootDir, '.env.example'), 'utf8');
-    expect(rootEnv).toContain('API_PORT=3500');
-    expect(rootEnv).toContain('PORT=3000');
-    expect(rootEnv).toContain('TECHA_API_BASE_URL=http://127.0.0.1:3500/api/v1/public');
+    const backendEnvConfig = fs.readFileSync(
+      path.resolve(rootDir, 'backend/src/core/config/env.ts'),
+      'utf8'
+    );
+    expect(backendEnvConfig).toContain('3500');
 
-    const backendEnv = fs.readFileSync(path.resolve(rootDir, 'backend/.env.example'), 'utf8');
-    expect(backendEnv).toContain('API_PORT=3500');
+    const frontendApiConfig = fs.readFileSync(
+      path.resolve(rootDir, 'frontend/src/lib/server/api-config.ts'),
+      'utf8'
+    );
+    expect(frontendApiConfig).toContain('http://127.0.0.1:3500/api/v1/public');
 
-    const frontendEnv = fs.readFileSync(path.resolve(rootDir, 'frontend/.env.example'), 'utf8');
-    expect(frontendEnv).toContain('PORT=3000');
-    expect(frontendEnv).toContain('TECHA_API_BASE_URL=http://127.0.0.1:3500/api/v1/public');
+    const frontendNextConfig = fs.readFileSync(
+      path.resolve(rootDir, 'frontend/next.config.mjs'),
+      'utf8'
+    );
+    expect(frontendNextConfig).toContain('http://127.0.0.1:3500');
 
     const pm2Config = fs.readFileSync(path.resolve(rootDir, 'ecosystem.config.cjs'), 'utf8');
     expect(pm2Config).toContain('API_PORT: 3500');

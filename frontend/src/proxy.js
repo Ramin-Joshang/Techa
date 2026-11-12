@@ -60,7 +60,17 @@ function isAllowedPublicRoute(pathname) {
     return false;
   }
 
-  // 4. Phase 4 & Phase 5 Auth pages
+  // 4. Dedicated Public Informational Pages
+  if (
+    normalized === '/about' ||
+    normalized === '/contact' ||
+    normalized === '/roadmap' ||
+    normalized === '/faq'
+  ) {
+    return true;
+  }
+
+  // 5. Phase 4 & Phase 5 Auth pages
   if (
     normalized === '/login' ||
     normalized === '/register' ||

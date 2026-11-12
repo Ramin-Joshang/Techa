@@ -29,7 +29,6 @@ const UserSchema = new Schema<IUserDocument>(
     phoneE164: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       match: [/^\+[1-9]\d{1,14}$/, 'Invalid E.164 phone number'],
     },

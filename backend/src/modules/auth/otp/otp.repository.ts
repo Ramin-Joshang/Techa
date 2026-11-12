@@ -98,7 +98,7 @@ export class OtpChallengeRepository {
           providerMessageId: providerMessageId || null,
         },
       },
-      { new: true }
+      { returnDocument: 'after' }
     ) as unknown as Promise<IOtpChallengeDocument | null>;
   }
 
@@ -109,7 +109,7 @@ export class OtpChallengeRepository {
     const doc = await OtpChallengeModel.findOneAndUpdate(
       { challengeId },
       { $inc: { attemptCount: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (doc && doc.attemptCount >= maxAttempts) {
@@ -138,7 +138,7 @@ export class OtpChallengeRepository {
           consumedAt: new Date(),
         },
       },
-      { new: true }
+      { returnDocument: 'after' }
     ) as unknown as Promise<IOtpChallengeDocument | null>;
   }
 }

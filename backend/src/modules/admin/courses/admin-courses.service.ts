@@ -279,7 +279,7 @@ export class AdminCoursesService {
           $set: updateSet,
           $inc: { version: 1 },
         },
-        { new: true, runValidators: true, session }
+        { returnDocument: 'after', runValidators: true, session }
       );
 
       if (!doc) {
@@ -369,7 +369,7 @@ export class AdminCoursesService {
           },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) {
         throw new ConflictError('دوره همزمان تغییر کرده است');
@@ -440,7 +440,7 @@ export class AdminCoursesService {
           $set: { status: 'draft', updatedBy: actor.objectId },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) {
         throw new ConflictError('دوره همزمان تغییر کرده است');
@@ -508,7 +508,7 @@ export class AdminCoursesService {
           $set: { status: 'archived', archivedAt: new Date(), updatedBy: actor.objectId },
           $inc: { version: 1 },
         },
-        { new: true, session }
+        { returnDocument: 'after', session }
       );
       if (!doc) {
         throw new ConflictError('دوره همزمان تغییر کرده است');
