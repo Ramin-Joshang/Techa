@@ -54,6 +54,14 @@ export const ParagraphBlockSchema = new Schema(
 );
 
 // 3. RichText
+const RichTextLinkSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    openInNewTab: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const RichTextSpanSchema = new Schema(
   {
     text: { type: String, required: true, minlength: 1, maxlength: 1000 },
@@ -62,10 +70,7 @@ const RichTextSpanSchema = new Schema(
     code: { type: Boolean, default: false },
     underline: { type: Boolean, default: false },
     strikethrough: { type: Boolean, default: false },
-    link: {
-      url: { type: String },
-      openInNewTab: { type: Boolean, default: false },
-    },
+    link: { type: RichTextLinkSchema, default: undefined },
   },
   { _id: false }
 );

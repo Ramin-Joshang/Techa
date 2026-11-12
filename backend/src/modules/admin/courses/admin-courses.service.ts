@@ -15,6 +15,7 @@ import {
   NotFoundError,
 } from '../../../core/errors/app-error';
 import { escapeRegex } from '../../../core/utils/regex';
+import { normalizeCourseIcon } from '../../../core/utils/dto-normalizer';
 import { courseStatsService } from '../../../services/course-stats.service';
 import {
   AuthenticatedAdminActor,
@@ -39,7 +40,7 @@ export function toAdminCourseDto(doc: CourseRaw | any): AdminCourseDto {
     summary: doc.summary,
     description: doc.description,
     level: doc.level,
-    icon: doc.icon,
+    icon: normalizeCourseIcon(doc.icon),
     coverStorageKey: doc.coverStorageKey,
     tags: doc.tags || [],
     prerequisites: doc.prerequisites || [],

@@ -90,6 +90,15 @@ const SocialLinkSubSchema = new Schema(
   { _id: false }
 );
 
+const HeaderCtaButtonSubSchema = new Schema(
+  {
+    label: { type: String, required: true },
+    url: { type: String, required: true },
+    enabled: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
 export const SiteSettingsSchema = new Schema<SiteSettingsRaw>(
   {
     settingsKey: {
@@ -115,11 +124,7 @@ export const SiteSettingsSchema = new Schema<SiteSettingsRaw>(
           { id: 'nav-docs', label: 'مستندات و دوره‌ها', path: '/docs', external: false, order: 2 },
         ],
       },
-      ctaButton: {
-        label: { type: String },
-        url: { type: String },
-        enabled: { type: Boolean, default: true },
-      },
+      ctaButton: { type: HeaderCtaButtonSubSchema, default: undefined },
     },
     footer: {
       description: {

@@ -38,6 +38,12 @@ describe('Frontend Server-Only API Config & Error Abstractions', () => {
       expect(() => getApiBaseUrl()).toThrow(/Invalid protocol/);
     });
 
+    it('falls back to internal backend URL when TECHA_API_BASE_URL is only a bare external domain root', () => {
+      process.env.TECHA_API_BASE_URL = 'https://techa.ir/';
+      const url = getApiBaseUrl();
+      expect(url).toBe('http://127.0.0.1:3500/api/v1/public');
+    });
+
     it('assertServerOnly succeeds in Node.js environment', () => {
       expect(() => assertServerOnly()).not.toThrow();
     });

@@ -4,8 +4,18 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft, MessageSquare, KeyRound } from 'lucide-react';
+import { hasAnyAdminAccess } from '@techa/shared';
 import { useAuth } from '../../context/AuthContext';
 import { authClient } from '../../lib/auth-client';
+
+function getSafeNextPath(): string | null {
+  if (typeof window === 'undefined') return null;
+  const raw = new URLSearchParams(window.location.search).get('next');
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
+    return null;
+  }
+  return raw;
+}
 
 function normalizePersianDigits(str: string): string {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -51,8 +61,15 @@ export default function LoginForm() {
 
       setIsLoading(true);
       try {
-        await login({ phone: trimmedPhone, password });
-        router.push('/');
+        const loggedInUser = await login({ phone: trimmedPhone, password });
+        const safeNext = getSafeNextPath();
+        if (safeNext) {
+          router.push(safeNext);
+        } else if (loggedInUser && hasAnyAdminAccess(loggedInUser.roles)) {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'شماره موبایل یا رمز عبور صحیح نیست';
         setErrorMessage(msg);

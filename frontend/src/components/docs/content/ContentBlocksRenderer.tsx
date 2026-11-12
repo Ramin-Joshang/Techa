@@ -59,6 +59,17 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function resolveMediaSrc(storageKey: string): string {
+  if (
+    storageKey.startsWith('http://') ||
+    storageKey.startsWith('https://') ||
+    storageKey.startsWith('/')
+  ) {
+    return storageKey;
+  }
+  return `/api/v1/public/media/${storageKey}`;
+}
+
 // 1. Heading Renderer with Anchor Support
 function RenderHeading({ block }: { block: HeadingBlock }) {
   const { level, text } = block.data;
@@ -230,34 +241,20 @@ function RenderCodeBlock({ block }: { block: CodeBlock }) {
 // 5. Image Block Renderer
 function RenderImage({ block }: { block: ImageBlock }) {
   const { storageKey, altText, caption, width, height } = block.data;
-  const isDirectUrl = storageKey.startsWith('http://') || storageKey.startsWith('https://') || storageKey.startsWith('/');
+  const mediaSrc = resolveMediaSrc(storageKey);
 
   return (
     <figure className="my-6">
-      {isDirectUrl ? (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-gray-50 flex items-center justify-center">
-          <img
-            src={storageKey}
-            alt={altText || 'تصویر آموزشی'}
-            width={width}
-            height={height}
-            loading="lazy"
-            className="w-full h-auto object-cover max-h-[500px]"
-          />
-        </div>
-      ) : (
-        <div className="bg-gradient-to-br from-emerald-50/50 to-gray-50 border border-emerald-100 rounded-2xl p-6 text-center shadow-xs">
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-xs text-emerald-600 mx-auto flex items-center justify-center mb-3">
-            <ImageIcon className="w-8 h-8" />
-          </div>
-          <p className="font-bold text-gray-800 text-base">{altText}</p>
-          <div className="mt-2 inline-flex items-center gap-2 text-xs text-gray-500 bg-white/80 px-3 py-1.5 rounded-lg border border-gray-200 font-mono" dir="ltr">
-            <span className="text-gray-400">شناسه:</span>
-            <span className="font-semibold text-emerald-700 truncate max-w-xs">{storageKey}</span>
-            {width && height && <span className="text-gray-400">({width}×{height})</span>}
-          </div>
-        </div>
-      )}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-gray-50 flex items-center justify-center">
+        <img
+          src={mediaSrc}
+          alt={altText || 'تصویر آموزشی'}
+          width={width}
+          height={height}
+          loading="lazy"
+          className="w-full h-auto object-cover max-h-[500px]"
+        />
+      </div>
       {caption && (
         <figcaption className="text-center text-sm text-gray-500 mt-2 font-medium">
           {caption}
@@ -270,49 +267,30 @@ function RenderImage({ block }: { block: ImageBlock }) {
 // 6. Video Block Renderer
 function RenderVideo({ block }: { block: VideoBlock }) {
   const { storageKey, caption, durationSeconds } = block.data;
-  const isDirectUrl = storageKey.startsWith('http://') || storageKey.startsWith('https://') || storageKey.startsWith('/');
+  const mediaSrc = resolveMediaSrc(storageKey);
   const durationMinutes = durationSeconds ? Math.ceil(durationSeconds / 60) : null;
 
   return (
     <div className="my-6">
-      {isDirectUrl ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
-          <video
-            controls
-            preload="metadata"
-            className="w-full max-h-[480px] bg-black"
-          >
-            <source src={storageKey} />
-            مرورگر شما از پخش مستقیم ویدیو پشتیبانی نمی‌کند.
-          </video>
-        </div>
-      ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-white shadow-xl relative overflow-hidden">
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-3 border border-emerald-500/30">
-              <PlayCircle className="w-10 h-10" />
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <VideoIcon className="w-5 h-5 text-emerald-400" />
-              <h4 className="font-bold text-lg text-white">رسانه ویدیویی آموزشی</h4>
-            </div>
-            {durationMinutes && (
-              <p className="text-xs text-slate-400 mb-3 font-medium">
-                مدت زمان: {durationMinutes} دقیقه
-              </p>
-            )}
-            <div className="inline-flex items-center gap-2 text-xs text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 font-mono" dir="ltr">
-              <span className="text-slate-500">شناسه منبع:</span>
-              <span className="text-emerald-300 truncate max-w-xs">{storageKey}</span>
-            </div>
-          </div>
-        </div>
-      )}
-      {caption && (
-        <p className="text-center text-sm text-gray-500 mt-2 font-medium">
-          {caption}
-        </p>
-      )}
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
+        <video
+          controls
+          preload="metadata"
+          className="w-full max-h-[480px] bg-black"
+        >
+          <source src={mediaSrc} />
+          مرورگر شما از پخش مستقیم ویدیو پشتیبانی نمی‌کند.
+        </video>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-gray-500">
+        {caption ? <p className="text-sm text-gray-600 font-medium">{caption}</p> : <span />}
+        {durationMinutes && (
+          <span className="inline-flex items-center gap-1 font-medium text-gray-500">
+            <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
+            مدت زمان: {durationMinutes} دقیقه
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -430,6 +408,7 @@ function RenderDivider() {
 // 11. Downloadable File Block Renderer
 function RenderDownloadableFile({ block }: { block: DownloadableFileBlock }) {
   const { storageKey, title, description, sizeBytes } = block.data;
+  const mediaSrc = resolveMediaSrc(storageKey);
 
   return (
     <div className="my-6 bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex items-center justify-between gap-4">
@@ -448,9 +427,14 @@ function RenderDownloadableFile({ block }: { block: DownloadableFileBlock }) {
         </div>
       </div>
       <div className="shrink-0">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">
-          آماده دریافت
-        </span>
+        <a
+          href={mediaSrc}
+          download
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          <span>دریافت فایل</span>
+        </a>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import {
   NotFoundError,
 } from '../../../core/errors/app-error';
 import { courseStatsService } from '../../../services/course-stats.service';
+import { normalizeContentBlocks } from '../../../core/utils/dto-normalizer';
 import {
   AuthenticatedAdminActor,
   assertOwnershipIfEditorOnly,
@@ -58,7 +59,7 @@ export function toAdminLessonDto(doc: LessonRaw | any): AdminLessonDto {
     order: doc.order ?? 0,
     readingTimeMinutes: doc.readingTimeMinutes ?? 1,
     contentSchemaVersion: doc.contentSchemaVersion ?? 1,
-    contentBlocks: doc.contentBlocks || [],
+    contentBlocks: normalizeContentBlocks(doc.contentBlocks || []),
     status: doc.status,
     version: doc.version ?? 1,
     seo: doc.seo,

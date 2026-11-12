@@ -14,6 +14,7 @@ import {
   NotFoundError,
 } from '../../../core/errors/app-error';
 import { escapeRegex } from '../../../core/utils/regex';
+import { normalizeContentBlocks } from '../../../core/utils/dto-normalizer';
 import { AuthenticatedAdminActor } from '../authz/permissions.middleware';
 import { adminAuditService } from '../audit/audit.service';
 import {
@@ -34,7 +35,7 @@ export function toAdminSitePageDto(doc: SitePageRaw | any): AdminSitePageDto {
     title: doc.title,
     heroSection: doc.heroSection,
     features: doc.features,
-    contentBlocks: doc.contentBlocks || [],
+    contentBlocks: normalizeContentBlocks(doc.contentBlocks || []),
     seo: doc.seo,
     status: doc.status || 'draft',
     version: doc.version ?? 1,

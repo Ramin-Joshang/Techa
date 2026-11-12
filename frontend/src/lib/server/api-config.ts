@@ -11,24 +11,33 @@ export function assertServerOnly(): void {
 
 export const DEFAULT_TECHA_API_BASE_URL = 'http://127.0.0.1:3500/api/v1/public';
 
+function getInternalBackendApiBaseUrl(): string {
+  if (process.env.BACKEND_INTERNAL_URL) {
+    return `${process.env.BACKEND_INTERNAL_URL.replace(/\/+$/, '')}/api/v1/public`;
+  }
+  if (process.env.API_PORT && process.env.API_PORT !== '3000') {
+    const host = process.env.API_HOST || '127.0.0.1';
+    return `http://${host}:${process.env.API_PORT}/api/v1/public`;
+  }
+  return DEFAULT_TECHA_API_BASE_URL;
+}
+
 export function getApiBaseUrl(): string {
   assertServerOnly();
 
-  let url = process.env.TECHA_API_BASE_URL;
-
-  if (!url) {
-    if (process.env.API_PORT && process.env.API_PORT !== '3000') {
-      const host = process.env.API_HOST || '127.0.0.1';
-      url = `http://${host}:${process.env.API_PORT}/api/v1/public`;
-    } else {
-      url = DEFAULT_TECHA_API_BASE_URL;
-    }
-  }
+  const url = process.env.TECHA_API_BASE_URL || getInternalBackendApiBaseUrl();
 
   try {
     const parsed = new URL(url);
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       throw new Error(`Invalid protocol in TECHA_API_BASE_URL: ${parsed.protocol}`);
+    }
+    if (
+      (parsed.pathname === '/' || parsed.pathname === '') &&
+      parsed.hostname !== '127.0.0.1' &&
+      parsed.hostname !== 'localhost'
+    ) {
+      return getInternalBackendApiBaseUrl();
     }
     return url.replace(/\/+$/, '');
   } catch (err: unknown) {

@@ -48,13 +48,15 @@ export default async function HomePage() {
   let courses: any[] = [];
   let totalCourses = 0;
   let isDatabaseError = false;
+  let loadErrorMessage: string | null = null;
 
   try {
     const coursesResult = await getPublishedCourses({ limit: 6 });
     courses = coursesResult?.courses || [];
     totalCourses = coursesResult?.total || 0;
   } catch (err: unknown) {
-    isDatabaseError = isServiceUnavailable(err) || true;
+    isDatabaseError = isServiceUnavailable(err);
+    loadErrorMessage = err instanceof Error ? err.message : 'خطا در دریافت اطلاعات دوره‌ها';
   }
 
   const firstCourseSlug = courses[0]?.slug;
@@ -222,13 +224,19 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          {/* Courses Grid: Distinct Database Error vs. Empty Data vs. Real Data */}
-          {isDatabaseError ? (
+          {/* Courses Grid: Distinct Database Error vs. Load Error vs. Empty Data vs. Real Data */}
+          {isDatabaseError || loadErrorMessage ? (
             <div className="bg-amber-50/90 rounded-3xl p-10 text-center border border-amber-200 text-amber-950 space-y-2 max-w-2xl mx-auto shadow-xs">
               <AlertTriangle className="h-10 w-10 text-amber-600 mx-auto mb-1" />
-              <h3 className="text-base font-bold text-amber-900">سرویس پایگاه داده در حال حاضر در دسترس نمی‌باشد</h3>
+              <h3 className="text-base font-bold text-amber-900">
+                {isDatabaseError
+                  ? 'سرویس پایگاه داده در حال حاضر در دسترس نمی‌باشد'
+                  : 'خطا در بارگذاری دوره‌های آموزشی'}
+              </h3>
               <p className="text-xs text-amber-800 leading-relaxed">
-                ارتباط با سرور پایگاه داده برقرار نیست یا در حال بازیابی اتصال است.
+                {isDatabaseError
+                  ? 'ارتباط با سرور پایگاه داده برقرار نیست یا در حال بازیابی اتصال است.'
+                  : loadErrorMessage}
               </p>
             </div>
           ) : courses.length > 0 ? (

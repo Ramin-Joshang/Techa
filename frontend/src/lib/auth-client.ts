@@ -7,7 +7,7 @@ import {
   SessionItem,
 } from '@techa/shared';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -15,8 +15,36 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[3]) : null;
 }
 
+let inflightCsrfPromise: Promise<string | null> | null = null;
+
+async function ensureCsrfToken(): Promise<string | null> {
+  const existing = getCookie('techa_csrf');
+  if (existing) return existing;
+
+  if (!inflightCsrfPromise) {
+    inflightCsrfPromise = (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/auth/csrf`, {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const body = await res.json().catch(() => null);
+        return (body?.data?.csrfToken as string) || getCookie('techa_csrf') || null;
+      } catch {
+        return null;
+      } finally {
+        inflightCsrfPromise = null;
+      }
+    })();
+  }
+
+  return inflightCsrfPromise;
+}
+
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<any> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   const headers = new Headers(options.headers || {});
 
   // Add JSON content type for bodies
@@ -24,17 +52,29 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers.set('Content-Type', 'application/json');
   }
 
-  // Double submit cookie CSRF token header
-  const csrfToken = getCookie('techa_csrf');
-  if (csrfToken && ['POST', 'PATCH', 'DELETE', 'PUT'].includes(options.method?.toUpperCase() || '')) {
-    headers.set('x-csrf-token', csrfToken);
+  // Double submit cookie CSRF token header for mutating requests
+  if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(method)) {
+    const csrfToken = getCookie('techa_csrf') || (await ensureCsrfToken());
+    if (csrfToken) {
+      headers.set('x-csrf-token', csrfToken);
+    }
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include', // Ensure HttpOnly cookies (techa_at, techa_rt) are sent
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      method,
+      headers,
+      credentials: 'include', // Ensure HttpOnly cookies (techa_at, techa_rt) are sent
+      cache: 'no-store',
+    });
+  } catch {
+    const error = new Error('خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت یا وضعیت سرویس را بررسی کنید.');
+    (error as any).status = 0;
+    (error as any).code = 'NETWORK_ERROR';
+    throw error;
+  }
 
   const data = await response.json().catch(() => null);
 

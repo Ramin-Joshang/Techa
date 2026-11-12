@@ -17,6 +17,21 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+function normalizePersianDigits(str: string): string {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return str
+    .split('')
+    .map((c) => {
+      const pIdx = persianDigits.indexOf(c);
+      if (pIdx !== -1) return String(pIdx);
+      const aIdx = arabicDigits.indexOf(c);
+      if (aIdx !== -1) return String(aIdx);
+      return c;
+    })
+    .join('');
+}
+
 export default function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
@@ -38,7 +53,7 @@ export default function RegisterForm() {
 
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
-    const trimmedPhone = phone.trim();
+    const trimmedPhone = normalizePersianDigits(phone.trim());
 
     if (!trimmedFirstName) {
       setErrorMessage('لطفاً نام خود را وارد کنید.');

@@ -12,13 +12,14 @@ import {
   buildSettingsRevalidationTargets,
 } from '../cache/cache-invalidation.service';
 import { adminMediaService, RequestAuditContext } from '../media/media.service';
+import { normalizeSiteHeader } from '../../../core/utils/dto-normalizer';
 
 export function toAdminSiteSettingsDto(doc: SiteSettingsRaw | any) {
   return {
     id: doc._id.toString(),
     settingsKey: doc.settingsKey,
     branding: doc.branding,
-    header: doc.header,
+    header: normalizeSiteHeader(doc.header),
     footer: doc.footer,
     seo: doc.seo,
     general: doc.general,

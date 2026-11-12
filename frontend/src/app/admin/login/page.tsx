@@ -19,6 +19,21 @@ import { sanitizeAdminReturnPath } from '../../../lib/admin/admin-formatters';
 import { AdminButton } from '../../../components/admin/ui/AdminPrimitives';
 import { AdminField, AdminInput } from '../../../components/admin/ui/AdminFormFields';
 
+function normalizePersianDigits(str: string): string {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return str
+    .split('')
+    .map((c) => {
+      const pIdx = persianDigits.indexOf(c);
+      if (pIdx !== -1) return String(pIdx);
+      const aIdx = arabicDigits.indexOf(c);
+      if (aIdx !== -1) return String(aIdx);
+      return c;
+    })
+    .join('');
+}
+
 function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,14 +78,15 @@ function AdminLoginContent() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    if (!phone.trim() || !password) {
+    const normalizedPhone = normalizePersianDigits(phone.trim());
+    if (!normalizedPhone || !password) {
       setErrorMsg('لطفاً شماره موبایل و رمز عبور را وارد کنید.');
       return;
     }
 
     setSubmitting(true);
     try {
-      await loginWithPassword({ phone: phone.trim(), password });
+      await loginWithPassword({ phone: normalizedPhone, password });
       router.replace(nextPath);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'ورود ناموفق بود.');
@@ -82,14 +98,15 @@ function AdminLoginContent() {
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    if (!phone.trim()) {
+    const normalizedPhone = normalizePersianDigits(phone.trim());
+    if (!normalizedPhone) {
       setErrorMsg('لطفاً شماره موبایل را وارد کنید.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const challenge = await requestLoginOtp(phone.trim());
+      const challenge = await requestLoginOtp(normalizedPhone);
       setChallengeId(challenge.challengeId);
       setMaskedPhone(challenge.maskedPhone);
       setResendSeconds(challenge.retryAfterSeconds || 60);

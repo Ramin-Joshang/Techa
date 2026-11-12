@@ -23,6 +23,7 @@ import { siteSettingsRepository } from '../site-settings/site-settings.repositor
 import { searchService } from '../search/search.service';
 import { NotFoundError, DatabaseUnavailableError, AppError } from '../../core/errors/app-error';
 import { isDatabaseConnected } from '../../core/database/database-status';
+import { normalizeContentBlocks, normalizeCourseIcon, normalizeSiteHeader } from '../../core/utils/dto-normalizer';
 
 export interface PaginatedCoursesResult {
   courses: CoursePublicDto[];
@@ -88,7 +89,7 @@ export class PublicService {
             summary: c.summary,
             description: c.description,
             level: c.level,
-            icon: c.icon,
+            icon: normalizeCourseIcon(c.icon),
             coverStorageKey: c.coverStorageKey,
             tags: c.tags || [],
             prerequisites: c.prerequisites || [],
@@ -147,7 +148,7 @@ export class PublicService {
         summary: course.summary,
         description: course.description,
         level: course.level,
-        icon: course.icon,
+        icon: normalizeCourseIcon(course.icon),
         coverStorageKey: course.coverStorageKey,
         tags: course.tags || [],
         prerequisites: course.prerequisites || [],
@@ -200,7 +201,7 @@ export class PublicService {
         summary: course.summary,
         description: course.description,
         level: course.level,
-        icon: course.icon,
+        icon: normalizeCourseIcon(course.icon),
         coverStorageKey: course.coverStorageKey,
         tags: course.tags || [],
         prerequisites: course.prerequisites || [],
@@ -331,7 +332,7 @@ export class PublicService {
         order: lesson.order,
         readingTimeMinutes: lesson.readingTimeMinutes,
         contentSchemaVersion: lesson.contentSchemaVersion,
-        contentBlocks: lesson.contentBlocks || [],
+        contentBlocks: normalizeContentBlocks(lesson.contentBlocks || []),
         seo: lesson.seo,
         navigation,
         publishedAt: lesson.publishedAt ? new Date(lesson.publishedAt).toISOString() : null,
@@ -368,7 +369,7 @@ export class PublicService {
 
       return {
         branding: settings.branding,
-        header: settings.header,
+        header: normalizeSiteHeader(settings.header),
         footer: settings.footer,
         seo: settings.seo,
         general: settings.general,
@@ -397,7 +398,7 @@ export class PublicService {
       return {
         pageKey: page.pageKey,
         title: page.title,
-        contentBlocks: page.contentBlocks || [],
+        contentBlocks: normalizeContentBlocks(page.contentBlocks || []),
         seo: page.seo,
         publishedAt: page.publishedAt
           ? new Date(page.publishedAt).toISOString()

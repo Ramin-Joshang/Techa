@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { authService, AuthService } from './auth.service';
-import { setAuthCookies, clearAuthCookies, getCookies } from './auth.cookies';
+import { setAuthCookies, clearAuthCookies, getCookies, setCsrfCookie } from './auth.cookies';
 import { generateCsrfToken } from './auth.security';
 import {
   RegisterRequestSchema,
@@ -77,11 +77,15 @@ export class AuthController {
       });
 
       // Set HttpOnly authentication cookies
-      setAuthCookies(res, {
-        accessToken: result.accessToken,
-        refreshToken: result.rawRefreshToken,
-        csrfToken: result.csrfToken,
-      });
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken,
+          refreshToken: result.rawRefreshToken,
+          csrfToken: result.csrfToken,
+        },
+        req
+      );
 
       res.status(200).json({
         success: true,
@@ -129,11 +133,15 @@ export class AuthController {
       });
 
       // Set new rotated cookies
-      setAuthCookies(res, {
-        accessToken: result.accessToken,
-        refreshToken: result.newRawRefreshToken,
-        csrfToken: result.csrfToken,
-      });
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken,
+          refreshToken: result.newRawRefreshToken,
+          csrfToken: result.csrfToken,
+        },
+        req
+      );
 
       res.status(200).json({
         success: true,
@@ -144,7 +152,7 @@ export class AuthController {
         },
       });
     } catch (err: unknown) {
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
       const message = err instanceof Error ? err.message : 'تمدید نشست ناموفق بود';
       const isReuse = message.includes('مجدد') || message.includes('شناسایی');
       res.status(401).json({
@@ -165,7 +173,7 @@ export class AuthController {
       if (req.session?._id) {
         await this.service.logout(req.session._id.toString());
       }
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
       res.status(200).json({
         success: true,
         data: {
@@ -173,7 +181,7 @@ export class AuthController {
         },
       });
     } catch {
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
       res.status(200).json({
         success: true,
         data: {
@@ -191,7 +199,7 @@ export class AuthController {
       if (req.user?._id) {
         await this.service.logoutAll(req.user._id.toString());
       }
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
       res.status(200).json({
         success: true,
         data: {
@@ -199,7 +207,7 @@ export class AuthController {
         },
       });
     } catch (err: unknown) {
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
       res.status(500).json({
         success: false,
         error: {
@@ -306,7 +314,7 @@ export class AuthController {
       );
 
       // Clear cookies to force re-login with new password
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
 
       res.status(200).json({
         success: true,
@@ -393,11 +401,15 @@ export class AuthController {
       });
 
       // Set HttpOnly authentication cookies
-      setAuthCookies(res, {
-        accessToken: result.accessToken,
-        refreshToken: result.rawRefreshToken,
-        csrfToken: result.csrfToken,
-      });
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken,
+          refreshToken: result.rawRefreshToken,
+          csrfToken: result.csrfToken,
+        },
+        req
+      );
 
       res.status(200).json({
         success: true,
@@ -520,7 +532,7 @@ export class AuthController {
       });
 
       // Clear any cookies if user had an existing session
-      clearAuthCookies(res);
+      clearAuthCookies(res, req);
 
       res.status(200).json({
         success: true,
@@ -594,13 +606,7 @@ export class AuthController {
     let csrfToken = cookies.csrfToken;
     if (!csrfToken) {
       csrfToken = generateCsrfToken();
-      res.cookie('techa_csrf', csrfToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
+      setCsrfCookie(res, csrfToken, req);
     }
     res.status(200).json({
       success: true,

@@ -84,8 +84,9 @@ export async function getPublishedCourses(params?: {
         limit: queryParams.limit,
         level: queryParams.level,
         tag: queryParams.tag,
+        q: queryParams.q,
       },
-      revalidate: 60,
+      revalidate: queryParams.q ? 0 : 60,
       tags: ['techa-courses'],
     }
   );
