@@ -1,17 +1,33 @@
 import { Schema, model, Model, HydratedDocument, Types } from 'mongoose';
-import { MediaCategory, MEDIA_CATEGORIES } from '@techa/shared';
+import {
+  MediaCategory,
+  MEDIA_CATEGORIES,
+  MediaStatus,
+  MEDIA_STATUSES,
+  MediaType,
+  MEDIA_TYPES,
+  MediaVisibility,
+  MEDIA_VISIBILITIES,
+} from '@techa/shared';
 
 export interface MediaAssetRaw {
   _id: Types.ObjectId;
   storageKey: string;
+  safeFilename?: string;
   originalFileName: string;
   mimeType: string;
+  mediaType: MediaType;
   sizeBytes: number;
   width?: number;
   height?: number;
   checksumSha256?: string;
   category: MediaCategory;
+  storageProvider: 'local';
+  visibility: MediaVisibility;
+  status: MediaStatus;
   altText?: string;
+  uploadedBy?: Types.ObjectId | null;
+  archivedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +44,11 @@ export const MediaAssetSchema = new Schema<MediaAssetRaw>(
       minlength: 3,
       maxlength: 200,
     },
+    safeFilename: {
+      type: String,
+      trim: true,
+      maxlength: 255,
+    },
     originalFileName: {
       type: String,
       required: true,
@@ -41,6 +62,12 @@ export const MediaAssetSchema = new Schema<MediaAssetRaw>(
       trim: true,
       minlength: 3,
       maxlength: 100,
+    },
+    mediaType: {
+      type: String,
+      required: true,
+      enum: MEDIA_TYPES,
+      default: 'image',
     },
     sizeBytes: {
       type: Number,
@@ -58,10 +85,34 @@ export const MediaAssetSchema = new Schema<MediaAssetRaw>(
       required: true,
       enum: MEDIA_CATEGORIES,
     },
+    storageProvider: {
+      type: String,
+      enum: ['local'],
+      default: 'local',
+    },
+    visibility: {
+      type: String,
+      enum: MEDIA_VISIBILITIES,
+      default: 'public',
+    },
+    status: {
+      type: String,
+      enum: MEDIA_STATUSES,
+      default: 'ready',
+    },
     altText: {
       type: String,
       trim: true,
       maxlength: 200,
+    },
+    uploadedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -70,12 +121,10 @@ export const MediaAssetSchema = new Schema<MediaAssetRaw>(
   }
 );
 
-// Indexes:
-// 1. MediaAsset lookup by unique storageKey
-// (storageKey has unique: true in schema definition, which creates unique index)
-
-// 2. Querying media assets by category
 MediaAssetSchema.index({ category: 1 });
+MediaAssetSchema.index({ status: 1, category: 1, createdAt: -1 });
+MediaAssetSchema.index({ uploadedBy: 1, createdAt: -1 });
+MediaAssetSchema.index({ checksumSha256: 1 });
 
 export const MediaAssetModel: Model<MediaAssetRaw> = model<MediaAssetRaw>(
   'MediaAsset',

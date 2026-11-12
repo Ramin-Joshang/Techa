@@ -7,6 +7,7 @@ import {
 } from '@techa/shared';
 
 export interface IOtpChallengeDocument extends Document {
+  challengeId: string;
   phoneE164: string;
   userId?: Types.ObjectId | null;
   purpose: OtpPurpose;
@@ -15,6 +16,7 @@ export interface IOtpChallengeDocument extends Document {
   provider: string;
   providerMessageId?: string | null;
   status: OtpStatus;
+  deliveryStatus: 'pending' | 'accepted' | 'failed' | 'not_sent';
   attemptCount: number;
   maxAttempts: number;
   expiresAt: Date;
@@ -29,6 +31,13 @@ export interface IOtpChallengeDocument extends Document {
 
 const OtpChallengeSchema = new Schema<IOtpChallengeDocument>(
   {
+    challengeId: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      default: () => crypto.randomUUID(),
+    },
     phoneE164: {
       type: String,
       required: true,
@@ -71,6 +80,12 @@ const OtpChallengeSchema = new Schema<IOtpChallengeDocument>(
     status: {
       type: String,
       enum: OTP_STATUSES,
+      default: 'pending',
+      required: true,
+    },
+    deliveryStatus: {
+      type: String,
+      enum: ['pending', 'accepted', 'failed', 'not_sent'],
       default: 'pending',
       required: true,
     },
@@ -122,6 +137,7 @@ const OtpChallengeSchema = new Schema<IOtpChallengeDocument>(
 
 // Indexes specified by Section 13
 OtpChallengeSchema.index({ phoneE164: 1, purpose: 1, status: 1, createdAt: -1 });
+OtpChallengeSchema.index({ userId: 1, purpose: 1, createdAt: -1 });
 OtpChallengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 export const OtpChallengeModel: Model<IOtpChallengeDocument> =

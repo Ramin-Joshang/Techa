@@ -60,8 +60,82 @@ function isAllowedPublicRoute(pathname) {
     return false;
   }
 
-  // 4. Phase 4 Auth pages: /login and /register
-  if (normalized === '/login' || normalized === '/register') {
+  // 4. Phase 4 & Phase 5 Auth pages
+  if (
+    normalized === '/login' ||
+    normalized === '/register' ||
+    normalized === '/verify-otp' ||
+    normalized === '/forgot-password' ||
+    normalized === '/reset-password'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+
+function isAllowedAdminRoute(pathname) {
+  let normalized = pathname;
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+
+  if (
+    normalized === '/admin' ||
+    normalized === '/admin/login' ||
+    normalized === '/admin/courses' ||
+    normalized === '/admin/courses/new' ||
+    normalized === '/admin/media' ||
+    normalized === '/admin/pages' ||
+    normalized === '/admin/pages/new' ||
+    normalized === '/admin/settings' ||
+    normalized === '/admin/users' ||
+    normalized === '/admin/revisions' ||
+    normalized === '/admin/audit-logs'
+  ) {
+    return true;
+  }
+
+  if (!normalized.startsWith('/admin/')) {
+    return false;
+  }
+
+  const subPath = normalized.slice('/admin/'.length);
+  if (subPath.startsWith('/') || subPath.endsWith('/') || subPath.includes('//')) {
+    return false;
+  }
+  const segments = subPath.split('/');
+
+  // /admin/courses/:courseId or /admin/courses/:courseId/chapters
+  if (segments[0] === 'courses') {
+    if (segments.length === 2 && OBJECT_ID_REGEX.test(segments[1])) {
+      return true;
+    }
+    if (segments.length === 3 && OBJECT_ID_REGEX.test(segments[1]) && segments[2] === 'chapters') {
+      return true;
+    }
+    return false;
+  }
+
+  // /admin/chapters/:chapterId
+  if (segments[0] === 'chapters' && segments.length === 2 && OBJECT_ID_REGEX.test(segments[1])) {
+    return true;
+  }
+
+  // /admin/lessons/:lessonId
+  if (segments[0] === 'lessons' && segments.length === 2 && OBJECT_ID_REGEX.test(segments[1])) {
+    return true;
+  }
+
+  // /admin/pages/:pageId
+  if (segments[0] === 'pages' && segments.length === 2 && OBJECT_ID_REGEX.test(segments[1])) {
+    return true;
+  }
+
+  // /admin/users/:userId
+  if (segments[0] === 'users' && segments.length === 2 && OBJECT_ID_REGEX.test(segments[1])) {
     return true;
   }
 
@@ -81,6 +155,9 @@ export function proxy(request) {
     pathname === '/sitemap.xml' ||
     pathname.startsWith('/api/v1/public') ||
     pathname.startsWith('/api/v1/auth') ||
+    pathname.startsWith('/api/v1/admin') ||
+    pathname.startsWith('/api/v1/health') ||
+    pathname === '/api/internal/revalidate' ||
     pathname.startsWith('/api-docs') ||
     pathname === '/backend' ||
     pathname.startsWith('/backend/') ||
@@ -89,12 +166,19 @@ export function proxy(request) {
     return NextResponse.next();
   }
 
-  // 2. Enforce Phase 1 Public Route Allowlist
+  // 2. Enforce Phase 7 Admin Route Allowlist (marked noindex)
+  if (isAllowedAdminRoute(pathname)) {
+    const response = NextResponse.next();
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  }
+
+  // 3. Enforce Phase 1 Public Route Allowlist
   if (isAllowedPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // 3. For any unapproved route, rewrite to /_not-found which emits HTTP 404
+  // 4. For any unapproved route, rewrite to /_not-found which emits HTTP 404
   return NextResponse.rewrite(new URL('/_not-found', request.url));
 }
 

@@ -32,6 +32,11 @@ export const RegisterResponseSchema = z.object({
   lastName: z.string().nullable().optional(),
   status: z.literal('pending_verification'),
   message: z.string(),
+  challengeId: z.string().optional(),
+  maskedPhone: z.string().optional(),
+  expiresInSeconds: z.number().optional(),
+  resendAvailableAt: z.string().optional(),
+  retryAfterSeconds: z.number().optional(),
 });
 
 // 2. Login DTOs
@@ -89,6 +94,57 @@ export const ChangePasswordRequestSchema = z
     path: ['newPassword'],
   });
 
+// 6. Phase 5 OTP DTOs
+export const OtpRequestSchema = z.object({
+  phone: z.string().min(10, 'شماره موبایل وارد شده معتبر نیست').max(20),
+  purpose: z.enum(['registration', 'login', 'password_reset', 'registration_verification', 'passwordless_login']).optional().default('login'),
+});
+
+export const OtpChallengeResponseSchema = z.object({
+  challengeId: z.string(),
+  purpose: z.string(),
+  maskedPhone: z.string(),
+  expiresInSeconds: z.number().int().positive(),
+  resendAvailableAt: z.string(),
+  retryAfterSeconds: z.number().int().nonnegative(),
+  message: z.string(),
+});
+
+export const OtpVerifySchema = z.object({
+  challengeId: z.string().min(1, 'شناسه درخواست الزامی است'),
+  code: z
+    .string()
+    .trim()
+    .min(4, 'کد وارد شده نامعتبر است')
+    .max(8, 'کد وارد شده نمی‌تواند بیش از ۸ رقم باشد')
+    .regex(/^[0-9]+$/, 'کد تأیید باید فقط شامل ارقام عددی باشد'),
+});
+
+export const OtpResendSchema = z.object({
+  challengeId: z.string().min(1, 'شناسه درخواست الزامی است'),
+});
+
+export const ForgotPasswordRequestSchema = z.object({
+  phone: z.string().min(10, 'شماره موبایل معتبر نیست').max(20),
+});
+
+export const ResetPasswordRequestSchema = z
+  .object({
+    challengeId: z.string().min(1, 'شناسه درخواست الزامی است'),
+    code: z
+      .string()
+      .trim()
+      .min(4, 'کد وارد شده نامعتبر است')
+      .max(8, 'کد وارد شده نمی‌تواند بیش از ۸ رقم باشد')
+      .regex(/^[0-9]+$/, 'کد تأیید باید فقط شامل ارقام عددی باشد'),
+    newPassword: PasswordSchema,
+    confirmPassword: z.string().optional(),
+  })
+  .refine((data) => !data.confirmPassword || data.newPassword === data.confirmPassword, {
+    message: 'رمز عبور جدید و تکرار آن یکسان نیستند',
+    path: ['confirmPassword'],
+  });
+
 // Types
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
@@ -98,3 +154,9 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type SessionItem = z.infer<typeof SessionItemSchema>;
 export type SessionsListResponse = z.infer<typeof SessionsListResponseSchema>;
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
+export type OtpRequest = z.infer<typeof OtpRequestSchema>;
+export type OtpChallengeResponse = z.infer<typeof OtpChallengeResponseSchema>;
+export type OtpVerify = z.infer<typeof OtpVerifySchema>;
+export type OtpResend = z.infer<typeof OtpResendSchema>;
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;

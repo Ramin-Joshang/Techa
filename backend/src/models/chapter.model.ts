@@ -9,7 +9,11 @@ export interface ChapterRaw {
   summary?: string;
   order: number;
   status: PublicationStatus;
+  version: number;
   publishedAt?: Date | null;
+  archivedAt?: Date | null;
+  createdBy?: Types.ObjectId | null;
+  updatedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,7 +38,11 @@ export const ChapterSchema = new Schema<ChapterRaw>(
     summary: { type: String, trim: true, maxlength: 300 },
     order: { type: Number, required: true, default: 0, min: 0 },
     status: { type: String, required: true, enum: PUBLICATION_STATUSES, default: 'draft' },
+    version: { type: Number, required: true, default: 1, min: 1 },
     publishedAt: { type: Date, default: null },
+    archivedAt: { type: Date, default: null },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {
     collection: 'chapters',
@@ -48,5 +56,8 @@ ChapterSchema.index({ courseId: 1, slug: 1 }, { unique: true });
 
 // 2. Published chapters by courseId, ordered by order
 ChapterSchema.index({ courseId: 1, status: 1, order: 1 });
+
+// 3. All chapters by courseId ordered for Admin CMS
+ChapterSchema.index({ courseId: 1, order: 1 });
 
 export const ChapterModel: Model<ChapterRaw> = model<ChapterRaw>('Chapter', ChapterSchema);

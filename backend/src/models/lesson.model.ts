@@ -16,6 +16,7 @@ export interface LessonRaw {
   contentSchemaVersion: 1;
   contentBlocks: ContentBlock[];
   status: PublicationStatus;
+  version: number;
   seo: {
     metaTitle: string;
     metaDescription: string;
@@ -24,6 +25,9 @@ export interface LessonRaw {
   };
   publishedAt?: Date | null;
   lastPublishedAt?: Date | null;
+  archivedAt?: Date | null;
+  createdBy?: Types.ObjectId | null;
+  updatedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,9 +72,13 @@ export const LessonSchema = new Schema<LessonRaw>(
       default: [],
     },
     status: { type: String, required: true, enum: PUBLICATION_STATUSES, default: 'draft' },
+    version: { type: Number, required: true, default: 1, min: 1 },
     seo: { type: LessonSeoSchema, required: true },
     publishedAt: { type: Date, default: null },
     lastPublishedAt: { type: Date, default: null },
+    archivedAt: { type: Date, default: null },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {
     collection: 'lessons',
@@ -91,5 +99,9 @@ LessonSchema.index({ courseId: 1, status: 1, order: 1 });
 
 // 3. Published lessons for a chapter, ordered by order
 LessonSchema.index({ chapterId: 1, status: 1, order: 1 });
+
+// 4. Admin lesson ordering & status indexes
+LessonSchema.index({ chapterId: 1, order: 1 });
+LessonSchema.index({ status: 1 });
 
 export const LessonModel: Model<LessonRaw> = model<LessonRaw>('Lesson', LessonSchema);

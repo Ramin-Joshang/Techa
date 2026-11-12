@@ -35,20 +35,25 @@ export const ACCOUNT_STATUSES = [
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
 export const OTP_PURPOSES = [
+  'registration',
+  'login',
+  'password_reset',
   'registration_verification',
   'passwordless_login',
-  'password_reset',
   'phone_change',
 ] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];
 
 export const OTP_STATUSES = [
   'pending',
+  'active',
   'consumed',
   'expired',
   'locked',
   'failed',
   'invalidated',
+  'superseded',
+  'delivery_failed',
 ] as const;
 export type OtpStatus = (typeof OTP_STATUSES)[number];
 

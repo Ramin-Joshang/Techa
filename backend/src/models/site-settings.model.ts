@@ -54,6 +54,7 @@ export interface SiteSettingsRaw {
     supportContact?: string;
     timezone: string;
   };
+  version: number;
   updatedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -147,6 +148,7 @@ export const SiteSettingsSchema = new Schema<SiteSettingsRaw>(
       supportContact: { type: String },
       timezone: { type: String, default: 'Asia/Tehran' },
     },
+    version: { type: Number, required: true, default: 1, min: 1 },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {

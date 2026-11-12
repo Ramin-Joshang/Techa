@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   User,
   Phone,
@@ -17,6 +18,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterForm() {
+  const router = useRouter();
   const { register } = useAuth();
 
   const [firstName, setFirstName] = useState('');
@@ -78,6 +80,13 @@ export default function RegisterForm() {
         firstName: trimmedFirstName,
         lastName: trimmedLastName || undefined,
       });
+
+      if (res?.challengeId) {
+        router.push(
+          `/verify-otp?challengeId=${encodeURIComponent(res.challengeId)}&phone=${encodeURIComponent(res.phoneE164 || trimmedPhone)}&purpose=registration`
+        );
+        return;
+      }
 
       setRegisteredPhone(res.phoneE164 || trimmedPhone);
       setIsSuccess(true);

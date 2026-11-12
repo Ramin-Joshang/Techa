@@ -4,7 +4,7 @@ import {
   CALLOUT_TYPES,
   LIST_FORMATS,
 } from '../constants/content.constants';
-import { StorageKeySchema } from './primitives.schema';
+import { StorageKeySchema, isSafeHttpUrl } from './primitives.schema';
 import {
   InteractiveExampleDataSchema,
   getUtf8ByteLength,
@@ -54,7 +54,13 @@ export const RichTextSpanSchema = z.object({
   strikethrough: z.boolean().optional(),
   link: z
     .object({
-      url: z.string().url('Link must be a valid URL'),
+      url: z
+        .string()
+        .url('Link must be a valid URL')
+        .refine(
+          (val) => isSafeHttpUrl(val) || (val.startsWith('/') && !val.startsWith('//')),
+          'Link URL must use http, https, or a safe relative path'
+        ),
       openInNewTab: z.boolean().optional(),
     })
     .optional(),
@@ -182,7 +188,12 @@ export const CalloutBlockSchema = z.object({
 export const QuoteBlockDataSchema = z.object({
   text: z.string().min(1, 'Quote text cannot be empty').max(1000, 'Quote text cannot exceed 1000 characters'),
   author: z.string().max(100, 'Author cannot exceed 100 characters').optional(),
-  citationUrl: z.string().url('Citation URL must be a valid URL').max(255).optional(),
+  citationUrl: z
+    .string()
+    .url('Citation URL must be a valid URL')
+    .max(255)
+    .refine(isSafeHttpUrl, 'Citation URL must use http or https protocol')
+    .optional(),
 });
 
 export const QuoteBlockSchema = z.object({

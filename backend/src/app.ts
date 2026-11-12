@@ -11,6 +11,7 @@ import { errorHandler } from './core/errors/error-handler';
 import { healthRoutes } from './modules/health/health.routes';
 import { publicRoutes } from './modules/public/public.routes';
 import authRoutes from './modules/auth/auth.routes';
+import { adminRoutes } from './modules/admin/admin.routes';
 import { openApiDocument } from './core/docs/openapi';
 import { getLandingPageHtml } from './core/docs/landing-page';
 
@@ -71,9 +72,10 @@ export function createApp(): Express {
   app.get('/health', healthRoutes);
   app.use('/api/v1/health', healthRoutes);
 
-  // 4. API v1 Public & Auth Routes
+  // 4. API v1 Public, Auth & Admin Routes
   app.use('/api/v1/public', publicRoutes);
   app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/admin', adminRoutes);
 
   // 4. 404 Fallback
   app.use(notFoundHandler);

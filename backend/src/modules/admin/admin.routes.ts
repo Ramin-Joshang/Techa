@@ -1,0 +1,341 @@
+import { Router } from 'express';
+import { asyncHandler } from '../../core/utils/async-handler';
+import { requireAuth, validateCsrf } from '../auth/auth.middleware';
+import {
+  requireAnyAdminRole,
+  requirePermission,
+  adminWriteRateLimiter,
+  adminUploadRateLimiter,
+} from './authz/permissions.middleware';
+import { adminController } from './admin.controller';
+
+export const adminRoutes = Router();
+
+// All /api/v1/admin/* endpoints strictly require authenticated active user + at least one admin role
+adminRoutes.use(requireAuth, requireAnyAdminRole());
+
+// CSRF protection on all state-changing admin routes (POST/PATCH/PUT/DELETE)
+adminRoutes.use(validateCsrf);
+
+// 1. Dashboard Summary & Content Preview
+adminRoutes.get(
+  '/dashboard/summary',
+  requirePermission('dashboard:read'),
+  asyncHandler(adminController.getDashboardSummary)
+);
+adminRoutes.get(
+  '/preview/lessons/:lessonId',
+  requirePermission('preview:read'),
+  asyncHandler(adminController.previewLesson)
+);
+adminRoutes.get(
+  '/preview/courses/:courseId',
+  requirePermission('preview:read'),
+  asyncHandler(adminController.previewCourse)
+);
+
+// 2. Courses Management
+adminRoutes.get(
+  '/courses',
+  requirePermission('courses:read'),
+  asyncHandler(adminController.listCourses)
+);
+adminRoutes.post(
+  '/courses',
+  adminWriteRateLimiter,
+  requirePermission('courses:create'),
+  asyncHandler(adminController.createCourse)
+);
+adminRoutes.get(
+  '/courses/:courseId',
+  requirePermission('courses:read'),
+  asyncHandler(adminController.getCourse)
+);
+adminRoutes.patch(
+  '/courses/:courseId',
+  adminWriteRateLimiter,
+  requirePermission('courses:update'),
+  asyncHandler(adminController.updateCourse)
+);
+adminRoutes.post(
+  '/courses/:courseId/publish',
+  adminWriteRateLimiter,
+  requirePermission('courses:publish'),
+  asyncHandler(adminController.publishCourse)
+);
+adminRoutes.post(
+  '/courses/:courseId/unpublish',
+  adminWriteRateLimiter,
+  requirePermission('courses:publish'),
+  asyncHandler(adminController.unpublishCourse)
+);
+adminRoutes.post(
+  '/courses/:courseId/archive',
+  adminWriteRateLimiter,
+  requirePermission('courses:archive'),
+  asyncHandler(adminController.archiveCourse)
+);
+adminRoutes.get(
+  '/courses/:courseId/stats',
+  requirePermission('courses:read'),
+  asyncHandler(adminController.getCourseStats)
+);
+adminRoutes.get(
+  '/courses/:courseId/outline',
+  requirePermission('courses:read'),
+  asyncHandler(adminController.getCourseOutline)
+);
+
+// 3. Chapters Management
+adminRoutes.get(
+  '/courses/:courseId/chapters',
+  requirePermission('chapters:read'),
+  asyncHandler(adminController.listChapters)
+);
+adminRoutes.post(
+  '/courses/:courseId/chapters',
+  adminWriteRateLimiter,
+  requirePermission('chapters:create'),
+  asyncHandler(adminController.createChapter)
+);
+adminRoutes.patch(
+  '/courses/:courseId/chapters/reorder',
+  adminWriteRateLimiter,
+  requirePermission('chapters:reorder'),
+  asyncHandler(adminController.reorderChapters)
+);
+adminRoutes.get(
+  '/chapters/:chapterId',
+  requirePermission('chapters:read'),
+  asyncHandler(adminController.getChapter)
+);
+adminRoutes.patch(
+  '/chapters/:chapterId',
+  adminWriteRateLimiter,
+  requirePermission('chapters:update'),
+  asyncHandler(adminController.updateChapter)
+);
+adminRoutes.post(
+  '/chapters/:chapterId/publish',
+  adminWriteRateLimiter,
+  requirePermission('chapters:publish'),
+  asyncHandler(adminController.publishChapter)
+);
+adminRoutes.post(
+  '/chapters/:chapterId/unpublish',
+  adminWriteRateLimiter,
+  requirePermission('chapters:publish'),
+  asyncHandler(adminController.unpublishChapter)
+);
+adminRoutes.post(
+  '/chapters/:chapterId/archive',
+  adminWriteRateLimiter,
+  requirePermission('chapters:archive'),
+  asyncHandler(adminController.archiveChapter)
+);
+
+// 4. Lessons Management
+adminRoutes.get(
+  '/chapters/:chapterId/lessons',
+  requirePermission('lessons:read'),
+  asyncHandler(adminController.listLessons)
+);
+adminRoutes.post(
+  '/chapters/:chapterId/lessons',
+  adminWriteRateLimiter,
+  requirePermission('lessons:create'),
+  asyncHandler(adminController.createLesson)
+);
+adminRoutes.patch(
+  '/chapters/:chapterId/lessons/reorder',
+  adminWriteRateLimiter,
+  requirePermission('lessons:reorder'),
+  asyncHandler(adminController.reorderLessons)
+);
+adminRoutes.get(
+  '/lessons/:lessonId',
+  requirePermission('lessons:read'),
+  asyncHandler(adminController.getLesson)
+);
+adminRoutes.patch(
+  '/lessons/:lessonId',
+  adminWriteRateLimiter,
+  requirePermission('lessons:update'),
+  asyncHandler(adminController.updateLesson)
+);
+adminRoutes.post(
+  '/lessons/:lessonId/publish',
+  adminWriteRateLimiter,
+  requirePermission('lessons:publish'),
+  asyncHandler(adminController.publishLesson)
+);
+adminRoutes.post(
+  '/lessons/:lessonId/unpublish',
+  adminWriteRateLimiter,
+  requirePermission('lessons:publish'),
+  asyncHandler(adminController.unpublishLesson)
+);
+adminRoutes.post(
+  '/lessons/:lessonId/archive',
+  adminWriteRateLimiter,
+  requirePermission('lessons:archive'),
+  asyncHandler(adminController.archiveLesson)
+);
+
+// 5. Media Management
+adminRoutes.get(
+  '/media',
+  requirePermission('media:read'),
+  asyncHandler(adminController.listMedia)
+);
+adminRoutes.post(
+  '/media/upload',
+  adminUploadRateLimiter,
+  requirePermission('media:upload'),
+  asyncHandler(adminController.uploadMedia)
+);
+adminRoutes.get(
+  '/media/:mediaId',
+  requirePermission('media:read'),
+  asyncHandler(adminController.getMedia)
+);
+adminRoutes.get(
+  '/media/:mediaId/file',
+  requirePermission('media:read'),
+  asyncHandler(adminController.serveAdminMediaFile)
+);
+adminRoutes.patch(
+  '/media/:mediaId',
+  adminWriteRateLimiter,
+  requirePermission('media:update'),
+  asyncHandler(adminController.updateMedia)
+);
+adminRoutes.delete(
+  '/media/:mediaId',
+  adminWriteRateLimiter,
+  requirePermission('media:delete'),
+  asyncHandler(adminController.deleteMedia)
+);
+adminRoutes.get(
+  '/media/:mediaId/usage',
+  requirePermission('media:read'),
+  asyncHandler(adminController.getMediaUsage)
+);
+
+// 6. Site Pages & Settings
+adminRoutes.get(
+  '/pages',
+  requirePermission('pages:read'),
+  asyncHandler(adminController.listPages)
+);
+adminRoutes.post(
+  '/pages',
+  adminWriteRateLimiter,
+  requirePermission('pages:create'),
+  asyncHandler(adminController.createPage)
+);
+adminRoutes.get(
+  '/pages/:pageId',
+  requirePermission('pages:read'),
+  asyncHandler(adminController.getPage)
+);
+adminRoutes.patch(
+  '/pages/:pageId',
+  adminWriteRateLimiter,
+  requirePermission('pages:update'),
+  asyncHandler(adminController.updatePage)
+);
+adminRoutes.post(
+  '/pages/:pageId/publish',
+  adminWriteRateLimiter,
+  requirePermission('pages:publish'),
+  asyncHandler(adminController.publishPage)
+);
+adminRoutes.post(
+  '/pages/:pageId/unpublish',
+  adminWriteRateLimiter,
+  requirePermission('pages:publish'),
+  asyncHandler(adminController.unpublishPage)
+);
+adminRoutes.post(
+  '/pages/:pageId/archive',
+  adminWriteRateLimiter,
+  requirePermission('pages:archive'),
+  asyncHandler(adminController.archivePage)
+);
+
+adminRoutes.get(
+  '/settings',
+  requirePermission('settings:read'),
+  asyncHandler(adminController.getSettings)
+);
+adminRoutes.patch(
+  '/settings',
+  adminWriteRateLimiter,
+  requirePermission('settings:update'),
+  asyncHandler(adminController.updateSettings)
+);
+
+// 7. User & Role Management
+adminRoutes.get(
+  '/users',
+  requirePermission('users:read'),
+  asyncHandler(adminController.listUsers)
+);
+adminRoutes.get(
+  '/users/:userId',
+  requirePermission('users:read'),
+  asyncHandler(adminController.getUserDetail)
+);
+adminRoutes.patch(
+  '/users/:userId/status',
+  adminWriteRateLimiter,
+  requirePermission('users:manage_status'),
+  asyncHandler(adminController.updateUserStatus)
+);
+adminRoutes.patch(
+  '/users/:userId/roles',
+  adminWriteRateLimiter,
+  requirePermission('users:manage_roles'),
+  asyncHandler(adminController.updateUserRoles)
+);
+adminRoutes.get(
+  '/users/:userId/sessions',
+  requirePermission('users:read'),
+  asyncHandler(adminController.getUserSessions)
+);
+adminRoutes.post(
+  '/users/:userId/revoke-sessions',
+  adminWriteRateLimiter,
+  requirePermission('users:revoke_sessions'),
+  asyncHandler(adminController.revokeUserSessions)
+);
+
+// 8. Revisions & Audit Logs
+adminRoutes.get(
+  '/revisions',
+  requirePermission('revisions:read'),
+  asyncHandler(adminController.listAllRevisions)
+);
+adminRoutes.get(
+  '/revisions/:resourceType/:resourceId',
+  requirePermission('revisions:read'),
+  asyncHandler(adminController.listRevisions)
+);
+adminRoutes.get(
+  '/revisions/:revisionId',
+  requirePermission('revisions:read'),
+  asyncHandler(adminController.getRevision)
+);
+adminRoutes.post(
+  '/revisions/:revisionId/restore',
+  adminWriteRateLimiter,
+  requirePermission('revisions:restore'),
+  asyncHandler(adminController.restoreRevision)
+);
+
+adminRoutes.get(
+  '/audit-logs',
+  requirePermission('audit:read'),
+  asyncHandler(adminController.listAuditLogs)
+);

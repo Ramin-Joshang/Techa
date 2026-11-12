@@ -48,7 +48,7 @@ export class PublicService {
 
     try {
       const page = await sitePagesRepository.findByPageKey('home');
-      if (!page) {
+      if (!page || (page.status && page.status !== 'published')) {
         throw new NotFoundError('Homepage configuration not found in site_pages collection');
       }
 
@@ -390,16 +390,20 @@ export class PublicService {
 
     try {
       const page = await sitePagesRepository.findByPageKey(pageKey);
-      if (!page) {
+      if (!page || (page.status && page.status !== 'published')) {
         throw new NotFoundError(`Site page "${pageKey}" not found`);
       }
 
       return {
         pageKey: page.pageKey,
         title: page.title,
-        contentBlocks: [],
+        contentBlocks: page.contentBlocks || [],
         seo: page.seo,
-        publishedAt: page.createdAt ? new Date(page.createdAt).toISOString() : null,
+        publishedAt: page.publishedAt
+          ? new Date(page.publishedAt).toISOString()
+          : page.createdAt
+            ? new Date(page.createdAt).toISOString()
+            : null,
       };
     } catch (err: unknown) {
       if (err instanceof AppError) throw err;

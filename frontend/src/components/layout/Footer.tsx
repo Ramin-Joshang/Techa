@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import {
   BookOpen,
   PhoneCall,
@@ -14,8 +15,13 @@ import {
 } from 'lucide-react';
 
 export default function Footer() {
+  const pathname = usePathname();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();

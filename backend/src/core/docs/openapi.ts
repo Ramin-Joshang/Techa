@@ -43,6 +43,7 @@ import {
 import { env } from '../config/env';
 
 import { ensureOpenApi } from './extend-zod';
+import { registerAdminOpenApiRoutes } from './openapi-admin';
 
 export function buildOpenApiDocument() {
   const registry = new OpenAPIRegistry();
@@ -463,6 +464,9 @@ export function buildOpenApiDocument() {
     },
   });
 
+  // Phase 6 Admin & Media Routes
+  registerAdminOpenApiRoutes(registry);
+
   // ---------------------------------------------------------------------------
   // Generate OpenAPI 3.1 Document
   // ---------------------------------------------------------------------------
@@ -506,6 +510,38 @@ export function buildOpenApiDocument() {
       {
         name: 'Health',
         description: 'Service liveness and readiness monitoring endpoints.',
+      },
+      {
+        name: 'Admin Dashboard & Preview',
+        description: 'Live platform metrics and administrative draft content previews.',
+      },
+      {
+        name: 'Admin Courses',
+        description: 'Course lifecycle, publication workflow, outline, and statistics management.',
+      },
+      {
+        name: 'Admin Chapters',
+        description: 'Chapter creation, updates, reordering, and publication controls.',
+      },
+      {
+        name: 'Admin Lessons',
+        description: 'Lesson authoring with 13 typed content blocks, reordering, and publishing.',
+      },
+      {
+        name: 'Admin Media',
+        description: 'Streaming media uploads, usage checks, metadata updates, and safe deletion.',
+      },
+      {
+        name: 'Admin Pages & Settings',
+        description: 'Site pages CMS and global platform settings management.',
+      },
+      {
+        name: 'Admin Users & Governance',
+        description: 'User status, RBAC role assignments, and session revocation controls.',
+      },
+      {
+        name: 'Admin Revisions & Audit',
+        description: 'Immutable content revision snapshots, restores, and audit trail queries.',
       },
     ],
   });

@@ -101,10 +101,35 @@ export const CourseLevelSchema = z.enum(COURSE_LEVELS);
 export const PublicationStatusSchema = z.enum(PUBLICATION_STATUSES);
 export const MediaCategorySchema = z.enum(MEDIA_CATEGORIES);
 
+export function isSafeHttpUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith('javascript:') ||
+    lower.startsWith('data:') ||
+    lower.startsWith('vbscript:') ||
+    lower.startsWith('file:')
+  ) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export const SafeHttpUrlSchema = z
+  .string()
+  .max(255, 'URL cannot exceed 255 characters')
+  .refine(isSafeHttpUrl, 'URL must use http or https protocol');
+
 export const SeoMetadataSchema = z.object({
   metaTitle: z.string().min(1, 'Meta title is required').max(100, 'Meta title cannot exceed 100 characters'),
   metaDescription: z.string().min(1, 'Meta description is required').max(300, 'Meta description cannot exceed 300 characters'),
-  canonicalUrlOverride: z.string().url('Canonical URL must be a valid URL').max(255).optional(),
+  canonicalUrlOverride: SafeHttpUrlSchema.optional(),
   ogImageStorageKey: StorageKeySchema.optional(),
 });
 
@@ -117,7 +142,7 @@ export const PublishedSeoMetadataSchema = z.object({
     .string()
     .min(10, 'Published meta description must be at least 10 characters')
     .max(160, 'Published meta description cannot exceed 160 characters'),
-  canonicalUrlOverride: z.string().url('Canonical URL must be a valid URL').max(255).optional(),
+  canonicalUrlOverride: SafeHttpUrlSchema.optional(),
   ogImageStorageKey: StorageKeySchema.optional(),
 });
 
@@ -148,19 +173,24 @@ export const AccountStatusSchema = z.enum([
 ]);
 
 export const OtpPurposeSchema = z.enum([
+  'registration',
+  'login',
+  'password_reset',
   'registration_verification',
   'passwordless_login',
-  'password_reset',
   'phone_change',
 ]);
 
 export const OtpStatusSchema = z.enum([
   'pending',
+  'active',
   'consumed',
   'expired',
   'locked',
   'failed',
   'invalidated',
+  'superseded',
+  'delivery_failed',
 ]);
 
 export const RevisionResourceTypeSchema = z.enum([
@@ -187,3 +217,7 @@ export const AuditActionSchema = z.enum([
 ]);
 
 export const AuditResultSchema = z.enum(['success', 'failure', 'denied']);
+
+export type CourseIcon = z.infer<typeof CourseIconSchema>;
+export type SeoMetadata = z.infer<typeof SeoMetadataSchema>;
+

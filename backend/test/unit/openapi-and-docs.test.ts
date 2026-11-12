@@ -59,7 +59,7 @@ describe('OpenAPI 3.1 & Documentation Endpoints', () => {
       expect(openApiDocument.info.version).toBe('1.0.0');
     });
 
-    it('should document exactly all 10 registered backend endpoints', () => {
+    it('should document all registered public, health, media, and admin CMS endpoints', () => {
       const paths = Object.keys(openApiDocument.paths || {});
       expect(paths).toContain('/api/v1/health/liveness');
       expect(paths).toContain('/api/v1/health/readiness');
@@ -71,7 +71,20 @@ describe('OpenAPI 3.1 & Documentation Endpoints', () => {
       expect(paths).toContain('/api/v1/public/search');
       expect(paths).toContain('/api/v1/public/settings');
       expect(paths).toContain('/api/v1/public/pages/{pageKey}');
-      expect(paths.length).toBe(10);
+      expect(paths).toContain('/api/v1/public/media/{storageKey}');
+      expect(paths).toContain('/api/v1/admin/dashboard/summary');
+      expect(paths).toContain('/api/v1/admin/courses');
+      expect(paths).toContain('/api/v1/admin/courses/{courseId}/publish');
+      expect(paths).toContain('/api/v1/admin/chapters/{chapterId}');
+      expect(paths).toContain('/api/v1/admin/lessons/{lessonId}');
+      expect(paths).toContain('/api/v1/admin/media/upload');
+      expect(paths).toContain('/api/v1/admin/pages');
+      expect(paths).toContain('/api/v1/admin/settings');
+      expect(paths).toContain('/api/v1/admin/users/{userId}/roles');
+      expect(paths).toContain('/api/v1/admin/revisions');
+      expect(paths).toContain('/api/v1/admin/revisions/{revisionId}/restore');
+      expect(paths).toContain('/api/v1/admin/audit-logs');
+      expect(paths.length).toBe(55);
     });
 
     it('should register all 13 supported content block variant schemas', () => {
@@ -97,18 +110,28 @@ describe('OpenAPI 3.1 & Documentation Endpoints', () => {
       }
     });
 
-    it('should register all public DTO schemas and response envelopes', () => {
+    it('should register all public and admin DTO schemas, response envelopes, and security schemes', () => {
       const schemas = (openApiDocument.components?.schemas || {}) as Record<string, unknown>;
+      const securitySchemes = (openApiDocument.components?.securitySchemes || {}) as Record<string, unknown>;
       expect(schemas['CoursePublicDto']).toBeDefined();
       expect(schemas['CourseOutlinePublicDto']).toBeDefined();
       expect(schemas['LessonPublicDto']).toBeDefined();
       expect(schemas['SitePagePublicDto']).toBeDefined();
+      expect(schemas['AdminCourseDto']).toBeDefined();
+      expect(schemas['AdminChapterDto']).toBeDefined();
+      expect(schemas['AdminLessonDto']).toBeDefined();
+      expect(schemas['AdminMediaDto']).toBeDefined();
+      expect(schemas['AdminSitePageDto']).toBeDefined();
+      expect(schemas['AdminUserDto']).toBeDefined();
+      expect(schemas['AdminDashboardSummaryDto']).toBeDefined();
       expect(schemas['LivenessResponse']).toBeDefined();
       expect(schemas['ReadinessResponse']).toBeDefined();
       expect(schemas['ApiErrorResponse']).toBeDefined();
       expect(schemas['CourseListResponse']).toBeDefined();
       expect(schemas['CourseDetailResponse']).toBeDefined();
       expect(schemas['LessonDetailResponse']).toBeDefined();
+      expect(securitySchemes['cookieAuth']).toBeDefined();
+      expect(securitySchemes['csrfToken']).toBeDefined();
     });
 
     it('should configure production canonical URL and avoid leaking private IPs or credentials', () => {

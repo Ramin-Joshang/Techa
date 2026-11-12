@@ -212,3 +212,6 @@ export const InteractiveExampleDataSchema = z
       });
     }
   });
+
+export type InteractiveFile = z.infer<typeof InteractiveFileSchema>;
+

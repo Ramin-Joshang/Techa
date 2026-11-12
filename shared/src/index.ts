@@ -1,5 +1,6 @@
 export * from './constants/api.constants';
 export * from './constants/content.constants';
+export * from './constants/rbac.constants';
 export * from './schemas/api.schema';
 export * from './schemas/health.schema';
 export * from './schemas/primitives.schema';
@@ -19,5 +20,6 @@ export * from './schemas/audit-log.schema';
 export * from './schemas/public-query.schema';
 export * from './schemas/import-package.schema';
 export * from './schemas/auth.schema';
+export * from './schemas/admin.schema';
 export * from './types/api.types';
 export * from './types/common.types';

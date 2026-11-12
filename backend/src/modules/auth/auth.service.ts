@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { Types } from 'mongoose';
+import { logger } from '../../core/logger/logger';
 import { authRepository, AuthRepository } from './auth.repository';
 import {
   normalizePhoneE164,
@@ -13,16 +14,21 @@ import {
   generateCsrfToken,
   signAccessToken,
 } from './auth.security';
+import { otpService, OtpService } from './otp/otp.service';
 import {
   RegisterRequest,
   RegisterResponse,
   LoginRequest,
   AuthUser,
   SessionItem,
+  OtpChallengeResponse,
 } from '@techa/shared';
 
 export class AuthService {
-  constructor(private repo: AuthRepository = authRepository) {}
+  constructor(
+    private repo: AuthRepository = authRepository,
+    private otp: OtpService = otpService
+  ) {}
 
   /**
    * User Registration
@@ -30,14 +36,52 @@ export class AuthService {
    * - Argon2id password hash
    * - Always assigns role 'student'
    * - Account set to 'pending_verification'
-   * - No OTP sent in Phase 4 (reserved for Phase 5)
+   * - Dispatches Kavenegar OTP challenge when configured
    */
-  async register(input: RegisterRequest): Promise<RegisterResponse> {
+  async register(
+    input: RegisterRequest,
+    ipAddress?: string
+  ): Promise<RegisterResponse> {
     const phoneE164 = normalizePhoneE164(input.phone);
 
     // Check if phone number already exists
     const existingUser = await this.repo.findUserByPhone(phoneE164);
     if (existingUser) {
+      if (existingUser.status === 'pending_verification') {
+        if (this.otp.isConfigured()) {
+          try {
+            const challenge = await this.otp.requestOtp({
+              phone: phoneE164,
+              purpose: 'registration',
+              userId: existingUser._id,
+              ipAddress,
+            });
+            return {
+              id: existingUser._id.toString(),
+              phoneE164: existingUser.phoneE164,
+              firstName: existingUser.firstName || '',
+              lastName: existingUser.lastName || '',
+              status: 'pending_verification',
+              message: 'کد تأیید عضویت به شماره همراه شما ارسال شد.',
+              challengeId: challenge.challengeId,
+              maskedPhone: challenge.maskedPhone,
+              expiresInSeconds: challenge.expiresInSeconds,
+              resendAvailableAt: challenge.resendAvailableAt,
+              retryAfterSeconds: challenge.retryAfterSeconds,
+            };
+          } catch (otpErr: unknown) {
+            logger.warn({ otpErr }, '[AuthService] Failed to redispatch registration OTP');
+          }
+        }
+        return {
+          id: existingUser._id.toString(),
+          phoneE164: existingUser.phoneE164,
+          firstName: existingUser.firstName || '',
+          lastName: existingUser.lastName || '',
+          status: 'pending_verification',
+          message: 'حساب شما ایجاد شده است اما سامانه پیامکی در حال حاضر فعال نیست.',
+        };
+      }
       // Generic error response to prevent phone enumeration
       throw new Error('امکان ثبت‌نام با این شماره وجود ندارد یا حساب قبلاً ایجاد شده است');
     }
@@ -53,6 +97,34 @@ export class AuthService {
       status: 'pending_verification',
       phoneVerifiedAt: null,
     });
+
+    // Request OTP via Kavenegar if configured
+    if (this.otp.isConfigured()) {
+      try {
+        const challenge = await this.otp.requestOtp({
+          phone: phoneE164,
+          purpose: 'registration',
+          userId: user._id,
+          ipAddress,
+        });
+
+        return {
+          id: user._id.toString(),
+          phoneE164: user.phoneE164,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          status: 'pending_verification',
+          message: 'کد تأیید عضویت به شماره همراه شما ارسال شد.',
+          challengeId: challenge.challengeId,
+          maskedPhone: challenge.maskedPhone,
+          expiresInSeconds: challenge.expiresInSeconds,
+          resendAvailableAt: challenge.resendAvailableAt,
+          retryAfterSeconds: challenge.retryAfterSeconds,
+        };
+      } catch (otpErr: unknown) {
+        logger.warn({ otpErr }, '[AuthService] Failed to dispatch registration OTP');
+      }
+    }
 
     return {
       id: user._id.toString(),
@@ -140,7 +212,6 @@ export class AuthService {
       userAgent: context.userAgent?.slice(0, 500) || null,
     });
 
-    // Sign Access Token
     const accessToken = signAccessToken({
       userId: user._id.toString(),
       sessionId: session._id.toString(),
@@ -154,6 +225,202 @@ export class AuthService {
       accessToken,
       rawRefreshToken,
       csrfToken,
+    };
+  }
+
+  /**
+   * Request Login OTP
+   * User enumeration protection: returns identical envelope for existing and non-existing users.
+   */
+  async requestLoginOtp(
+    phone: string,
+    ipAddress?: string
+  ): Promise<OtpChallengeResponse> {
+    const phoneE164 = normalizePhoneE164(phone);
+    const user = await this.repo.findUserByPhone(phoneE164);
+
+    // Only dispatch real SMS if user exists and is active & verified
+    if (user && user.status === 'active' && user.phoneVerifiedAt) {
+      return this.otp.requestOtp({
+        phone: phoneE164,
+        purpose: 'login',
+        userId: user._id,
+        ipAddress,
+      });
+    }
+
+    // Anti-enumeration synthetic response
+    return {
+      challengeId: crypto.randomUUID(),
+      purpose: 'login',
+      maskedPhone: maskPhoneNumber(phoneE164),
+      expiresInSeconds: 300,
+      resendAvailableAt: new Date(Date.now() + 60000).toISOString(),
+      retryAfterSeconds: 60,
+      message: 'در صورت وجود حساب فعال، کد ورود برای شماره شما ارسال خواهد شد.',
+    };
+  }
+
+  /**
+   * Verify OTP & Authenticate (Registration verification or Login)
+   */
+  async verifyOtpAndLogin(params: {
+    challengeId: string;
+    code: string;
+    context: { userAgent?: string; ipAddress?: string };
+  }): Promise<{
+    user: AuthUser;
+    accessToken: string;
+    rawRefreshToken: string;
+    csrfToken: string;
+    message: string;
+  }> {
+    const { challenge } = await this.otp.verifyOtp({
+      challengeId: params.challengeId,
+      code: params.code,
+    });
+
+    let user = challenge.userId
+      ? await this.repo.findUserById(challenge.userId)
+      : await this.repo.findUserByPhone(challenge.phoneE164);
+
+    if (!user) {
+      throw new Error('کاربر مربوط به این درخواست یافت نشد');
+    }
+
+    // Purpose-specific user state transitions
+    if (challenge.purpose === 'registration' || challenge.purpose === 'registration_verification') {
+      user = await this.repo.updateUser(user._id, {
+        status: 'active',
+        phoneVerifiedAt: new Date(),
+      });
+      if (!user) throw new Error('خطا در به‌روزرسانی وضعیت کاربر');
+    } else if (challenge.purpose === 'login' || challenge.purpose === 'passwordless_login') {
+      if (user.status !== 'active') {
+        throw new Error('حساب کاربری شما فعال نیست');
+      }
+    } else {
+      throw new Error('OTP_INVALID');
+    }
+
+    // Record last login
+    await this.repo.updateUser(user._id, {
+      failedLoginCount: 0,
+      lastLoginAt: new Date(),
+    });
+
+    // Create session using Phase 4 session architecture
+    const familyId = crypto.randomUUID();
+    const jti = crypto.randomUUID();
+    const rawRefreshToken = generateOpaqueRefreshToken();
+    const tokenHash = hashTokenSha256(rawRefreshToken);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const session = await this.repo.createSession({
+      userId: user._id,
+      tokenHash,
+      familyId,
+      jti,
+      expiresAt,
+      ipHash: hashIpAddress(params.context.ipAddress),
+      userAgent: params.context.userAgent?.slice(0, 500) || null,
+    });
+
+    const accessToken = signAccessToken({
+      userId: user._id.toString(),
+      sessionId: session._id.toString(),
+      roles: user.roles,
+    });
+
+    const csrfToken = generateCsrfToken();
+
+    return {
+      user: this.mapToAuthUser(user),
+      accessToken,
+      rawRefreshToken,
+      csrfToken,
+      message:
+        challenge.purpose === 'registration' || challenge.purpose === 'registration_verification'
+          ? 'شماره موبایل شما با موفقیت تأیید شد و حساب کاربری فعال گردید'
+          : 'ورود با موفقیت انجام شد',
+    };
+  }
+
+  /**
+   * Resend OTP for Challenge
+   */
+  async resendOtp(challengeId: string, ipAddress?: string): Promise<OtpChallengeResponse> {
+    return this.otp.resendOtp(challengeId, ipAddress);
+  }
+
+  /**
+   * Request Password Reset OTP
+   * User enumeration protection: identical response envelope regardless of user existence.
+   */
+  async forgotPassword(phone: string, ipAddress?: string): Promise<OtpChallengeResponse> {
+    const phoneE164 = normalizePhoneE164(phone);
+    const user = await this.repo.findUserByPhone(phoneE164);
+
+    if (user && user.status === 'active' && user.phoneVerifiedAt) {
+      return this.otp.requestOtp({
+        phone: phoneE164,
+        purpose: 'password_reset',
+        userId: user._id,
+        ipAddress,
+      });
+    }
+
+    // Anti-enumeration synthetic response
+    return {
+      challengeId: crypto.randomUUID(),
+      purpose: 'password_reset',
+      maskedPhone: maskPhoneNumber(phoneE164),
+      expiresInSeconds: 300,
+      resendAvailableAt: new Date(Date.now() + 60000).toISOString(),
+      retryAfterSeconds: 60,
+      message: 'در صورت وجود حساب فعال، کد بازیابی برای شماره شما ارسال خواهد شد.',
+    };
+  }
+
+  /**
+   * Reset Password with OTP & Revoke all user sessions
+   */
+  async resetPasswordWithOtp(params: {
+    challengeId: string;
+    code: string;
+    newPassword: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const { challenge } = await this.otp.verifyOtp({
+      challengeId: params.challengeId,
+      code: params.code,
+    });
+
+    if (challenge.purpose !== 'password_reset') {
+      throw new Error('OTP_INVALID');
+    }
+
+    const user = challenge.userId
+      ? await this.repo.findUserById(challenge.userId)
+      : await this.repo.findUserByPhone(challenge.phoneE164);
+
+    if (!user) {
+      throw new Error('کاربر مورد نظر یافت نشد');
+    }
+
+    const newHash = await hashPassword(params.newPassword);
+
+    await this.repo.updateUser(user._id, {
+      passwordHash: newHash,
+      passwordChangedAt: new Date(),
+      authVersion: (user.authVersion || 1) + 1,
+    });
+
+    // Revoke all existing sessions across all devices
+    await this.repo.revokeAllUserSessions(user._id, 'password_reset');
+
+    return {
+      success: true,
+      message: 'رمز عبور با موفقیت تغییر یافت. لطفاً با رمز عبور جدید وارد شوید.',
     };
   }
 
@@ -278,55 +545,44 @@ export class AuthService {
   /**
    * Get Active Sessions for Current User
    */
-  async getActiveSessions(userId: string, currentSessionId: string): Promise<SessionItem[]> {
+  async getActiveSessions(userId: string, currentSessionId?: string): Promise<SessionItem[]> {
     const sessions = await this.repo.findActiveSessionsByUserId(userId);
     return sessions.map((s) => ({
       id: s._id.toString(),
       createdAt: s.createdAt.toISOString(),
       lastUsedAt: s.lastUsedAt ? s.lastUsedAt.toISOString() : null,
       expiresAt: s.expiresAt.toISOString(),
-      userAgent: s.userAgent || 'مرورگر نامشخص',
-      isCurrent: s._id.toString() === currentSessionId,
+      userAgent: s.userAgent || null,
+      isCurrent: currentSessionId ? s._id.toString() === currentSessionId : false,
     }));
   }
 
   /**
-   * Revoke specific session (ownership enforced)
+   * Revoke a specific session owned by user
    */
   async revokeSession(userId: string, sessionId: string): Promise<void> {
     const session = await this.repo.findSessionById(sessionId);
-    if (!session) {
-      throw new Error('نشست مورد نظر یافت نشد');
+    if (!session || session.userId.toString() !== userId) {
+      throw new Error('نشست مورد نظر یافت نشد یا متعلق به شما نیست');
     }
-    if (session.userId.toString() !== userId) {
-      throw new Error('شما مجاز به ابطال این نشست نیستید');
-    }
-    await this.repo.revokeSession(sessionId, 'user_revoked');
+    await this.repo.revokeSession(session._id, 'user_revoked');
   }
 
   /**
-   * Change Password
-   * - Verifies current password
-   * - Hashes new password with Argon2id
-   * - Revokes other sessions & logs user out for fresh re-login
+   * Change Password (for logged in users)
    */
-  async changePassword(params: {
-    userId: string;
-    currentSessionId: string;
-    currentPassword: string;
-    newPassword: string;
-  }): Promise<void> {
-    const user = await this.repo.findUserById(params.userId);
+  async changePassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
+    const user = await this.repo.findUserById(userId);
     if (!user || !user.passwordHash) {
       throw new Error('کاربر یافت نشد');
     }
 
-    const isValid = await verifyPassword(user.passwordHash, params.currentPassword);
-    if (!isValid) {
+    const isCurrentValid = await verifyPassword(user.passwordHash, input.currentPassword);
+    if (!isCurrentValid) {
       throw new Error('رمز عبور فعلی صحیح نیست');
     }
 
-    const newHash = await hashPassword(params.newPassword);
+    const newHash = await hashPassword(input.newPassword);
 
     await this.repo.updateUser(user._id, {
       passwordHash: newHash,

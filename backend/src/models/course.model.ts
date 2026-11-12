@@ -22,6 +22,7 @@ export interface CourseRaw {
   targetAudience: string[];
   order: number;
   status: PublicationStatus;
+  version: number;
   stats: {
     totalChapters: number;
     totalLessons: number;
@@ -35,6 +36,9 @@ export interface CourseRaw {
   };
   publishedAt?: Date | null;
   lastPublishedAt?: Date | null;
+  archivedAt?: Date | null;
+  createdBy?: Types.ObjectId | null;
+  updatedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,10 +104,14 @@ export const CourseSchema = new Schema<CourseRaw>(
     targetAudience: { type: [String], default: [] },
     order: { type: Number, required: true, default: 0, min: 0 },
     status: { type: String, required: true, enum: PUBLICATION_STATUSES, default: 'draft' },
+    version: { type: Number, required: true, default: 1, min: 1 },
     stats: { type: CourseStatsSchema, required: true, default: () => ({}) },
     seo: { type: CourseSeoSchema, required: true },
     publishedAt: { type: Date, default: null },
     lastPublishedAt: { type: Date, default: null },
+    archivedAt: { type: Date, default: null },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {
     collection: 'courses',

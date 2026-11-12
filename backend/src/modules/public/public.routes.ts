@@ -31,3 +31,7 @@ publicRoutes.get(
   '/courses/:courseSlug/lessons/:lessonSlug',
   asyncHandler(publicController.getLessonDetail)
 );
+
+// 9. Controlled public media serving endpoint
+publicRoutes.get('/media/*storageKey', asyncHandler(publicController.servePublicMedia));
+

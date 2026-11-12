@@ -20,6 +20,10 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();

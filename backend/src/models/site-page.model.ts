@@ -1,11 +1,20 @@
-import { Schema, model, Model, HydratedDocument, Types } from 'mongoose';
-import { isValidPhase1PublicRoute } from '@techa/shared';
+import { Schema, SchemaDefinitionProperty, model, Model, HydratedDocument, Types } from 'mongoose';
+import {
+  isValidPhase1PublicRoute,
+  PublicationStatus,
+  PUBLICATION_STATUSES,
+  ContentBlock,
+} from '@techa/shared';
+import {
+  BaseContentBlockSchema,
+  registerContentBlockDiscriminators,
+} from './content-block.schema';
 
 export interface SitePageRaw {
   _id: Types.ObjectId;
-  pageKey: 'home';
+  pageKey: string;
   title: string;
-  heroSection: {
+  heroSection?: {
     title: string;
     subtitle: string;
     primaryCta: {
@@ -17,17 +26,24 @@ export interface SitePageRaw {
       url: string;
     };
   };
-  features: Array<{
+  features?: Array<{
     title: string;
     description: string;
     icon: string;
   }>;
+  contentBlocks: ContentBlock[];
   seo: {
     metaTitle: string;
     metaDescription: string;
     canonicalUrlOverride?: string;
     ogImageStorageKey?: string;
   };
+  status: PublicationStatus;
+  version: number;
+  publishedAt?: Date | null;
+  archivedAt?: Date | null;
+  createdBy?: Types.ObjectId | null;
+  updatedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,7 +76,11 @@ const HeroSectionSchema = new Schema(
   { _id: false }
 );
 
-const FeatureItemSchema = new Schema(
+const FeatureItemSchema = new Schema<{
+  title: string;
+  description: string;
+  icon: string;
+}>(
   {
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 100 },
     description: { type: String, required: true, trim: true, minlength: 1, maxlength: 300 },
@@ -85,20 +105,39 @@ export const SitePageSchema = new Schema<SitePageRaw>(
       type: String,
       required: true,
       unique: true,
-      enum: ['home'],
-      default: 'home',
+      trim: true,
+      lowercase: true,
+      minlength: 1,
+      maxlength: 100,
+      match: [/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid pageKey format'],
     },
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 150 },
-    heroSection: { type: HeroSectionSchema, required: true },
+    heroSection: { type: HeroSectionSchema, required: false },
     features: {
       type: [FeatureItemSchema],
-      required: true,
+      required: false,
+      default: undefined,
       validate: {
-        validator: (v: unknown[]) => Array.isArray(v) && v.length >= 1 && v.length <= 6,
-        message: 'Features must contain between 1 and 6 items',
+        validator: function (this: { pageKey?: string }, v: unknown[] | undefined) {
+          if (this.pageKey === 'home') {
+            return Array.isArray(v) && v.length >= 1 && v.length <= 6;
+          }
+          return v === undefined || (Array.isArray(v) && v.length <= 6);
+        },
+        message: 'Home page features must contain between 1 and 6 items',
       },
+    } as SchemaDefinitionProperty<SitePageRaw['features']>,
+    contentBlocks: {
+      type: [BaseContentBlockSchema],
+      default: [],
     },
     seo: { type: PageSeoSchema, required: true },
+    status: { type: String, required: true, enum: PUBLICATION_STATUSES, default: 'draft' },
+    version: { type: Number, required: true, default: 1, min: 1 },
+    publishedAt: { type: Date, default: null },
+    archivedAt: { type: Date, default: null },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   {
     collection: 'site_pages',
@@ -106,8 +145,10 @@ export const SitePageSchema = new Schema<SitePageRaw>(
   }
 );
 
-// Indexes:
-// 1. SitePage lookup by unique pageKey (unique: true)
+const pageContentBlocksPath = SitePageSchema.path('contentBlocks') as Schema.Types.DocumentArray;
+registerContentBlockDiscriminators(pageContentBlocksPath);
+
 SitePageSchema.index({ pageKey: 1 }, { unique: true });
+SitePageSchema.index({ status: 1 });
 
 export const SitePageModel: Model<SitePageRaw> = model<SitePageRaw>('SitePage', SitePageSchema);

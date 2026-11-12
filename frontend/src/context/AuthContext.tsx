@@ -9,9 +9,11 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (input: LoginRequest) => Promise<AuthUser>;
+  verifyOtp: (input: { challengeId: string; code: string }) => Promise<AuthUser>;
   register: (input: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUserManually: (user: AuthUser | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,6 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.user;
   };
 
+  const verifyOtp = async (input: { challengeId: string; code: string }): Promise<AuthUser> => {
+    const res = await authClient.verifyOtp(input);
+    setUser(res.user);
+    return res.user;
+  };
+
   const register = async (input: RegisterRequest): Promise<RegisterResponse> => {
     return authClient.register(input);
   };
@@ -65,6 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchCurrentUser();
   };
 
+  const setUserManually = (u: AuthUser | null) => {
+    setUser(u);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -72,9 +84,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        verifyOtp,
         register,
         logout,
         refreshUser,
+        setUserManually,
       }}
     >
       {children}

@@ -107,6 +107,41 @@ export const authClient = {
     });
   },
 
+  async requestOtp(phone: string): Promise<any> {
+    return fetchWithAuth('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  },
+
+  async verifyOtp(input: { challengeId: string; code: string }): Promise<{ user: AuthUser; csrfToken: string; message: string }> {
+    return fetchWithAuth('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  async resendOtp(challengeId: string): Promise<any> {
+    return fetchWithAuth('/api/v1/auth/otp/resend', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId }),
+    });
+  },
+
+  async forgotPassword(phone: string): Promise<any> {
+    return fetchWithAuth('/api/v1/auth/password/forgot', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  },
+
+  async resetPassword(input: { challengeId: string; code: string; newPassword: string; confirmPassword?: string }): Promise<{ success: boolean; message: string }> {
+    return fetchWithAuth('/api/v1/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   async initCsrf(): Promise<string> {
     const res = await fetchWithAuth('/api/v1/auth/csrf', { method: 'GET' });
     return res?.csrfToken || '';

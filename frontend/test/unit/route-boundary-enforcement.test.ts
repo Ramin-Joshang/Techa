@@ -181,4 +181,68 @@ describe('Phase 1 Public Route Boundary Enforcement Guard', () => {
       expect(testProxy('/sitemap.xml').allowed).toBe(true);
     });
   });
+
+  describe('Phase 7 Admin Route Boundary Enforcement & NoIndex Headers', () => {
+    const validId = '507f1f77bcf86cd799439011';
+
+    function testAdminProxy(path: string) {
+      const url = new URL(`http://localhost:3000${path}`);
+      const request = new NextRequest(url);
+      const response = proxy(request);
+      const isRewrittenTo404 =
+        response.headers.get('x-middleware-rewrite')?.includes('/_not-found') || false;
+      return {
+        allowed: !isRewrittenTo404,
+        robotsHeader: response.headers.get('X-Robots-Tag'),
+      };
+    }
+
+    const allowedAdminPaths = [
+      '/admin',
+      '/admin/login',
+      '/admin/courses',
+      '/admin/courses/new',
+      `/admin/courses/${validId}`,
+      `/admin/courses/${validId}/chapters`,
+      `/admin/chapters/${validId}`,
+      `/admin/lessons/${validId}`,
+      '/admin/media',
+      '/admin/pages',
+      '/admin/pages/new',
+      `/admin/pages/${validId}`,
+      '/admin/settings',
+      '/admin/users',
+      `/admin/users/${validId}`,
+      '/admin/revisions',
+      '/admin/audit-logs',
+    ];
+
+    for (const p of allowedAdminPaths) {
+      it(`allows admin route ${p} with X-Robots-Tag noindex`, () => {
+        const res = testAdminProxy(p);
+        expect(res.allowed).toBe(true);
+        expect(res.robotsHeader).toBe('noindex, nofollow');
+      });
+    }
+
+    const blockedAdminPaths = [
+      '/admin/unknown-section',
+      '/admin/courses/not-an-object-id',
+      '/admin/courses/12345/lessons',
+      `/admin/courses/${validId}/extra`,
+      '/admin/chapters/invalid-id',
+      '/admin/lessons/invalid-id',
+      '/admin/pages/invalid-id',
+      '/admin/users/invalid-id',
+      '/admin/settings/advanced',
+    ];
+
+    for (const p of blockedAdminPaths) {
+      it(`blocks unapproved admin path ${p} with 404 rewrite`, () => {
+        const res = testAdminProxy(p);
+        expect(res.allowed).toBe(false);
+      });
+    }
+  });
 });
+

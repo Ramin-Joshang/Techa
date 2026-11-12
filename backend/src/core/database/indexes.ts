@@ -15,9 +15,14 @@ export const TARGET_INDEX_SPECIFICATIONS: Record<TargetCollection, IndexSpecific
       description: 'یکتایی شناسه پیوند یکتا (Slug) دوره',
     },
     {
-      fields: { status: 1, sortOrder: 1 },
-      options: { name: 'idx_courses_status_sortOrder' },
-      description: 'مرتب‌سازی و فیلتر دوره‌های منتشر شده در کاتالوگ عمومی',
+      fields: { status: 1, order: 1 },
+      options: { name: 'idx_courses_status_order' },
+      description: 'مرتب‌سازی و فیلتر دوره‌های منتشر شده در کاتالوگ عمومی و پنل مدیریت',
+    },
+    {
+      fields: { status: 1, tags: 1, order: 1 },
+      options: { name: 'idx_courses_status_tags_order' },
+      description: 'فیلتر دوره‌ها بر اساس برچسب و وضعیت انتشار',
     },
   ],
   chapters: [
@@ -27,8 +32,8 @@ export const TARGET_INDEX_SPECIFICATIONS: Record<TargetCollection, IndexSpecific
       description: 'یکتایی پیوند یکتای سرفصل در محدوده همان دوره',
     },
     {
-      fields: { courseId: 1, sortOrder: 1 },
-      options: { name: 'idx_chapters_courseId_sortOrder' },
+      fields: { courseId: 1, order: 1 },
+      options: { name: 'idx_chapters_courseId_order' },
       description: 'مرتب‌سازی سرفصل‌های دوره بر اساس ترتیب نمایش',
     },
   ],
@@ -39,8 +44,8 @@ export const TARGET_INDEX_SPECIFICATIONS: Record<TargetCollection, IndexSpecific
       description: 'یکتایی پیوند یکتای درس در محدوده همان دوره',
     },
     {
-      fields: { chapterId: 1, sortOrder: 1 },
-      options: { name: 'idx_lessons_chapterId_sortOrder' },
+      fields: { chapterId: 1, order: 1 },
+      options: { name: 'idx_lessons_chapterId_order' },
       description: 'مرتب‌سازی درس‌های هر سرفصل بر مبنای ترتیب چینش',
     },
     {
@@ -53,19 +58,29 @@ export const TARGET_INDEX_SPECIFICATIONS: Record<TargetCollection, IndexSpecific
     {
       fields: { storageKey: 1 },
       options: { unique: true, name: 'uniq_media_assets_storageKey' },
-      description: 'یکتایی کلید ذخیره‌سازی فایل در فضای ذخیره‌سازی ابری',
+      description: 'یکتایی کلید ذخیره‌سازی فایل در فضای ذخیره‌سازی',
     },
     {
-      fields: { category: 1, status: 1 },
-      options: { name: 'idx_media_assets_category_status' },
-      description: 'فهرست‌بندی و دسترسی رسانه‌ها بر اساس دسته‌بندی و وضعیت انتشار',
+      fields: { status: 1, category: 1, createdAt: -1 },
+      options: { name: 'idx_media_assets_status_category_createdAt' },
+      description: 'فهرست‌بندی رسانه‌ها بر اساس وضعیت، دسته‌بندی و تاریخ',
+    },
+    {
+      fields: { uploadedBy: 1, createdAt: -1 },
+      options: { name: 'idx_media_assets_uploadedBy_createdAt' },
+      description: 'فهرست رسانه‌های آپلود شده توسط کاربر',
+    },
+    {
+      fields: { checksumSha256: 1 },
+      options: { name: 'idx_media_assets_checksumSha256' },
+      description: 'جستجو و بررسی یکپارچگی فایل با SHA-256',
     },
   ],
   site_pages: [
     {
-      fields: { slug: 1 },
-      options: { unique: true, name: 'uniq_site_pages_slug' },
-      description: 'یکتایی پیوند یکتای صفحات مستقل سایت',
+      fields: { pageKey: 1 },
+      options: { unique: true, name: 'uniq_site_pages_pageKey' },
+      description: 'یکتایی شناسه صفحات مستقل سایت',
     },
     {
       fields: { status: 1 },
