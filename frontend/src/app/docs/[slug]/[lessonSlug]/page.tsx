@@ -5,9 +5,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
-  BookOpen,
   ChevronLeft,
-  ListTree,
+  Layers,
 } from 'lucide-react';
 import {
   getPublishedLessonDetail,
@@ -15,7 +14,13 @@ import {
   isNotFoundError,
 } from '../../../../lib/server';
 import ContentBlocksRenderer from '../../../../components/docs/content/ContentBlocksRenderer';
+import { extractLessonHeadings } from '../../../../components/docs/content/heading-utils';
 import CourseSidebar from '../../../../components/docs/CourseSidebar';
+import LessonTableOfContents from '../../../../components/docs/LessonTableOfContents';
+import {
+  LessonReadingProgress,
+  CopyLessonLinkButton,
+} from '../../../../components/docs/LessonReadingTools';
 
 interface LessonPageProps {
   params: Promise<{
@@ -36,6 +41,9 @@ export async function generateMetadata({ params }: LessonPageProps) {
     return {
       title: lesson.seo?.metaTitle || `${lesson.title} | مستندات تکا`,
       description: lesson.seo?.metaDescription || `درس ${lesson.title} از مستندات جامع تکا`,
+      alternates: {
+        canonical: `/docs/${courseSlug}/${lessonSlug}`,
+      },
       robots: 'index, follow',
       openGraph: {
         title: lesson.seo?.metaTitle || `${lesson.title} | مستندات تکا`,
@@ -75,19 +83,25 @@ export default async function LessonPage({ params }: LessonPageProps) {
     throw err;
   }
 
-  // Calculate ordered lesson position, previous and next navigation from outline
-  const flatLessons: Array<{ title: string; slug: string }> = [];
+  // Sequential lesson navigation & current chapter info
+  const flatLessons: Array<{ title: string; slug: string; chapterTitle: string }> = [];
   if (outline?.chapters) {
     for (const chapter of outline.chapters) {
       if (chapter.lessons) {
         for (const l of chapter.lessons) {
-          flatLessons.push({ title: l.title, slug: l.slug });
+          flatLessons.push({
+            title: l.title,
+            slug: l.slug,
+            chapterTitle: chapter.title,
+          });
         }
       }
     }
   }
 
   const currentIndex = flatLessons.findIndex((l) => l.slug === lessonSlug);
+  const currentChapterTitle =
+    currentIndex !== -1 ? flatLessons[currentIndex].chapterTitle : null;
   const prevLesson = currentIndex > 0 ? flatLessons[currentIndex - 1] : null;
   const nextLesson =
     currentIndex !== -1 && currentIndex < flatLessons.length - 1
@@ -96,13 +110,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const lessonNumber = currentIndex !== -1 ? currentIndex + 1 : lesson.order || 1;
   const totalLessons = flatLessons.length;
 
-  // Extract headings for Table of Contents
-  const headings = lesson.contentBlocks
-    ?.filter((b) => b.type === 'heading' && b.data.level === 2)
-    .map((b) => (b.type === 'heading' ? b.data.text : ''));
+  // Extract all h2 & h3 heading anchors consistently with ContentBlocksRenderer
+  const headings = extractLessonHeadings(lesson.contentBlocks).filter(
+    (h) => h.level === 2 || h.level === 3
+  );
 
-  // JSON-LD Structured Data
-  const jsonLd = {
+  const techArticleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
     headline: lesson.title,
@@ -116,166 +129,203 @@ export default async function LessonPage({ params }: LessonPageProps) {
     },
   };
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'صفحه اصلی', item: 'https://techa.ir/' },
+      { '@type': 'ListItem', position: 2, name: 'مستندات', item: 'https://techa.ir/docs' },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: outline?.course?.title || courseSlug,
+        item: `https://techa.ir/docs/${courseSlug}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: lesson.title,
+        item: `https://techa.ir/docs/${courseSlug}/${lessonSlug}`,
+      },
+    ],
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row items-start gap-8">
-      {/* 1. Awesome Sidebar for Lesson Navigation */}
+    <div className="flex flex-col lg:flex-row items-start gap-6 xl:gap-8">
+      <LessonReadingProgress />
+
+      {/* Right Rail (RTL Start): Course Outline Sidebar */}
       <CourseSidebar
         outline={outline}
         courseSlug={courseSlug}
         courseTitle={outline?.course?.title}
       />
 
-      {/* 2. Main Lesson Article Content */}
-      <div className="flex-1 w-full min-w-0 bg-white rounded-2xl border border-gray-200/90 p-6 sm:p-10 shadow-xs">
+      {/* Main Reading Surface */}
+      <div className="flex-1 w-full min-w-0 max-w-4xl bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-8 lg:p-10 shadow-xs">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
 
         <article className="space-y-8">
           {/* Breadcrumbs */}
-          <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+          <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
             <Link href="/" className="hover:text-emerald-700 transition-colors">
               صفحه اصلی
             </Link>
-            <ChevronLeft className="h-3 w-3 text-gray-400" />
+            <ChevronLeft className="h-3.5 w-3.5 text-slate-400" />
             <Link href="/docs" className="hover:text-emerald-700 transition-colors">
               مستندات
             </Link>
-            <ChevronLeft className="h-3 w-3 text-gray-400" />
-            <Link href={`/docs/${courseSlug}`} className="hover:text-emerald-700 transition-colors">
+            <ChevronLeft className="h-3.5 w-3.5 text-slate-400" />
+            <Link
+              href={`/docs/${courseSlug}`}
+              className="hover:text-emerald-700 transition-colors truncate max-w-[180px]"
+            >
               {outline?.course?.title || courseSlug}
             </Link>
-            <ChevronLeft className="h-3 w-3 text-gray-400" />
-            <span className="text-gray-900 font-semibold truncate max-w-xs">{lesson.title}</span>
+            <ChevronLeft className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-slate-900 font-semibold truncate max-w-[200px] sm:max-w-xs">
+              {lesson.title}
+            </span>
           </nav>
 
           {/* Lesson Header */}
-          <header className="space-y-4 pb-6 border-b border-gray-100">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight leading-tight">
-                {lesson.title}
-              </h1>
+          <header className="space-y-4 pb-6 border-b border-slate-200/80">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              {currentChapterTitle ? (
+                <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800">
+                  <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{currentChapterTitle}</span>
+                </span>
+              ) : (
+                <span />
+              )}
 
               {totalLessons > 0 && (
-                <span className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg tabular-nums">
                   درس {lessonNumber} از {totalLessons}
                 </span>
               )}
             </div>
 
-            {/* Toolbar Metadata (Unboxed text with dots per zero-pill discipline) */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 pt-1">
-              <Link
-                href={`/docs/${courseSlug}`}
-                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-semibold transition-colors"
-              >
-                <ArrowRight className="h-3.5 w-3.5" />
-                <span>مشاهده معرفی دوره</span>
-              </Link>
+            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-slate-950 tracking-tight leading-tight text-balance">
+              {lesson.title}
+            </h1>
 
-              {lesson.readingTimeMinutes > 0 && (
-                <>
-                  <span className="text-gray-300">·</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-gray-400" />
-                    <span>زمان مطالعه تخمینی: {lesson.readingTimeMinutes} دقیقه</span>
-                  </span>
-                </>
-              )}
+            {/* Reading Metadata & Tools Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 tabular-nums">
+                <Link
+                  href={`/docs/${courseSlug}`}
+                  className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-bold transition-colors"
+                >
+                  <ArrowRight className="h-3.5 w-3.5" />
+                  <span>نمای کلی دوره</span>
+                </Link>
 
-              <span className="text-gray-300">·</span>
-              <span className="inline-flex items-center gap-1">
-                <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
-                <span>نسخه ساختار: {lesson.contentSchemaVersion}</span>
-              </span>
+                {lesson.readingTimeMinutes > 0 && (
+                  <>
+                    <span className="text-slate-300">·</span>
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <span>زمان مطالعه: {lesson.readingTimeMinutes} دقیقه</span>
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <CopyLessonLinkButton />
             </div>
 
-            {/* Quick Table of Contents */}
-            {headings && headings.length > 1 && (
-              <div className="mt-4 p-4 rounded-xl bg-gray-50/80 border border-gray-200/80 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
-                  <ListTree className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>فهرست عناوین این درس</span>
-                </div>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
-                  {headings.map((h, i) => {
-                    const anchorId = h
-                      .toLowerCase()
-                      .replace(/[^\u0600-\u06FF\w\s-]/g, '')
-                      .trim()
-                      .replace(/\s+/g, '-');
-                    return (
-                      <li key={i}>
-                        <a
-                          href={`#${anchorId}`}
-                          className="text-gray-600 hover:text-emerald-700 transition-colors line-clamp-1"
-                        >
-                          • {h}
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+            {/* Inline Table of Contents for Mobile/Tablet/Laptop (< xl) */}
+            <LessonTableOfContents headings={headings} variant="inline" />
           </header>
 
-          {/* Main Content: 13 Typed Content Blocks Renderer */}
-          <section className="prose prose-gray max-w-none">
+          {/* Main 13 Content Blocks */}
+          <section className="prose prose-slate max-w-none">
             <ContentBlocksRenderer
               blocks={lesson.contentBlocks}
               schemaVersion={lesson.contentSchemaVersion}
             />
           </section>
 
-          {/* Previous / Next Lesson Navigation Footer */}
-          <footer className="pt-8 mt-12 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          {/* Sequential Prev / Next Lesson Navigation */}
+          <footer className="pt-8 mt-10 border-t border-slate-200 flex flex-col sm:flex-row items-stretch justify-between gap-4">
             {prevLesson ? (
               <Link
                 href={`/docs/${courseSlug}/${prevLesson.slug}`}
-                className="group flex-1 flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30 transition-all text-right shadow-xs"
+                className="group flex-1 flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 transition-all text-right"
               >
-                <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+                <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-emerald-700 transition-colors shrink-0" />
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-slate-400 block">
                     درس قبلی
                   </span>
-                  <span className="text-sm font-bold text-gray-900 group-hover:text-emerald-800 transition-colors truncate block">
+                  <span className="text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors truncate block">
                     {prevLesson.title}
                   </span>
                 </div>
               </Link>
             ) : (
-              <div className="flex-1 p-4 rounded-xl border border-gray-100 bg-gray-50/50 text-gray-400 text-xs text-right">
-                <span>این اولین درس این دوره است.</span>
-              </div>
+              <Link
+                href={`/docs/${courseSlug}`}
+                className="flex-1 flex items-center gap-3 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/70 transition-colors text-right"
+              >
+                <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[11px] font-semibold text-slate-400 block">
+                    شروع دوره
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 truncate block">
+                    بازگشت به صفحه معرفی دوره
+                  </span>
+                </div>
+              </Link>
             )}
 
             {nextLesson ? (
               <Link
                 href={`/docs/${courseSlug}/${nextLesson.slug}`}
-                className="group flex-1 flex items-center justify-between gap-3 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left shadow-xs"
+                className="group flex-1 flex items-center justify-between gap-3 p-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 hover:border-emerald-400 transition-all text-right"
               >
-                <div className="space-y-0.5 min-w-0 text-right">
-                  <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[11px] font-bold text-emerald-700 block">
                     درس بعدی
                   </span>
-                  <span className="text-sm font-bold text-emerald-950 group-hover:text-emerald-800 transition-colors truncate block">
+                  <span className="text-sm font-extrabold text-emerald-950 transition-colors truncate block">
                     {nextLesson.title}
                   </span>
                 </div>
-                <ArrowLeft className="h-5 w-5 text-emerald-600 group-hover:translate-x-[-3px] transition-transform shrink-0" />
+                <ArrowLeft className="h-5 w-5 text-emerald-700 group-hover:-translate-x-1 transition-transform shrink-0" />
               </Link>
             ) : (
-              <div className="flex-1 p-4 rounded-xl border border-gray-100 bg-gray-50/50 text-gray-400 text-xs text-left">
-                <span>به پایان دوره رسیدید! 🎉</span>
-              </div>
+              <Link
+                href={`/docs/${courseSlug}`}
+                className="flex-1 flex items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/80 hover:bg-emerald-50/50 hover:border-emerald-300 transition-colors text-right"
+              >
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[11px] font-bold text-emerald-700 block">
+                    پایان سرفصل‌های دوره
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 truncate block">
+                    مرور سرفصل‌ها و سایر دوره‌ها
+                  </span>
+                </div>
+                <ArrowLeft className="h-4 w-4 text-emerald-700 shrink-0" />
+              </Link>
             )}
           </footer>
         </article>
       </div>
+
+      {/* Left Rail (RTL End, xl+): Sticky Dynamic Table of Contents */}
+      <LessonTableOfContents headings={headings} variant="rail" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ContentBlock,
   HeadingBlock,
@@ -12,7 +12,6 @@ import {
   TableBlock,
   CalloutBlock,
   QuoteBlock,
-  DividerBlock,
   DownloadableFileBlock,
   ListBlock,
   InteractiveExampleBlock,
@@ -31,12 +30,19 @@ import {
   Copy,
   Check,
   Hash,
+  Maximize2,
+  X,
 } from 'lucide-react';
+import CodeSyntaxHighlighter from './CodeSyntaxHighlighter';
+import InteractiveSandbox from './InteractiveSandbox';
+import { extractLessonHeadings } from './heading-utils';
 
 interface ContentBlocksRendererProps {
   blocks: ContentBlock[];
   schemaVersion?: number;
 }
+
+const READONLY_CODE_LANGUAGES = new Set(['sql', 'postgres', 'mysql', 'bash', 'sh', 'shell', 'yaml', 'json']);
 
 /**
  * Sanitizes URLs to prevent XSS (blocks javascript:, data:, vbscript: protocols).
@@ -44,7 +50,11 @@ interface ContentBlocksRendererProps {
 function isSafeUrl(url?: string): boolean {
   if (!url) return false;
   const trimmed = url.trim().toLowerCase();
-  if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+  if (
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('vbscript:')
+  ) {
     return false;
   }
   return true;
@@ -70,28 +80,20 @@ function resolveMediaSrc(storageKey: string): string {
   return `/api/v1/public/media/${storageKey}`;
 }
 
-// 1. Heading Renderer with Anchor Support
-function RenderHeading({ block }: { block: HeadingBlock }) {
+// 1. Heading Renderer with Deterministic Unique Anchor Support
+function RenderHeading({ block, anchorId }: { block: HeadingBlock; anchorId: string }) {
   const { level, text } = block.data;
-  const anchorId = text
-    .toLowerCase()
-    .replace(/[^\u0600-\u06FF\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
 
   if (level === 2) {
     return (
       <h2
         id={anchorId}
-        className="group text-2xl md:text-3xl font-extrabold text-[#042A1B] mt-10 mb-4 pb-2 border-b border-gray-100 flex items-center justify-between scroll-mt-24"
+        className="group text-xl sm:text-2xl md:text-[26px] font-extrabold text-slate-950 mt-10 mb-4 pb-2.5 border-b border-slate-200/80 flex items-center justify-between gap-3 scroll-mt-24 tracking-tight"
       >
-        <span className="flex items-center gap-2.5">
-          <span className="w-2 h-7 bg-emerald-500 rounded-sm inline-block shrink-0" />
-          <span>{text}</span>
-        </span>
+        <span>{text}</span>
         <a
           href={`#${anchorId}`}
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-emerald-600 transition-opacity p-1 text-sm"
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-400 hover:text-emerald-700 transition-opacity p-1 rounded-md"
           aria-label={`پیوند به ${text}`}
         >
           <Hash className="w-4 h-4" />
@@ -103,15 +105,12 @@ function RenderHeading({ block }: { block: HeadingBlock }) {
     return (
       <h3
         id={anchorId}
-        className="group text-xl md:text-2xl font-bold text-gray-900 mt-7 mb-3 flex items-center justify-between scroll-mt-24"
+        className="group text-lg sm:text-xl font-bold text-slate-900 mt-7 mb-3 flex items-center justify-between gap-3 scroll-mt-24"
       >
-        <span className="flex items-center gap-2">
-          <span className="w-1.5 h-5 bg-teal-500 rounded-sm inline-block shrink-0" />
-          <span>{text}</span>
-        </span>
+        <span>{text}</span>
         <a
           href={`#${anchorId}`}
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-emerald-600 transition-opacity p-1 text-sm"
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-400 hover:text-emerald-700 transition-opacity p-1 rounded-md"
           aria-label={`پیوند به ${text}`}
         >
           <Hash className="w-3.5 h-3.5" />
@@ -120,7 +119,7 @@ function RenderHeading({ block }: { block: HeadingBlock }) {
     );
   }
   return (
-    <h4 id={anchorId} className="text-lg md:text-xl font-bold text-gray-800 mt-5 mb-2 scroll-mt-24">
+    <h4 id={anchorId} className="text-base sm:text-lg font-bold text-slate-800 mt-5 mb-2 scroll-mt-24">
       {text}
     </h4>
   );
@@ -129,7 +128,7 @@ function RenderHeading({ block }: { block: HeadingBlock }) {
 // 2. Paragraph Renderer
 function RenderParagraph({ block }: { block: ParagraphBlock }) {
   return (
-    <p className="text-[17px] md:text-[18px] leading-8 md:leading-9 text-gray-700 text-justify my-4 font-normal">
+    <p className="text-[16px] sm:text-[17px] leading-[1.95] text-slate-700 text-right my-4 font-normal">
       {block.data.text}
     </p>
   );
@@ -138,13 +137,16 @@ function RenderParagraph({ block }: { block: ParagraphBlock }) {
 // 3. Rich Text Renderer
 function RenderRichText({ block }: { block: RichTextBlock }) {
   return (
-    <div className="text-[17px] md:text-[18px] leading-8 md:leading-9 text-gray-700 text-justify my-4">
+    <div className="text-[16px] sm:text-[17px] leading-[1.95] text-slate-700 text-right my-4">
       {block.data.spans.map((span, idx) => {
         let content: React.ReactNode = span.text;
 
         if (span.code) {
           content = (
-            <code className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-mono text-[15px] mx-1 inline-block" dir="ltr">
+            <code
+              className="text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 px-1.5 py-0.5 rounded-md font-mono text-[14px] mx-1 inline-block"
+              dir="ltr"
+            >
               {content}
             </code>
           );
@@ -156,10 +158,12 @@ function RenderRichText({ block }: { block: RichTextBlock }) {
           content = <em className="italic">{content}</em>;
         }
         if (span.underline) {
-          content = <span className="underline decoration-emerald-500 underline-offset-4">{content}</span>;
+          content = (
+            <span className="underline decoration-emerald-500 underline-offset-4">{content}</span>
+          );
         }
         if (span.strikethrough) {
-          content = <del className="line-through text-gray-400">{content}</del>;
+          content = <del className="line-through text-slate-400">{content}</del>;
         }
 
         if (span.link && isSafeUrl(span.link.url)) {
@@ -169,7 +173,7 @@ function RenderRichText({ block }: { block: RichTextBlock }) {
               href={span.link.url}
               target={span.link.openInNewTab ? '_blank' : undefined}
               rel={span.link.openInNewTab ? 'noopener noreferrer' : undefined}
-              className="text-emerald-600 hover:text-emerald-700 underline underline-offset-4 font-medium transition-colors"
+              className="text-emerald-700 hover:text-emerald-800 underline decoration-emerald-300 hover:decoration-emerald-600 underline-offset-4 font-medium transition-colors"
             >
               {content}
             </a>
@@ -182,110 +186,177 @@ function RenderRichText({ block }: { block: RichTextBlock }) {
   );
 }
 
-// 4. Code Block Renderer with Copy Button & Clean Syntax
+// 4. Code Block Renderer with Syntax Highlighting & Copy Feedback
 function RenderCodeBlock({ block }: { block: CodeBlock }) {
   const { code, language, title, showLineNumbers } = block.data;
   const [copied, setCopied] = useState(false);
-  const lines = code.split('\n');
+
+  const isExplicitStatic = READONLY_CODE_LANGUAGES.has((language || '').toLowerCase());
 
   const handleCopy = () => {
     if (navigator?.clipboard) {
-      navigator.clipboard.writeText(code);
+      void navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1800);
     }
   };
 
   return (
-    <div className="my-6 rounded-2xl overflow-hidden border border-gray-800 bg-[#18181b] shadow-xl text-left" dir="ltr">
+    <div
+      className="my-6 rounded-2xl overflow-hidden border border-slate-800 bg-[#0d131a] shadow-lg text-left"
+      dir="ltr"
+    >
       {/* Code Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#202023] border-b border-gray-800 text-xs text-gray-400">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-emerald-400" />
-          <span className="font-mono text-gray-300 font-semibold">{title || language}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#131b24] border-b border-slate-800 text-xs text-slate-400">
+        <div className="flex items-center gap-2 min-w-0">
+          <Terminal className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="font-mono text-slate-200 font-semibold truncate">{title || language}</span>
+          {isExplicitStatic && (
+            <span className="text-[10px] font-sans text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+              فقط نمایشی
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="uppercase tracking-wider text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-gray-300 border border-white/10">
+          <span className="uppercase tracking-wider text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-slate-300 border border-white/10">
             {language}
           </span>
           <button
             type="button"
             onClick={handleCopy}
-            className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-            title="کپی کردن کد"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-slate-300 hover:text-white transition-colors text-[11px] font-sans"
+            aria-label="کپی کردن کد"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400">کپی شد</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>کپی</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Code Lines */}
-      <pre className="p-4 overflow-x-auto text-[14px] leading-relaxed font-mono text-gray-100 bg-[#18181b]">
-        <code>
-          {lines.map((line, idx) => (
-            <div key={idx} className="table-row">
-              {showLineNumbers !== false && (
-                <span className="table-cell pr-4 text-gray-600 select-none text-right font-mono text-xs w-8">
-                  {idx + 1}
-                </span>
-              )}
-              <span className="table-cell whitespace-pre">{line || ' '}</span>
-            </div>
-          ))}
-        </code>
-      </pre>
+      {/* Syntax-Highlighted Code */}
+      <CodeSyntaxHighlighter
+        code={code}
+        language={language}
+        showLineNumbers={showLineNumbers !== false}
+      />
     </div>
   );
 }
 
-// 5. Image Block Renderer
+// 5. Image Block Renderer with Error Fallback & Lightbox
 function RenderImage({ block }: { block: ImageBlock }) {
   const { storageKey, altText, caption, width, height } = block.data;
   const mediaSrc = resolveMediaSrc(storageKey);
+  const [hasError, setHasError] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <figure className="my-6">
-      <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-gray-50 flex items-center justify-center">
-        <img
-          src={mediaSrc}
-          alt={altText || 'تصویر آموزشی'}
-          width={width}
-          height={height}
-          loading="lazy"
-          className="w-full h-auto object-cover max-h-[500px]"
-        />
+      <div className="relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[160px]">
+        {hasError ? (
+          <div className="p-8 text-center text-slate-500 space-y-2">
+            <ImageIcon className="w-8 h-8 mx-auto text-slate-400" />
+            <p className="text-xs font-medium">امکان بارگذاری این تصویر در حال حاضر وجود ندارد.</p>
+            {altText && <p className="text-[11px] text-slate-400">{altText}</p>}
+          </div>
+        ) : (
+          <>
+            <img
+              src={mediaSrc}
+              alt={altText || 'تصویر آموزشی'}
+              width={width}
+              height={height}
+              loading="lazy"
+              decoding="async"
+              onError={() => setHasError(true)}
+              className="w-full h-auto object-contain max-h-[520px] bg-slate-50"
+            />
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="بزرگ‌نمایی تصویر"
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute bottom-3 left-3 p-2 rounded-lg bg-slate-900/75 text-white hover:bg-slate-900"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
+
       {caption && (
-        <figcaption className="text-center text-sm text-gray-500 mt-2 font-medium">
+        <figcaption className="text-center text-xs sm:text-sm text-slate-500 mt-2.5 font-medium">
           {caption}
         </figcaption>
+      )}
+
+      {lightboxOpen && !hasError && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={altText || 'پیش‌نمایش تصویر'}
+          onClick={() => setLightboxOpen(false)}
+          className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm p-4 sm:p-8 flex items-center justify-center"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="بستن پیش‌نمایش"
+            className="absolute top-4 left-4 p-2 rounded-xl bg-white/10 text-white hover:bg-white/20"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={mediaSrc}
+            alt={altText || 'تصویر آموزشی'}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl"
+          />
+        </div>
       )}
     </figure>
   );
 }
 
-// 6. Video Block Renderer
+// 6. Video Block Renderer with Fallback State
 function RenderVideo({ block }: { block: VideoBlock }) {
   const { storageKey, caption, durationSeconds } = block.data;
   const mediaSrc = resolveMediaSrc(storageKey);
   const durationMinutes = durationSeconds ? Math.ceil(durationSeconds / 60) : null;
+  const [videoError, setVideoError] = useState(false);
 
   return (
     <div className="my-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
-        <video
-          controls
-          preload="metadata"
-          className="w-full max-h-[480px] bg-black"
-        >
-          <source src={mediaSrc} />
-          مرورگر شما از پخش مستقیم ویدیو پشتیبانی نمی‌کند.
-        </video>
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-lg">
+        {videoError ? (
+          <div className="p-10 text-center text-slate-400 space-y-2">
+            <VideoIcon className="w-8 h-8 mx-auto text-slate-500" />
+            <p className="text-xs font-medium">فایل ویدیویی این بخش در دسترس نیست.</p>
+          </div>
+        ) : (
+          <video
+            controls
+            preload="metadata"
+            onError={() => setVideoError(true)}
+            className="w-full max-h-[480px] bg-black"
+          >
+            <source src={mediaSrc} />
+            مرورگر شما از پخش مستقیم ویدیو پشتیبانی نمی‌کند.
+          </video>
+        )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mt-2 text-xs text-gray-500">
-        {caption ? <p className="text-sm text-gray-600 font-medium">{caption}</p> : <span />}
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 text-xs text-slate-500">
+        {caption ? <p className="text-sm text-slate-600 font-medium">{caption}</p> : <span />}
         {durationMinutes && (
-          <span className="inline-flex items-center gap-1 font-medium text-gray-500">
+          <span className="inline-flex items-center gap-1.5 font-medium text-slate-500 tabular-nums">
             <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
             مدت زمان: {durationMinutes} دقیقه
           </span>
@@ -300,23 +371,27 @@ function RenderTable({ block }: { block: TableBlock }) {
   const { headers, rows } = block.data;
 
   return (
-    <div className="my-6 overflow-hidden rounded-2xl border border-gray-200 shadow-xs bg-white">
+    <div className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="overflow-x-auto">
         <table className="w-full text-right border-collapse text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-slate-50 border-b border-slate-200">
               {headers.map((header, i) => (
-                <th key={i} className="px-5 py-3.5 font-bold text-gray-800 whitespace-nowrap">
+                <th
+                  key={i}
+                  scope="col"
+                  className="px-4 sm:px-5 py-3.5 font-bold text-slate-900 whitespace-nowrap"
+                >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {rows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="hover:bg-gray-50/50 transition-colors">
+              <tr key={rowIdx} className="hover:bg-slate-50/70 transition-colors">
                 {row.map((cell, cellIdx) => (
-                  <td key={cellIdx} className="px-5 py-3 text-gray-700 leading-relaxed">
+                  <td key={cellIdx} className="px-4 sm:px-5 py-3 text-slate-700 leading-relaxed">
                     {cell}
                   </td>
                 ))}
@@ -335,61 +410,61 @@ function RenderCallout({ block }: { block: CalloutBlock }) {
 
   const config = {
     info: {
-      bg: 'bg-blue-50/70 border-blue-200 text-blue-900',
-      icon: <Info className="w-6 h-6 text-blue-600 shrink-0" />,
-      titleColor: 'text-blue-900',
+      bg: 'bg-blue-50/70 border-blue-200/90 text-blue-950',
+      icon: <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />,
+      titleColor: 'text-blue-950',
     },
     warning: {
-      bg: 'bg-amber-50/70 border-amber-200 text-amber-900',
-      icon: <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />,
-      titleColor: 'text-amber-900',
+      bg: 'bg-amber-50/70 border-amber-200/90 text-amber-950',
+      icon: <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />,
+      titleColor: 'text-amber-950',
     },
     tip: {
-      bg: 'bg-emerald-50/70 border-emerald-200 text-emerald-900',
-      icon: <Lightbulb className="w-6 h-6 text-emerald-600 shrink-0" />,
-      titleColor: 'text-emerald-900',
+      bg: 'bg-emerald-50/70 border-emerald-200/90 text-emerald-950',
+      icon: <Lightbulb className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />,
+      titleColor: 'text-emerald-950',
     },
     danger: {
-      bg: 'bg-red-50/70 border-red-200 text-red-900',
-      icon: <AlertOctagon className="w-6 h-6 text-red-600 shrink-0" />,
-      titleColor: 'text-red-900',
+      bg: 'bg-red-50/70 border-red-200/90 text-red-950',
+      icon: <AlertOctagon className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />,
+      titleColor: 'text-red-950',
     },
   }[type] || {
-    bg: 'bg-gray-50 border-gray-200 text-gray-900',
-    icon: <Info className="w-6 h-6 text-gray-600 shrink-0" />,
-    titleColor: 'text-gray-900',
+    bg: 'bg-slate-50 border-slate-200 text-slate-900',
+    icon: <Info className="w-5 h-5 text-slate-600 shrink-0 mt-0.5" />,
+    titleColor: 'text-slate-900',
   };
 
   return (
-    <div className={`my-6 rounded-2xl border p-5 flex items-start gap-4 shadow-xs ${config.bg}`}>
+    <div className={`my-6 rounded-2xl border p-4 sm:p-5 flex items-start gap-3.5 ${config.bg}`}>
       {config.icon}
-      <div className="flex-1">
-        {title && <h4 className={`font-bold text-base mb-1.5 ${config.titleColor}`}>{title}</h4>}
-        <p className="text-[15px] leading-7 text-justify">{text}</p>
+      <div className="flex-1 min-w-0">
+        {title && <h4 className={`font-bold text-sm sm:text-base mb-1 ${config.titleColor}`}>{title}</h4>}
+        <p className="text-[14.5px] sm:text-[15px] leading-7 text-right">{text}</p>
       </div>
     </div>
   );
 }
 
-// 9. Quote Block Renderer
+// 9. Quote Block Renderer (Clean Surface & Hairline Border)
 function RenderQuote({ block }: { block: QuoteBlock }) {
   const { text, author, citationUrl } = block.data;
 
   return (
-    <blockquote className="my-6 relative border-r-4 border-emerald-500 bg-gray-50/70 rounded-l-2xl p-6 shadow-xs">
-      <Quote className="w-8 h-8 text-emerald-300 absolute top-4 left-4 rotate-180 opacity-50" />
-      <p className="text-[17px] md:text-[18px] italic text-gray-800 leading-8 mb-3 font-medium">
+    <blockquote className="my-6 relative border border-slate-200 bg-slate-50/80 rounded-2xl p-5 sm:p-6">
+      <Quote className="w-6 h-6 text-emerald-600/35 mb-2" />
+      <p className="text-[16px] sm:text-[17px] text-slate-800 leading-8 mb-3 font-medium">
         «{text}»
       </p>
       {(author || citationUrl) && (
-        <footer className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+        <footer className="text-xs sm:text-sm font-semibold text-slate-600 flex flex-wrap items-center gap-2">
           <span>— {author || 'منبع'}</span>
           {citationUrl && isSafeUrl(citationUrl) && (
             <a
               href={citationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-emerald-600 hover:underline"
+              className="text-xs text-emerald-700 hover:underline"
             >
               (پیوند ارجاع)
             </a>
@@ -402,37 +477,38 @@ function RenderQuote({ block }: { block: QuoteBlock }) {
 
 // 10. Divider Block Renderer
 function RenderDivider() {
-  return <hr className="my-8 border-t border-gray-200" />;
+  return <hr className="my-8 border-t border-slate-200/80" />;
 }
 
 // 11. Downloadable File Block Renderer
 function RenderDownloadableFile({ block }: { block: DownloadableFileBlock }) {
   const { storageKey, title, description, sizeBytes } = block.data;
   const mediaSrc = resolveMediaSrc(storageKey);
+  const safeHref = isSafeUrl(mediaSrc) ? mediaSrc : '#';
 
   return (
-    <div className="my-6 bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex items-center justify-between gap-4">
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="w-12 h-12 bg-emerald-50 rounded-xl text-emerald-600 flex items-center justify-center shrink-0">
-          <FileDown className="w-6 h-6" />
+    <div className="my-6 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-emerald-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+        <div className="w-11 h-11 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 flex items-center justify-center shrink-0">
+          <FileDown className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h4 className="font-bold text-gray-900 text-base truncate">{title}</h4>
-          {description && <p className="text-xs text-gray-500 truncate mt-0.5">{description}</p>}
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 font-mono" dir="ltr">
-            <span>حجم: {formatFileSize(sizeBytes)}</span>
+          <h4 className="font-bold text-slate-900 text-sm sm:text-base truncate">{title}</h4>
+          {description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{description}</p>}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-500 font-mono" dir="ltr">
+            <span className="tabular-nums">{formatFileSize(sizeBytes)}</span>
             <span>·</span>
-            <span className="truncate max-w-xs">{storageKey}</span>
+            <span className="truncate max-w-[220px] sm:max-w-xs">{storageKey}</span>
           </div>
         </div>
       </div>
       <div className="shrink-0">
         <a
-          href={mediaSrc}
+          href={safeHref}
           download
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors"
         >
-          <FileDown className="w-3.5 h-3.5" />
+          <FileDown className="w-4 h-4" />
           <span>دریافت فایل</span>
         </a>
       </div>
@@ -446,7 +522,7 @@ function RenderList({ block }: { block: ListBlock }) {
 
   if (format === 'ordered') {
     return (
-      <ol className="my-4 list-decimal pr-6 space-y-2 text-[16px] md:text-[17px] text-gray-700 leading-relaxed font-normal">
+      <ol className="my-4 list-decimal pr-6 space-y-2.5 text-[15.5px] sm:text-[16.5px] text-slate-700 leading-relaxed font-normal">
         {items.map((item, idx) => (
           <li key={idx} className="pr-1">{item}</li>
         ))}
@@ -455,7 +531,7 @@ function RenderList({ block }: { block: ListBlock }) {
   }
 
   return (
-    <ul className="my-4 list-disc pr-6 space-y-2 text-[16px] md:text-[17px] text-gray-700 leading-relaxed font-normal">
+    <ul className="my-4 list-disc pr-6 space-y-2.5 text-[15.5px] sm:text-[16.5px] text-slate-700 leading-relaxed font-normal">
       {items.map((item, idx) => (
         <li key={idx} className="pr-1">{item}</li>
       ))}
@@ -463,85 +539,30 @@ function RenderList({ block }: { block: ListBlock }) {
   );
 }
 
-// 13. Interactive Example Block Renderer (Static Multi-File Preview)
+// 13. Interactive Example Block Renderer (Mounted Strictly Isolated Sandbox)
 function RenderInteractiveExample({ block }: { block: InteractiveExampleBlock }) {
-  const { environment, preset, title, files } = block.data;
-  const [activePath, setActivePath] = useState(files.find((f) => f.entryPoint)?.path || files[0]?.path);
-  const currentFile = files.find((f) => f.path === activePath) || files[0];
+  const { environment, preset, title, description, files } = block.data;
 
   return (
-    <div className="my-8 rounded-2xl border border-gray-800 bg-[#18181b] shadow-xl overflow-hidden text-left" dir="ltr">
-      {/* Header */}
-      <div className="px-5 py-3.5 bg-[#202023] border-b border-gray-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <Terminal className="w-4 h-4 text-emerald-400" />
-          <span className="font-bold text-white text-sm">پیش‌نمایش کد تعاملی</span>
-          <span className="bg-amber-500/20 text-amber-300 text-[11px] px-2 py-0.5 rounded border border-amber-500/30 font-medium font-sans">
-            حالت غیر اجرایی (فاز ۱)
-          </span>
-          {title && <span className="text-gray-400 font-sans">({title})</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="bg-white/10 text-gray-300 px-2.5 py-1 rounded font-mono text-xs">
-            {environment}
-          </span>
-          {preset && (
-            <span className="bg-white/5 text-gray-400 px-2 py-1 rounded font-mono text-xs">
-              {preset}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* File Navigation Tabs */}
-      <div className="bg-[#121214] px-4 py-2 border-b border-gray-800 flex items-center gap-2 overflow-x-auto text-xs font-mono">
-        {files.map((file) => {
-          const isActive = file.path === activePath;
-          return (
-            <button
-              key={file.path}
-              type="button"
-              onClick={() => setActivePath(file.path)}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition-colors ${
-                isActive
-                  ? 'bg-[#27272a] text-emerald-400 border border-emerald-500/40 font-semibold'
-                  : 'text-gray-400 bg-white/5 hover:bg-white/10'
-              }`}
-            >
-              <span>{file.path}</span>
-              {file.entryPoint && (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded font-sans">
-                  نقطه ورود
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Code Viewer */}
-      <pre className="p-4 text-[13px] leading-relaxed font-mono text-gray-200 overflow-x-auto bg-[#18181b]">
-        <code>{currentFile?.content}</code>
-      </pre>
-
-      {/* Hidden container for all other files to ensure accessibility & test assertions */}
-      <div className="hidden" aria-hidden="true">
-        {files.map((f) => (
-          <div key={f.path}>
-            <span>{f.path}</span>
-            <pre><code>{f.content}</code></pre>
-          </div>
-        ))}
-      </div>
-    </div>
+    <InteractiveSandbox
+      environment={environment}
+      preset={preset}
+      title={title}
+      description={description}
+      files={files}
+    />
   );
 }
 
 // Fallback for Unsupported / Unknown Block Types
-function RenderUnsupportedBlock({ block }: { block: { id?: string; type?: string; version?: number } }) {
+function RenderUnsupportedBlock({
+  block,
+}: {
+  block: { id?: string; type?: string; version?: number };
+}) {
   return (
-    <div className="my-4 p-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500 text-sm flex items-center gap-3">
-      <Info className="w-5 h-5 text-gray-400 shrink-0" />
+    <div className="my-4 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-600 text-sm flex items-center gap-3">
+      <Info className="w-5 h-5 text-slate-400 shrink-0" />
       <span>
         این بلوک محتوایی با نوع «{block.type || 'نامشخص'}» و نسخه {block.version || 1} در این مرحله پشتیبانی نمی‌شود.
       </span>
@@ -551,25 +572,47 @@ function RenderUnsupportedBlock({ block }: { block: { id?: string; type?: string
 
 /**
  * Main Content Blocks Renderer
- * Exhaustively matches the 13 content block types using stable block IDs as React keys.
+ * Exhaustively matches all 13 content block types using stable block IDs as React keys.
  */
-export default function ContentBlocksRenderer({ blocks, schemaVersion = 1 }: ContentBlocksRendererProps) {
+export default function ContentBlocksRenderer({
+  blocks,
+  schemaVersion = 1,
+}: ContentBlocksRendererProps) {
+  const headingAnchorsByBlockId = useMemo(() => {
+    const map = new Map<string, string>();
+    const extracted = extractLessonHeadings(blocks);
+    let headingIdx = 0;
+    for (const b of blocks || []) {
+      if (b.type === 'heading' && b.data?.text && extracted[headingIdx]) {
+        map.set(b.id, extracted[headingIdx].id);
+        headingIdx++;
+      }
+    }
+    return map;
+  }, [blocks]);
+
   if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm font-medium">
+      <div className="text-center py-12 text-slate-500 text-sm font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
         محتوای متنی برای این درس ثبت نشده است.
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-2" data-schema-version={schemaVersion}>
+    <div className="lesson-content w-full space-y-2" data-schema-version={schemaVersion}>
       {blocks.map((block) => {
         const key = block.id;
 
         switch (block.type) {
           case 'heading':
-            return <RenderHeading key={key} block={block} />;
+            return (
+              <RenderHeading
+                key={key}
+                block={block}
+                anchorId={headingAnchorsByBlockId.get(block.id) || 'section'}
+              />
+            );
           case 'paragraph':
             return <RenderParagraph key={key} block={block} />;
           case 'richText':
@@ -595,7 +638,9 @@ export default function ContentBlocksRenderer({ blocks, schemaVersion = 1 }: Con
           case 'interactiveExample':
             return <RenderInteractiveExample key={key} block={block} />;
           default:
-            return <RenderUnsupportedBlock key={key || Math.random().toString()} block={block} />;
+            return (
+              <RenderUnsupportedBlock key={key || Math.random().toString()} block={block} />
+            );
         }
       })}
     </div>

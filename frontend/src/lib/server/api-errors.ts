@@ -65,6 +65,10 @@ export function isNotFoundError(error: unknown): boolean {
   return error instanceof NotFoundError || (error instanceof ApiError && error.statusCode === 404);
 }
 
+export function isNetworkError(error: unknown): boolean {
+  return error instanceof NetworkError;
+}
+
 export function isServiceUnavailable(error: unknown): boolean {
   return (
     error instanceof ServiceUnavailableError ||

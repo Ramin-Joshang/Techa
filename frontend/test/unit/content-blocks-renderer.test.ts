@@ -78,9 +78,10 @@ describe('ContentBlocksRenderer (All 13 Content Blocks)', () => {
     ];
 
     const html = renderToStaticMarkup(React.createElement(ContentBlocksRenderer, { blocks }));
+    const plainText = html.replace(/<[^>]+>/g, '');
     expect(html).toContain('app.js');
     expect(html).toContain('javascript');
-    expect(html).toContain('const greeting = &quot;سلام جهان&quot;;');
+    expect(plainText).toContain('const greeting = &quot;سلام جهان&quot;;');
     // Zero script execution tags
     expect(html).not.toContain('<script');
   });
@@ -240,7 +241,7 @@ describe('ContentBlocksRenderer (All 13 Content Blocks)', () => {
     expect(html).toContain('ایجاد پروژه Next.js');
   });
 
-  it('renders interactiveExample block statically with zero code execution and no sandbox iframe', () => {
+  it('renders interactiveExample block cleanly on SSR with zero script injection or unsafe iframe markup', () => {
     const blocks: ContentBlock[] = [
       {
         id: 'blk_interactive_01',
@@ -271,12 +272,12 @@ describe('ContentBlocksRenderer (All 13 Content Blocks)', () => {
     ];
 
     const html = renderToStaticMarkup(React.createElement(ContentBlocksRenderer, { blocks }));
-    expect(html).toContain('پیش‌نمایش کد تعاملی');
-    expect(html).toContain('حالت غیر اجرایی (فاز ۱)');
+    expect(html).toContain('کامپوننت نمونه');
+    expect(html).toContain('React 19');
     expect(html).toContain('App.jsx');
     expect(html).toContain('index.css');
     expect(html).toContain('export default function App()');
-    // Ensure no iframes, srcDoc, or script tags are generated
+    // Ensure SSR markup waits for client mount before attaching sandbox iframe and never injects script/srcdoc
     expect(html).not.toContain('<iframe');
     expect(html).not.toContain('srcdoc');
     expect(html).not.toContain('<script');

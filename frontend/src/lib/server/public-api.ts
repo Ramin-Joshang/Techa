@@ -27,16 +27,36 @@ export interface PublicCoursesPage {
   totalPages: number;
 }
 
+const HomePageAggregateDtoSchema = SitePagePublicDtoSchema.extend({
+  branding: z
+    .object({
+      siteName: z.string(),
+      siteDescription: z.string().optional(),
+    })
+    .optional(),
+  featuredCourses: z.array(CoursePublicDtoSchema).optional(),
+  statistics: z
+    .object({
+      totalCourses: z.number(),
+      totalChapters: z.number(),
+      totalLessons: z.number(),
+      totalReadingTimeMinutes: z.number(),
+    })
+    .optional(),
+});
+
+export type HomePageAggregateDto = z.infer<typeof HomePageAggregateDtoSchema>;
+
 /**
  * 1. GET /api/v1/public/home
  * Fetches homepage CMS configuration.
  * Returns null on NotFoundError so the homepage can render safely without breaking.
  */
-export async function getHomepage(): Promise<SitePagePublicDto | null> {
+export async function getHomepage(): Promise<HomePageAggregateDto | null> {
   try {
     const result = await fetchFromPublicApi(
       '/home',
-      SitePagePublicDtoSchema,
+      HomePageAggregateDtoSchema,
       {
         revalidate: 60,
         tags: ['techa-home'],
@@ -61,6 +81,8 @@ export async function getPublishedCourses(params?: {
   level?: string;
   tag?: string;
   q?: string;
+  sort?: 'order' | 'title' | 'recentlyUpdated';
+  noStore?: boolean;
 }): Promise<PublicCoursesPage> {
   // Validate and sanitize query params
   const parsedQuery = CourseListQuerySchema.safeParse(params || {});
@@ -75,6 +97,8 @@ export async function getPublishedCourses(params?: {
         q: undefined,
       };
 
+  const disableCache = Boolean(params?.noStore || queryParams.q);
+
   const result = await fetchFromPublicApi(
     '/courses',
     z.array(CoursePublicDtoSchema),
@@ -85,8 +109,10 @@ export async function getPublishedCourses(params?: {
         level: queryParams.level,
         tag: queryParams.tag,
         q: queryParams.q,
+        sort: queryParams.sort !== 'order' ? queryParams.sort : undefined,
       },
-      revalidate: queryParams.q ? 0 : 60,
+      noStore: disableCache,
+      revalidate: disableCache ? 0 : 60,
       tags: ['techa-courses'],
     }
   );

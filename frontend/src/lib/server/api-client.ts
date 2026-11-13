@@ -16,6 +16,8 @@ export interface FetchOptions {
   revalidate?: number | false;
   tags?: string[];
   headers?: Record<string, string>;
+  noStore?: boolean;
+  timeoutMs?: number;
 }
 
 export interface FetchResult<T> {
@@ -40,6 +42,19 @@ function buildTargetUrl(baseUrl: string, cleanEndpoint: string, searchParams?: F
   return url;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Low-level typed fetcher for Techa public APIs.
  * Validates request parameters and enforces the shared Zod response contracts.
@@ -51,6 +66,7 @@ export async function fetchFromPublicApi<T>(
 ): Promise<FetchResult<T>> {
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const timeoutMs = options.timeoutMs ?? 10000;
 
   // Build target URL safely
   let targetUrl: URL;
@@ -69,6 +85,10 @@ export async function fetchFromPublicApi<T>(
     },
   };
 
+  if (options.noStore || options.revalidate === 0) {
+    fetchInit.cache = 'no-store';
+  }
+
   // Configure Next.js caching if running inside Next.js server runtime
   const nextOptions: Record<string, unknown> = {};
   if (options.revalidate !== undefined) {
@@ -84,14 +104,14 @@ export async function fetchFromPublicApi<T>(
 
   let response: Response;
   try {
-    response = await fetch(targetUrl.toString(), fetchInit);
+    response = await fetchWithTimeout(targetUrl.toString(), fetchInit, timeoutMs);
   } catch (err: unknown) {
     const internalBaseUrl = getInternalBackendApiBaseUrl();
     const isLoopback = targetUrl.hostname === '127.0.0.1' || targetUrl.hostname === 'localhost';
     if (isLoopback && baseUrl !== internalBaseUrl) {
       try {
         const fallbackUrl = buildTargetUrl(internalBaseUrl, cleanEndpoint, options.searchParams);
-        response = await fetch(fallbackUrl.toString(), fetchInit);
+        response = await fetchWithTimeout(fallbackUrl.toString(), fetchInit, timeoutMs);
       } catch (fallbackErr: unknown) {
         const fallbackDetails = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
         throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', fallbackDetails);
