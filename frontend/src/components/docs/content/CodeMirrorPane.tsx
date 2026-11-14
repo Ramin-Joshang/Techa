@@ -46,16 +46,30 @@ export default function CodeMirrorPane({
         height: '100%',
         fontSize: `${fontSize}px`,
         backgroundColor: '#0d131a',
+        direction: 'ltr',
+        textAlign: 'left',
       },
       '.cm-scroller': {
         overflow: 'auto',
+        direction: 'ltr',
+        textAlign: 'left',
         fontFamily: 'var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace',
         lineHeight: '1.6',
+      },
+      '.cm-content': {
+        direction: 'ltr',
+        textAlign: 'left',
+        caretColor: '#7AE36A',
+      },
+      '.cm-line': {
+        direction: 'ltr',
+        textAlign: 'left',
       },
       '.cm-gutters': {
         backgroundColor: '#0a0f15',
         borderRight: '1px solid rgba(30, 41, 59, 0.85)',
         color: '#64748b',
+        direction: 'ltr',
       },
       '.cm-activeLineGutter': {
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -95,7 +109,7 @@ export default function CodeMirrorPane({
   }, [filePath, fontSize, onFormat, onRun, wordWrap]);
 
   return (
-    <div className="h-full w-full min-h-0 overflow-hidden" dir="ltr">
+    <div className="h-full w-full min-h-0 overflow-hidden text-left" dir="ltr">
       <CodeMirror
         value={value}
         height="100%"

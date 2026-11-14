@@ -1007,14 +1007,14 @@ export default function InteractiveSandbox({
         </div>
       )}
 
-      {/* Main Split Workspace — Strict Fixed Height */}
-      <div className={workspaceClass}>
+      {/* Main Split Workspace — Code strictly on LEFT, Preview strictly on RIGHT */}
+      <div className={workspaceClass} dir="ltr">
         {(activeTab === 'split' || activeTab === 'code') && (
           <div
-            className={`relative flex flex-col bg-[#0d131a] border-b lg:border-b-0 lg:border-l border-slate-800 ${codePaneHeightClass}`}
+            className={`relative flex flex-col bg-[#0d131a] border-b lg:border-b-0 lg:border-r border-slate-800 text-left ${codePaneHeightClass}`}
             dir="ltr"
           >
-            <div className="flex-1 min-h-0 overflow-hidden relative">
+            <div className="flex-1 min-h-0 overflow-hidden relative text-left" dir="ltr">
               {hasMounted ? (
                 <CodeMirrorPane
                   value={currentCode}
@@ -1032,7 +1032,10 @@ export default function InteractiveSandbox({
                   }}
                 />
               ) : (
-                <pre className="h-full w-full overflow-auto p-4 font-mono text-[13px] leading-6 text-slate-100 bg-[#0d131a] m-0">
+                <pre
+                  className="h-full w-full overflow-auto p-4 font-mono text-[13px] leading-6 text-slate-100 bg-[#0d131a] m-0 text-left"
+                  dir="ltr"
+                >
                   <code>{currentCode}</code>
                 </pre>
               )}
@@ -1055,7 +1058,10 @@ export default function InteractiveSandbox({
         )}
 
         {(activeTab === 'split' || activeTab === 'preview') && (
-          <div className={`flex flex-col bg-slate-100 relative ${previewPaneHeightClass}`}>
+          <div
+            className={`flex flex-col bg-slate-100 relative text-right ${previewPaneHeightClass}`}
+            dir="rtl"
+          >
             {/* Preview Responsive Toolbar */}
             <div
               className="px-3 py-1.5 bg-white border-b border-slate-200 flex items-center justify-between gap-2 text-[11px] shrink-0"

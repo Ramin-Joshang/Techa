@@ -202,8 +202,11 @@ export default function CodeSyntaxHighlighter({
   const lines = code.split('\n');
 
   return (
-    <pre className="p-4 overflow-x-auto text-[13.5px] leading-relaxed font-mono bg-[#0d131a] text-slate-100 m-0" dir="ltr">
-      <code className="block w-max min-w-full">
+    <pre
+      className="p-4 overflow-x-auto text-[13.5px] leading-relaxed font-mono bg-[#0d131a] text-slate-100 m-0 text-left"
+      dir="ltr"
+    >
+      <code className="block w-max min-w-full text-left">
         {lines.map((line, lineIdx) => {
           const tokens = tokenizeLine(line, language);
           return (

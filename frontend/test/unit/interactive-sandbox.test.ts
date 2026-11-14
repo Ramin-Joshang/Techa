@@ -246,6 +246,7 @@ describe('InteractiveSandbox Compiler, Security & Lesson Heading Utilities', () 
     );
 
     expect(html).toContain('h-[580px] lg:h-[460px]');
+    expect(html).toContain('lg:border-r border-slate-800 text-left');
     expect(html).toContain('console.log(119);');
     expect(html).not.toContain('<iframe');
     expect(html).not.toContain('<script');
