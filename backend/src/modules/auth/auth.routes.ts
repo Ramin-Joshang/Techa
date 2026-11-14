@@ -11,7 +11,9 @@ router.post('/refresh', validateCsrf, authController.refresh);
 router.get('/csrf', authController.getCsrf);
 
 // OTP & Phone Verification Endpoints
+router.get('/otp/status', authController.getOtpStatus);
 router.post('/otp/request', authRateLimiter, authController.requestOtp);
+router.post('/otp/verify-registration/request', authRateLimiter, authController.requestRegistrationVerificationOtp);
 router.post('/otp/verify', authRateLimiter, authController.verifyOtp);
 router.post('/otp/resend', authRateLimiter, authController.resendOtp);
 

@@ -550,6 +550,59 @@ export class AuthController {
     }
   };
 
+  /**
+   * GET /api/v1/auth/otp/status
+   * Returns boolean OTP configuration readiness (no sensitive data)
+   */
+  getOtpStatus = (_req: Request, res: Response): void => {
+    const status = this.service.getOtpStatus();
+    res.status(200).json({
+      success: true,
+      data: status,
+    });
+  };
+
+  /**
+   * POST /api/v1/auth/otp/verify-registration/request
+   * Dispatches verification OTP for unverified accounts
+   */
+  requestRegistrationVerificationOtp = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const parseResult = OtpRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: parseResult.error.issues[0]?.message || 'شماره موبایل وارد شده نامعتبر است',
+            details: parseResult.error.issues,
+          },
+        });
+        return;
+      }
+
+      const clientIp = (req.ip || req.socket.remoteAddress) as string | undefined;
+      const result = await this.service.requestRegistrationVerificationOtp(
+        parseResult.data.phone,
+        clientIp
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (err: unknown) {
+      const mapped = this.mapOtpError(err);
+      res.status(mapped.status).json({
+        success: false,
+        error: {
+          code: mapped.code,
+          message: mapped.message,
+        },
+      });
+    }
+  };
+
   private mapOtpError(err: unknown): { status: number; code: string; message: string } {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes('OTP_EXPIRED')) {
@@ -577,7 +630,7 @@ export class AuthController {
       return { status: 404, code: 'OTP_CHALLENGE_NOT_FOUND', message: 'درخواست اعتبارسنجی یافت نشد یا باطل شده است.' };
     }
     if (msg.includes('OTP_PROVIDER_NOT_CONFIGURED')) {
-      return { status: 503, code: 'OTP_PROVIDER_NOT_CONFIGURED', message: 'سرویس ارسال پیامک در حال حاضر پیکربندی نشده است.' };
+      return { status: 503, code: 'OTP_PROVIDER_NOT_CONFIGURED', message: 'سرویس ارسال پیامک در حال حاضر فعال یا پیکربندی نشده است.' };
     }
     if (msg.includes('OTP_PROVIDER_UNAVAILABLE')) {
       return { status: 503, code: 'OTP_PROVIDER_UNAVAILABLE', message: 'ارتباط با سامانه پیامکی با وقفه مواجه شد. لطفاً لحظاتی دیگر تلاش کنید.' };
@@ -589,7 +642,7 @@ export class AuthController {
       return { status: 503, code: 'OTP_PROVIDER_INSUFFICIENT_CREDIT', message: 'سرویس ارسال پیامک موقتاً در دسترس نیست.' };
     }
     if (msg.includes('OTP_TEMPLATE_INVALID')) {
-      return { status: 502, code: 'OTP_TEMPLATE_INVALID', message: 'الگوی پیامک اعتبارسنجی به درستی پیکربندی نشده است.' };
+      return { status: 502, code: 'OTP_TEMPLATE_INVALID', message: 'الگوی پیامک اعتبارسنجی در پنل کاوه‌نگار تعریف یا تأیید نشده است.' };
     }
     if (msg.includes('OTP_DELIVERY_FAILED') || msg.includes('OTP_PROVIDER_ERROR')) {
       return { status: 502, code: 'OTP_DELIVERY_FAILED', message: 'خطا در ارسال پیامک اعتبارسنجی. لطفاً مجدداً تلاش کنید.' };

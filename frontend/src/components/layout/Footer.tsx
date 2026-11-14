@@ -50,14 +50,14 @@ export default function Footer() {
 
           <div className="w-full lg:w-auto">
             {subscribed ? (
-              <div className="flex items-center gap-2 bg-[#042A1B] text-white px-6 py-3.5 rounded-2xl font-bold text-sm shadow-md">
-                <CheckCircle2 className="h-5 w-5 text-[#7AE36A]" />
+              <div className="flex flex-wrap items-center gap-2 bg-[#042A1B] text-white px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md">
+                <CheckCircle2 className="h-5 w-5 text-[#7AE36A] shrink-0" />
                 <span>با تشکر! عضویت شما در خبرنامه با موفقیت ثبت شد.</span>
               </div>
             ) : (
               <form
                 onSubmit={handleNewsletterSubmit}
-                className="flex flex-col sm:flex-row items-center gap-2 bg-white/95 p-1.5 rounded-2xl shadow-inner w-full lg:min-w-[420px]"
+                className="flex flex-col sm:flex-row items-center gap-2 bg-white/95 p-1.5 rounded-2xl shadow-inner w-full lg:w-[420px] max-w-full"
               >
                 <input
                   type="email"
@@ -94,7 +94,7 @@ export default function Footer() {
                 />
               </div>
             </Link>
-            <p className="text-white/70 text-xs sm:text-sm leading-relaxed text-justify">
+            <p className="text-white/70 text-xs sm:text-sm leading-7 text-right">
               پلتفرم توانمندسازی و مهارت‌افزایی تکا، بستری سریع و ساختاریافته برای دانشجویان و علاقه‌مندان فراهم نموده تا بتوانند مسیر حرفه‌ای خود را در عرصه توسعه نرم‌افزار و سامانه‌های مدرن وب با استانداردهای واقعی بسازند.
             </p>
           </div>

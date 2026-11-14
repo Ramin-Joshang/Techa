@@ -135,14 +135,14 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#042A1B]/95 backdrop-blur-md border-b border-[#7AE36A]/20 shadow-md shadow-black/15">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 lg:px-8">
         {/* Zone 1 (Start/Right): Brand Logo */}
         <Link
           href="/"
           className="flex items-center shrink-0 transition-opacity hover:opacity-90"
           aria-label="صفحه اصلی تکا"
         >
-          <div className="relative w-28 h-8 sm:w-32 sm:h-9">
+          <div className="relative w-24 h-7 sm:w-32 sm:h-9">
             <Image
               src="/images/logo-light.svg"
               alt="تکا - پلتفرم آموزش و کارآموزی برنامه‌نویسی وب"
@@ -285,7 +285,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#7AE36A] text-[#042A1B] hover:bg-[#6acf5a] font-bold text-xs transition-all shadow-sm shadow-[#7AE36A]/20 whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 h-9 px-2.5 sm:px-3.5 rounded-xl bg-[#7AE36A] text-[#042A1B] hover:bg-[#6acf5a] font-bold text-[11px] sm:text-xs transition-all shadow-sm shadow-[#7AE36A]/20 whitespace-nowrap"
             >
               <LogIn className="h-3.5 w-3.5 shrink-0" />
               <span>ورود / ثبت‌نام</span>

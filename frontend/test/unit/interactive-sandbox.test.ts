@@ -6,6 +6,8 @@ import {
   injectLoopGuard,
 } from '../../src/components/docs/content/sandbox-compiler';
 import { extractLessonHeadings } from '../../src/components/docs/content/heading-utils';
+import { parseStructuredProse } from '../../src/components/docs/content/prose-parser';
+import { buildSandboxPayloadFromCodeBlock } from '../../src/components/docs/content/sandbox-helpers';
 import { ContentBlock } from '@techa/shared';
 
 describe('InteractiveSandbox Compiler, Security & Lesson Heading Utilities', () => {
@@ -27,6 +29,32 @@ describe('InteractiveSandbox Compiler, Security & Lesson Heading Utilities', () 
     expect(result.html).toContain('console.log("ready")');
     expect(result.html).not.toContain('unpkg.com');
     expect(result.html).not.toContain('cdn.tailwindcss.com');
+  });
+
+  it('extracts head styles, body content, and inline scripts from full HTML5 documents cleanly', () => {
+    const fullDoc = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <style>h1 { color: teal; }</style>
+</head>
+<body>
+  <h1>صفحه نمونه</h1>
+  <script>console.log("from-inline-script");</script>
+</body>
+</html>`;
+
+    const result = buildIsolatedSandboxDocument({
+      instanceId: 'inst_full_html',
+      environment: 'html-css-js',
+      files: [{ path: 'index.html', language: 'html', content: fullDoc, entryPoint: true }],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.html).toContain('lang="fa" dir="rtl"');
+    expect(result.html).toContain('h1 { color: teal; }');
+    expect(result.html).toContain('<h1>صفحه نمونه</h1>');
+    expect(result.html).toContain('console.log("from-inline-script")');
+    expect(result.html.match(/<!DOCTYPE html>/gi)?.length).toBe(1);
   });
 
   it('compiles React 19 + TypeScript example using @babel/standalone and local runtime', () => {
@@ -138,5 +166,36 @@ describe('InteractiveSandbox Compiler, Security & Lesson Heading Utilities', () 
       { id: 'نصب-ابزار', text: 'نصب ابزار', level: 3 },
       { id: 'مقدمه-2', text: 'مقدمه', level: 2 },
     ]);
+  });
+
+  it('splits inline bulleted prose strings into paragraph and stacked list segments', () => {
+    const parsed = parseStructuredProse(
+      'اهداف یادگیری این جلسه: • درک مفهوم HTML و نقش آن در ساخت وب‌سایت‌ها • آشنایی با تاریخچه و نسخه‌های مختلف HTML • شناخت تفاوت‌های HTML، CSS و JavaScript'
+    );
+
+    expect(parsed).toEqual([
+      { kind: 'paragraph', text: 'اهداف یادگیری این جلسه:' },
+      {
+        kind: 'list',
+        ordered: false,
+        items: [
+          'درک مفهوم HTML و نقش آن در ساخت وب‌سایت‌ها',
+          'آشنایی با تاریخچه و نسخه‌های مختلف HTML',
+          'شناخت تفاوت‌های HTML، CSS و JavaScript',
+        ],
+      },
+    ]);
+  });
+
+  it('builds runnable multi-file sandbox payload from JavaScript codeBlock', () => {
+    const payload = buildSandboxPayloadFromCodeBlock({
+      code: 'console.log("hello techa");',
+      language: 'javascript',
+      title: 'مثال کنسول',
+    });
+
+    expect(payload.environment).toBe('html-css-js');
+    expect(payload.files.some((f) => f.path === 'script.js' && f.entryPoint)).toBe(true);
+    expect(payload.files.some((f) => f.path === 'index.html')).toBe(true);
   });
 });

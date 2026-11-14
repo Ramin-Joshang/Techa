@@ -46,8 +46,8 @@ describe('Phase 1 Public Route Boundary Enforcement Guard', () => {
       expect(res.is404).toBe(false);
     });
 
-    it('allows dedicated public informational routes (/about, /contact, /roadmap, /faq)', () => {
-      for (const route of ['/about', '/contact', '/roadmap', '/faq']) {
+    it('allows dedicated public informational routes (/about, /contact, /roadmap, /faq, /sandbox/preview)', () => {
+      for (const route of ['/about', '/contact', '/roadmap', '/faq', '/sandbox', '/sandbox/preview']) {
         const res = testProxy(route);
         expect(res.allowed).toBe(true);
         expect(res.is404).toBe(false);

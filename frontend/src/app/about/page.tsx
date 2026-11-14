@@ -97,7 +97,7 @@ export default async function AboutPage() {
                 پلی میان آموزش آکادمیک و مهندسی حرفه‌ای وب
               </h1>
 
-              <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-2xl text-justify">
+              <p className="text-sm sm:text-base text-white/80 leading-7 max-w-2xl text-right">
                 تکا با هدف توانمندسازی دانشجویان، برنامه‌نویسان جوان و تیم‌های فنی بنا شده است تا یادگیری مهندسی نرم‌افزار بر پایه مستندات شفاف، استانداردهای واقعی صنعت و تمرین عملی پیش برود.
               </p>
 
@@ -187,7 +187,7 @@ export default async function AboutPage() {
                   <item.icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-950">{item.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed text-justify">
+                <p className="text-sm text-gray-600 leading-7 text-right">
                   {item.description}
                 </p>
               </div>

@@ -200,5 +200,58 @@ describe('OTP Security & Service Unit Tests', () => {
 
       await expect(otpService.resendOtp(challengeId)).rejects.toThrow('OTP_RESEND_COOLDOWN_ACTIVE');
     });
+
+    it('rejects OTP_PROVIDER_NOT_CONFIGURED before creating any challenge or counting rate limits', async () => {
+      mockProvider.isConfigured.mockReturnValue(false);
+
+      await expect(
+        otpService.requestOtp({
+          phone: '+989123456789',
+          purpose: 'registration',
+        })
+      ).rejects.toThrow('OTP_PROVIDER_NOT_CONFIGURED');
+
+      expect(mockRepo.createChallenge).not.toHaveBeenCalled();
+      expect(mockRepo.countSendsForPhoneInPastHour).not.toHaveBeenCalled();
+    });
+
+    it('falls back to secondary template when purpose-specific template returns OTP_TEMPLATE_INVALID', async () => {
+      const prevReg = process.env.KAVENEGAR_REGISTER_TEMPLATE;
+      const prevVerify = process.env.KAVENEGAR_VERIFY_TEMPLATE;
+      process.env.KAVENEGAR_REGISTER_TEMPLATE = 'techa-register';
+      process.env.KAVENEGAR_VERIFY_TEMPLATE = 'techa-otp';
+
+      try {
+        mockProvider.sendVerifyLookup
+          .mockRejectedValueOnce(new Error('OTP_TEMPLATE_INVALID'))
+          .mockResolvedValueOnce({ accepted: true, messageId: 'msg-fallback-1' });
+
+        const response = await otpService.requestOtp({
+          phone: '+989123456789',
+          purpose: 'registration',
+        });
+
+        expect(response.challengeId).toBeDefined();
+        expect(mockProvider.sendVerifyLookup).toHaveBeenCalledTimes(2);
+        expect(mockProvider.sendVerifyLookup).toHaveBeenNthCalledWith(
+          1,
+          expect.objectContaining({ template: 'techa-register' })
+        );
+        expect(mockProvider.sendVerifyLookup).toHaveBeenNthCalledWith(
+          2,
+          expect.objectContaining({ template: 'techa-otp' })
+        );
+        expect(mockRepo.updateDeliveryStatus).toHaveBeenCalledWith(
+          expect.any(String),
+          'accepted',
+          'msg-fallback-1'
+        );
+      } finally {
+        if (prevReg === undefined) delete process.env.KAVENEGAR_REGISTER_TEMPLATE;
+        else process.env.KAVENEGAR_REGISTER_TEMPLATE = prevReg;
+        if (prevVerify === undefined) delete process.env.KAVENEGAR_VERIFY_TEMPLATE;
+        else process.env.KAVENEGAR_VERIFY_TEMPLATE = prevVerify;
+      }
+    });
   });
 });

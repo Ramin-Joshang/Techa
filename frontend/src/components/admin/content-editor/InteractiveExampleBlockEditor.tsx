@@ -199,7 +199,7 @@ export function InteractiveExampleBlockEditor({
         {currentFile && (
           <div className="p-3.5 space-y-3 bg-white">
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex-1 min-w-[180px]">
+              <div className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[180px]">
                 <AdminField label="مسیر فایل (LTR)" required>
                   <AdminInput
                     dir="ltr"

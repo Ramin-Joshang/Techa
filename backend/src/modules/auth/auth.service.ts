@@ -229,6 +229,48 @@ export class AuthService {
   }
 
   /**
+   * Safe OTP readiness status (boolean flags only, never exposes secrets or templates)
+   */
+  getOtpStatus(): { enabled: boolean; configured: boolean } {
+    const configured = this.otp.isConfigured();
+    return {
+      enabled: configured,
+      configured,
+    };
+  }
+
+  /**
+   * Request Registration Verification OTP for an unverified (pending_verification) account.
+   * Uses anti-enumeration safe envelope when user is non-existent or already active.
+   */
+  async requestRegistrationVerificationOtp(
+    phone: string,
+    ipAddress?: string
+  ): Promise<OtpChallengeResponse> {
+    const phoneE164 = normalizePhoneE164(phone);
+    const user = await this.repo.findUserByPhone(phoneE164);
+
+    if (user && user.status === 'pending_verification' && !user.phoneVerifiedAt) {
+      return this.otp.requestOtp({
+        phone: phoneE164,
+        purpose: 'registration',
+        userId: user._id,
+        ipAddress,
+      });
+    }
+
+    return {
+      challengeId: crypto.randomUUID(),
+      purpose: 'registration',
+      maskedPhone: maskPhoneNumber(phoneE164),
+      expiresInSeconds: 300,
+      resendAvailableAt: new Date(Date.now() + 60000).toISOString(),
+      retryAfterSeconds: 60,
+      message: 'در صورت نیاز به تأیید حساب، کد یکبارمصرف برای شماره شما ارسال خواهد شد.',
+    };
+  }
+
+  /**
    * Request Login OTP
    * User enumeration protection: returns identical envelope for existing and non-existing users.
    */

@@ -1,6 +1,14 @@
-import path from 'path';
+import path from 'node:path';
 import dotenv from 'dotenv';
 
-// تلاش برای لود از ریشه و همچنین پوشه backend
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// لود امن از پوشه فعلی، ریشه بک‌اند و ریشه مونورپو (بدون بازنویسی متغیرهای ست‌شده سیستم)
+const candidatePaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../../../.env'),
+];
+
+for (const envPath of candidatePaths) {
+  dotenv.config({ path: envPath });
+}
+

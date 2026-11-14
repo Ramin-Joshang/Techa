@@ -167,7 +167,7 @@ export default function VerifyOtpForm() {
   };
 
   return (
-    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-6 sm:p-8 shadow-2xl">
+    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-4 sm:p-8 shadow-2xl">
       {/* Brand & Heading */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-block text-2xl font-black text-white tracking-wider mb-2">
@@ -213,7 +213,7 @@ export default function VerifyOtpForm() {
           <label className="block text-xs font-semibold text-slate-300 mb-3 text-center">
             کد اعتبارسنجی پیامکی
           </label>
-          <div className="flex items-center justify-center gap-2 sm:gap-3" dir="ltr">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2.5" dir="ltr">
             {digits.map((digit, idx) => (
               <input
                 key={idx}
@@ -228,7 +228,7 @@ export default function VerifyOtpForm() {
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 onPaste={handlePaste}
                 disabled={isLoading}
-                className="w-11 h-13 sm:w-12 sm:h-14 text-center font-mono text-xl sm:text-2xl font-bold bg-[#02180F] border border-[#7AE36A]/30 text-white rounded-xl focus:outline-none focus:border-[#7AE36A] focus:ring-2 focus:ring-[#7AE36A]/30 transition-all disabled:opacity-50"
+                className="w-9 h-11 sm:w-12 sm:h-14 text-center font-mono text-lg sm:text-2xl font-bold bg-[#02180F] border border-[#7AE36A]/30 text-white rounded-xl focus:outline-none focus:border-[#7AE36A] focus:ring-2 focus:ring-[#7AE36A]/30 transition-all disabled:opacity-50"
               />
             ))}
           </div>
@@ -275,7 +275,7 @@ export default function VerifyOtpForm() {
       </form>
 
       {/* Return Links */}
-      <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+      <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
         <Link href="/login" className="hover:text-white transition-colors inline-flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>بازگشت به صفحه ورود</span>

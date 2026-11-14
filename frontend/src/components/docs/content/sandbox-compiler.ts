@@ -33,12 +33,18 @@ const COLOR_PALETTE: Record<string, Record<string, string>> = {
   emerald: { '50': '#ecfdf5', '100': '#d1fae5', '200': '#a7f3d0', '300': '#6ee7b7', '400': '#34d399', '500': '#10b981', '600': '#059669', '700': '#047857', '800': '#065f46', '900': '#064e3b', '950': '#022c22' },
   green: { '50': '#f0fdf4', '100': '#dcfce7', '200': '#bbf7d0', '300': '#86efac', '400': '#4ade80', '500': '#22c55e', '600': '#16a34a', '700': '#15803d', '800': '#166534', '900': '#14532d' },
   teal: { '50': '#f0fdfa', '100': '#ccfbf1', '200': '#99f6e4', '300': '#5eead4', '400': '#2dd4bf', '500': '#14b8a6', '600': '#0d9488', '700': '#0f766e', '800': '#115e59', '900': '#134e4a' },
+  cyan: { '50': '#ecfeff', '100': '#cffafe', '200': '#a5f3fc', '300': '#67e8f9', '400': '#22d3ee', '500': '#06b6d4', '600': '#0891b2', '700': '#0e7490', '800': '#155e75', '900': '#164e63' },
+  sky: { '50': '#f0f9ff', '100': '#e0f2fe', '200': '#bae6fd', '300': '#7dd3fc', '400': '#38bdf8', '500': '#0ea5e9', '600': '#0284c7', '700': '#0369a1', '800': '#075985', '900': '#0c4a6e' },
   blue: { '50': '#eff6ff', '100': '#dbeafe', '200': '#bfdbfe', '300': '#93c5fd', '400': '#60a5fa', '500': '#3b82f6', '600': '#2563eb', '700': '#1d4ed8', '800': '#1e40af', '900': '#1e3a8a' },
   indigo: { '50': '#eef2ff', '100': '#e0e7ff', '200': '#c7d2fe', '300': '#a5b4fc', '400': '#818cf8', '500': '#6366f1', '600': '#4f46e5', '700': '#4338ca', '800': '#3730a3', '900': '#312e81' },
+  violet: { '50': '#f5f3ff', '100': '#ede9fe', '200': '#ddd6fe', '300': '#c4b5fd', '400': '#a78bfa', '500': '#8b5cf6', '600': '#7c3aed', '700': '#6d28d9', '800': '#5b21b6', '900': '#4c1d95' },
+  purple: { '50': '#faf5ff', '100': '#f3e8ff', '200': '#e9d5ff', '300': '#d8b4fe', '400': '#c084fc', '500': '#a855f7', '600': '#9333ea', '700': '#7e22ce' },
+  pink: { '50': '#fdf2f8', '100': '#fce7f3', '200': '#fbcfe8', '300': '#f9a8d4', '400': '#f472b6', '500': '#ec4899', '600': '#db2777', '700': '#be185d' },
+  orange: { '50': '#fff7ed', '100': '#ffedd5', '200': '#fed7aa', '300': '#fdba74', '400': '#fb923c', '500': '#f97316', '600': '#ea580c', '700': '#c2410c' },
   amber: { '50': '#fffbeb', '100': '#fef3c7', '200': '#fde68a', '300': '#fcd34d', '400': '#fbbf24', '500': '#f59e0b', '600': '#d97706', '700': '#b45309', '800': '#92400e', '900': '#78350f' },
+  yellow: { '50': '#fefce8', '100': '#fef9c3', '200': '#fef08a', '300': '#fde047', '400': '#facc15', '500': '#eab308', '600': '#ca8a04', '700': '#a16207' },
   red: { '50': '#fef2f2', '100': '#fee2e2', '200': '#fecaca', '300': '#fca5a5', '400': '#f87171', '500': '#ef4444', '600': '#dc2626', '700': '#b91c1c', '800': '#991b1b', '900': '#7f1d1d' },
   rose: { '50': '#fff1f2', '100': '#ffe4e6', '200': '#fecdd3', '300': '#fda4af', '400': '#fb7185', '500': '#f43f5e', '600': '#e11d48', '700': '#be123c' },
-  purple: { '50': '#faf5ff', '100': '#f3e8ff', '200': '#e9d5ff', '300': '#d8b4fe', '400': '#c084fc', '500': '#a855f7', '600': '#9333ea', '700': '#7e22ce' },
 };
 
 const SPACING_SCALE: Record<string, string> = {
@@ -52,6 +58,7 @@ const SPACING_SCALE: Record<string, string> = {
 const WIDTH_SCALE: Record<string, string> = {
   ...SPACING_SCALE,
   xs: '20rem', sm: '24rem', md: '28rem', lg: '32rem', xl: '36rem', '2xl': '42rem',
+  '3xl': '48rem', '4xl': '56rem', '5xl': '64rem',
   '1/2': '50%', '1/3': '33.333333%', '2/3': '66.666667%', '1/4': '25%', '3/4': '75%',
   fit: 'fit-content', screen: '100vw',
 };
@@ -162,11 +169,16 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
     'text-4xl': 'font-size: 2.25rem; line-height: 2.5rem;',
     'leading-relaxed': 'line-height: 1.625;',
     'leading-tight': 'line-height: 1.25;',
+    'w-full': 'width: 100%;',
+    'h-full': 'height: 100%;',
+    'min-h-screen': 'min-height: 100vh;',
+    'mx-auto': 'margin-left: auto; margin-right: auto;',
+    'space-y-2': '',
   };
   if (exactMap[util]) return { decl: exactMap[util] };
 
-  // Spacing: p, px, py, pt, pb, pl, pr, m, mx, my, mt, mb, ml, mr, gap
-  const spaceMatch = /^(p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap)-(.+)$/.exec(util);
+  // Spacing: p, px, py, pt, pb, pl, pr, m, mx, my, mt, mb, ml, mr, gap, gap-x, gap-y
+  const spaceMatch = /^(p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap-x|gap-y|gap)-(.+)$/.exec(util);
   if (spaceMatch) {
     const [, prop, rawVal] = spaceMatch;
     const val = resolveScaleVal(rawVal, SPACING_SCALE);
@@ -187,6 +199,8 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
         ml: `margin-left: ${val};`,
         mr: `margin-right: ${val};`,
         gap: `gap: ${val};`,
+        'gap-x': `column-gap: ${val};`,
+        'gap-y': `row-gap: ${val};`,
       };
       return { decl: propMap[prop] };
     }
@@ -440,28 +454,75 @@ export function buildIsolatedSandboxDocument(params: {
 
   // 1. HTML + CSS + JS Runtime
   if (environment === 'html-css-js') {
-    let html = '';
+    let rawHtml = '';
     let css = '';
     let js = '';
 
     for (const file of files) {
-      if (/\.html?$/i.test(file.path)) html += file.content + '\n';
+      if (/\.html?$/i.test(file.path)) rawHtml += file.content + '\n';
       else if (/\.css$/i.test(file.path)) css += file.content + '\n';
       else if (/\.jsx?$/i.test(file.path)) js += file.content + '\n';
     }
 
-    if (!html.trim()) {
-      html = '<div id="app"></div>';
+    let docDir: 'rtl' | 'ltr' = 'rtl';
+    let docLang = 'fa';
+    let extractedCss = '';
+    let extractedJs = '';
+    let bodyHtml = rawHtml;
+
+    if (rawHtml.trim()) {
+      const htmlTagMatch = /<html\b([^>]*)>/i.exec(rawHtml);
+      if (htmlTagMatch) {
+        const attrs = htmlTagMatch[1];
+        const dirMatch = /\bdir\s*=\s*["']?(ltr|rtl)["']?/i.exec(attrs);
+        if (dirMatch) docDir = dirMatch[1].toLowerCase() === 'ltr' ? 'ltr' : 'rtl';
+        const langMatch = /\blang\s*=\s*["']?([a-zA-Z-]+)["']?/i.exec(attrs);
+        if (langMatch) docLang = langMatch[1];
+      }
+
+      // Extract inline <style> tags inside HTML
+      bodyHtml = bodyHtml.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_m, styleContent) => {
+        extractedCss += '\n' + styleContent;
+        return '';
+      });
+
+      // Extract inline <script> blocks without src attribute
+      bodyHtml = bodyHtml.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (_m, attrs, scriptContent) => {
+        if (/\bsrc\s*=/i.test(attrs)) {
+          return '';
+        }
+        if (scriptContent && scriptContent.trim()) {
+          extractedJs += '\n' + scriptContent;
+        }
+        return '';
+      });
+
+      // If full document with <body>, take inner <body> content
+      const bodyMatch = /<body\b[^>]*>([\s\S]*?)<\/body>/i.exec(bodyHtml);
+      if (bodyMatch) {
+        bodyHtml = bodyMatch[1];
+      } else {
+        bodyHtml = bodyHtml
+          .replace(/<!DOCTYPE[^>]*>/gi, '')
+          .replace(/<\/?(?:html|head|body)\b[^>]*>/gi, '')
+          .replace(/<meta\b[^>]*>/gi, '')
+          .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
+          .replace(/<link\b[^>]*>/gi, '');
+      }
     }
 
-    let transpiledJs = js;
-    if (babel && js.trim()) {
+    const html = bodyHtml.trim() ? bodyHtml : '<div id="app"></div>';
+    const combinedCss = [extractedCss, css].filter((s) => s.trim()).join('\n');
+    const combinedJs = [extractedJs, js].filter((s) => s.trim()).join('\n');
+
+    let transpiledJs = combinedJs;
+    if (babel && combinedJs.trim()) {
       try {
-        const res = babel.transform(js, {
+        const res = babel.transform(combinedJs, {
           filename: 'script.js',
           presets: ['env'],
         });
-        transpiledJs = res.code || js;
+        transpiledJs = res.code || combinedJs;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'خطای سینتکس جاوااسکریپت';
         return {
@@ -472,31 +533,37 @@ export function buildIsolatedSandboxDocument(params: {
       }
     }
 
-    const guardedJs = escapeInlineScript(injectLoopGuard(transpiledJs));
+    const guardedJs = transpiledJs.trim()
+      ? escapeInlineScript(injectLoopGuard(transpiledJs))
+      : '';
 
     return {
       ok: true,
       html: `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="${docLang}" dir="${docDir}">
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy" content="${SANDBOX_CSP}" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; margin: 16px; color: #0f172a; background: #ffffff; }
-    ${css}
+    ${combinedCss}
   </style>
 </head>
 <body>
   ${html}
   <script>${bridgeScript}</script>
-  <script>
+  ${
+    guardedJs
+      ? `<script>
     try {
       ${guardedJs}
     } catch (err) {
       window.__techaReportError(err && err.message ? err.message : err);
     }
-  </script>
+  </script>`
+      : ''
+  }
 </body>
 </html>`,
     };

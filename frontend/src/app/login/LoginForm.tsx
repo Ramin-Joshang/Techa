@@ -41,11 +41,41 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingVerificationOtp, setIsSendingVerificationOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [needsPhoneVerification, setNeedsPhoneVerification] = useState(false);
+
+  const handleRequestRegistrationVerification = async () => {
+    const trimmedPhone = normalizePersianDigits(phone.trim());
+    if (!trimmedPhone) {
+      setErrorMessage('لطفاً شماره موبایل خود را وارد کنید.');
+      return;
+    }
+
+    setIsSendingVerificationOtp(true);
+    setErrorMessage(null);
+    try {
+      const res = await authClient.requestRegistrationOtp(trimmedPhone);
+      const challengeId = res?.challengeId;
+      if (challengeId) {
+        router.push(
+          `/verify-otp?challengeId=${encodeURIComponent(challengeId)}&phone=${encodeURIComponent(trimmedPhone)}&purpose=registration`
+        );
+      } else {
+        setErrorMessage('امکان ارسال کد تأیید فراهم نشد. لطفاً مجدداً تلاش کنید.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطا در ارسال کد تأیید شماره موبایل';
+      setErrorMessage(msg);
+    } finally {
+      setIsSendingVerificationOtp(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setNeedsPhoneVerification(false);
 
     const trimmedPhone = normalizePersianDigits(phone.trim());
     if (!trimmedPhone) {
@@ -71,8 +101,12 @@ export default function LoginForm() {
           router.push('/');
         }
       } catch (err: unknown) {
+        const errCode = (err as { code?: string })?.code;
         const msg = err instanceof Error ? err.message : 'شماره موبایل یا رمز عبور صحیح نیست';
         setErrorMessage(msg);
+        if (errCode === 'PHONE_NOT_VERIFIED' || msg.includes('تأیید نشده')) {
+          setNeedsPhoneVerification(true);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -99,49 +133,51 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-6 sm:p-8 shadow-2xl">
+    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-4 sm:p-8 shadow-2xl">
       {/* Brand & Heading */}
       <div className="text-center mb-6">
         <Link href="/" className="inline-block text-2xl font-black text-white tracking-wider mb-2">
           TECH<span className="text-[#7AE36A]">A</span>
         </Link>
         <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">ورود به حساب کاربری</h1>
-        <p className="text-sm text-slate-300">
+        <p className="text-xs sm:text-sm text-slate-300">
           برای دسترسی به دوره‌ها، یادداشت‌ها و تمرین‌ها وارد شوید
         </p>
       </div>
 
       {/* Mode Switcher Tabs */}
-      <div className="grid grid-cols-2 gap-2 bg-[#02180F] p-1.5 rounded-xl border border-[#7AE36A]/20 mb-6">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 bg-[#02180F] p-1 sm:p-1.5 rounded-xl border border-[#7AE36A]/20 mb-6">
         <button
           type="button"
           onClick={() => {
             setMode('password');
             setErrorMessage(null);
+            setNeedsPhoneVerification(false);
           }}
-          className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === 'password'
               ? 'bg-[#7AE36A] text-[#042A1B] shadow-md shadow-[#7AE36A]/20'
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <KeyRound className="w-3.5 h-3.5" />
-          <span>ورود با رمز عبور</span>
+          <KeyRound className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">ورود با رمز عبور</span>
         </button>
         <button
           type="button"
           onClick={() => {
             setMode('otp');
             setErrorMessage(null);
+            setNeedsPhoneVerification(false);
           }}
-          className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === 'otp'
               ? 'bg-[#7AE36A] text-[#042A1B] shadow-md shadow-[#7AE36A]/20'
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>ورود با پیامک (OTP)</span>
+          <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">ورود با پیامک (OTP)</span>
         </button>
       </div>
 
@@ -149,10 +185,32 @@ export default function LoginForm() {
       {errorMessage && (
         <div
           role="alert"
-          className="mb-6 p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-sm flex items-start gap-3"
+          className="mb-6 p-3.5 sm:p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs sm:text-sm space-y-3"
         >
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-          <div className="leading-relaxed">{errorMessage}</div>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">{errorMessage}</div>
+          </div>
+          {needsPhoneVerification && (
+            <button
+              type="button"
+              onClick={handleRequestRegistrationVerification}
+              disabled={isSendingVerificationOtp}
+              className="w-full py-2.5 px-3 rounded-lg bg-[#7AE36A] hover:bg-[#6bd65b] text-[#042A1B] font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              {isSendingVerificationOtp ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>در حال ارسال کد تأیید...</span>
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>ارسال کد تأیید و فعال‌سازی حساب</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 

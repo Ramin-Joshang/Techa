@@ -160,7 +160,7 @@ export function BlockFormBody({
                     maxLength={1000}
                     onChange={(e) => updateSpan(idx, { text: e.target.value })}
                     placeholder="متن قطعه..."
-                    className="flex-1 min-w-[200px]"
+                    className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[200px]"
                   />
 
                   <div className="flex items-center gap-1">
@@ -240,7 +240,7 @@ export function BlockFormBody({
                         })
                       }
                       placeholder="https://example.com"
-                      className="flex-1 min-w-[200px] font-mono text-xs min-h-[36px]"
+                      className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[200px] font-mono text-xs min-h-[36px]"
                     />
                     <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
                       <input
@@ -343,7 +343,7 @@ export function BlockFormBody({
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[220px]">
+            <div className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[220px]">
               <AdminField label="کلید ذخیره‌سازی تصویر (storageKey)" required>
                 <AdminInput
                   dir="ltr"
@@ -437,7 +437,7 @@ export function BlockFormBody({
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[220px]">
+            <div className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[220px]">
               <AdminField label="کلید ذخیره‌سازی ویدیو (storageKey)" required>
                 <AdminInput
                   dir="ltr"
@@ -793,7 +793,7 @@ export function BlockFormBody({
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[220px]">
+            <div className="flex-1 min-w-0 w-full sm:w-auto sm:min-w-[220px]">
               <AdminField label="کلید ذخیره‌سازی فایل (storageKey)" required>
                 <AdminInput
                   dir="ltr"

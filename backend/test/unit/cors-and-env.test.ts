@@ -123,5 +123,21 @@ describe('CORS, Trusted Proxy & Environment Validation', () => {
         });
       }).toThrow(/CANONICAL_API_URL must be a valid URL/);
     });
+
+    it('should parse boolean AUTH_OTP_ENABLED strings accurately including "false" and smart-enable when API key exists', () => {
+      const explicitFalse = validateEnv({
+        NODE_ENV: 'development',
+        AUTH_OTP_ENABLED: 'false',
+        KAVENEGAR_API_KEY: 'sample-valid-api-key-value',
+      });
+      expect(explicitFalse.AUTH_OTP_ENABLED).toBe(false);
+
+      const autoEnabled = validateEnv({
+        NODE_ENV: 'development',
+        KAVENEGAR_API_KEY: ' "sample-valid-api-key-value" ',
+      });
+      expect(autoEnabled.AUTH_OTP_ENABLED).toBe(true);
+      expect(autoEnabled.KAVENEGAR_API_KEY).toBe('sample-valid-api-key-value');
+    });
   });
 });

@@ -147,8 +147,21 @@ export const authClient = {
     });
   },
 
+  async getOtpStatus(): Promise<{ enabled: boolean; configured: boolean }> {
+    return fetchWithAuth('/api/v1/auth/otp/status', {
+      method: 'GET',
+    });
+  },
+
   async requestOtp(phone: string): Promise<any> {
     return fetchWithAuth('/api/v1/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  },
+
+  async requestRegistrationOtp(phone: string): Promise<any> {
+    return fetchWithAuth('/api/v1/auth/otp/verify-registration/request', {
       method: 'POST',
       body: JSON.stringify({ phone }),
     });

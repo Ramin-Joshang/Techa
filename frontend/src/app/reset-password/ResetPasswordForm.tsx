@@ -96,7 +96,7 @@ export default function ResetPasswordForm() {
 
   if (isSuccess) {
     return (
-      <div className="bg-[#042A1B]/95 backdrop-blur-md border border-[#7AE36A]/30 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+      <div className="bg-[#042A1B]/95 backdrop-blur-md border border-[#7AE36A]/30 rounded-2xl p-4 sm:p-8 shadow-2xl text-center">
         <div className="w-16 h-16 bg-[#7AE36A]/10 border border-[#7AE36A]/30 rounded-2xl flex items-center justify-center mx-auto mb-5 text-[#7AE36A]">
           <CheckCircle2 className="w-9 h-9" />
         </div>
@@ -119,7 +119,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-6 sm:p-8 shadow-2xl">
+    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-4 sm:p-8 shadow-2xl">
       {/* Brand & Heading */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-block text-2xl font-black text-white tracking-wider mb-2">

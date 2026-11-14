@@ -250,6 +250,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
             <ContentBlocksRenderer
               blocks={lesson.contentBlocks}
               schemaVersion={lesson.contentSchemaVersion}
+              courseSlug={courseSlug}
+              lessonSlug={lessonSlug}
             />
           </section>
 

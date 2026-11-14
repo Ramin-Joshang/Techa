@@ -81,6 +81,11 @@ function isAllowedPublicRoute(pathname) {
     return true;
   }
 
+  // 6. Interactive Code Sandbox Standalone Preview Route
+  if (normalized === '/sandbox' || normalized === '/sandbox/preview') {
+    return true;
+  }
+
   return false;
 }
 

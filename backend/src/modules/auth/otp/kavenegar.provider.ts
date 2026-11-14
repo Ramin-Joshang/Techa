@@ -29,11 +29,21 @@ export class KavenegarProvider {
    */
   isConfigured(): boolean {
     const key = this.getApiKey();
-    return !!key && key.trim().length > 10;
+    return !!key && key.length > 10;
   }
 
   getApiKey(): string | undefined {
-    return process.env.KAVENEGAR_API_KEY || env.KAVENEGAR_API_KEY;
+    const raw = process.env.KAVENEGAR_API_KEY || env.KAVENEGAR_API_KEY;
+    if (!raw) return undefined;
+    let trimmed = raw.trim();
+    if (
+      trimmed.length >= 2 &&
+      ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'")))
+    ) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+    return trimmed.length > 0 ? trimmed : undefined;
   }
 
   /**
@@ -58,11 +68,12 @@ export class KavenegarProvider {
    */
   async sendVerifyLookup(params: SendVerifyOtpParams): Promise<KavenegarVerifyResult> {
     const apiKey = this.getApiKey();
-    if (!apiKey || apiKey.trim().length === 0) {
+    if (!apiKey) {
       throw new Error('OTP_PROVIDER_NOT_CONFIGURED');
     }
 
-    if (!params.template || params.template.trim().length === 0) {
+    const template = params.template?.trim();
+    if (!template) {
       throw new Error('OTP_TEMPLATE_INVALID');
     }
 

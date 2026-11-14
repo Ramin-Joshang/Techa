@@ -43,9 +43,31 @@ export default function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [registeredPhone, setRegisteredPhone] = useState('');
+
+  const handleRetryVerificationOtp = async () => {
+    if (!registeredPhone || isRequestingOtp) return;
+    setIsRequestingOtp(true);
+    setErrorMessage(null);
+    try {
+      const res = await (await import('../../lib/auth-client')).authClient.requestRegistrationOtp(
+        registeredPhone
+      );
+      if (res?.challengeId) {
+        router.push(
+          `/verify-otp?challengeId=${encodeURIComponent(res.challengeId)}&phone=${encodeURIComponent(registeredPhone)}&purpose=registration`
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'خطا در ارسال کد تأیید پیامکی';
+      setErrorMessage(msg);
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +137,7 @@ export default function RegisterForm() {
 
   if (isSuccess) {
     return (
-      <div className="bg-[#042A1B]/95 backdrop-blur-md border border-[#7AE36A]/30 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+      <div className="bg-[#042A1B]/95 backdrop-blur-md border border-[#7AE36A]/30 rounded-2xl p-4 sm:p-8 shadow-2xl text-center">
         <div className="w-16 h-16 bg-[#7AE36A]/10 border border-[#7AE36A]/30 rounded-2xl flex items-center justify-center mx-auto mb-5 text-[#7AE36A]">
           <CheckCircle2 className="w-9 h-9" />
         </div>
@@ -126,36 +148,64 @@ export default function RegisterForm() {
           حساب کاربری شما با شماره <span className="font-mono text-[#7AE36A] font-bold" dir="ltr">{registeredPhone}</span> با موفقیت ایجاد شد.
         </p>
 
+        {errorMessage && (
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs text-right flex items-start gap-2"
+          >
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <div className="bg-[#02180F] border border-[#7AE36A]/20 rounded-xl p-4 mb-6 text-right space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-[#7AE36A]">
             <ShieldCheck className="w-4 h-4" />
             <span>وضعیت حساب: در انتظار تأیید شماره موبایل</span>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            حساب کاربری شما ایجاد شده است. هنگام ورود می‌توانید تأیید پیامکی شماره موبایل خود را با کد یک‌بارمصرف تکمیل کنید.
+            برای فعال‌سازی حساب کاربری، می‌توانید همین حالا کد تأیید پیامکی را دریافت کنید یا از صفحه ورود اقدام نمایید.
           </p>
         </div>
 
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-[#7AE36A] hover:bg-[#6bd65b] text-[#042A1B] font-bold text-sm rounded-xl shadow-lg shadow-[#7AE36A]/20 transition-all"
-        >
-          <span>ورود به صفحه ورود</span>
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleRetryVerificationOtp}
+            disabled={isRequestingOtp}
+            className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-[#7AE36A] hover:bg-[#6bd65b] text-[#042A1B] font-bold text-sm rounded-xl shadow-lg shadow-[#7AE36A]/20 transition-all cursor-pointer disabled:opacity-60"
+          >
+            {isRequestingOtp ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>در حال ارسال کد تأیید...</span>
+              </>
+            ) : (
+              <span>دریافت کد تأیید پیامکی</span>
+            )}
+          </button>
+
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-white/10 hover:bg-white/15 text-white font-semibold text-sm rounded-xl border border-white/15 transition-all"
+          >
+            <span>رفتن به صفحه ورود</span>
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-6 sm:p-8 shadow-2xl">
+    <div className="bg-[#042A1B]/90 backdrop-blur-md border border-[#7AE36A]/20 rounded-2xl p-4 sm:p-8 shadow-2xl">
       {/* Brand & Heading */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-block text-2xl font-black text-white tracking-wider mb-2">
           TECH<span className="text-[#7AE36A]">A</span>
         </Link>
         <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">ثبت‌نام در سامانه تکا</h1>
-        <p className="text-sm text-slate-300">
+        <p className="text-xs sm:text-sm text-slate-300">
           برای یادگیری عمیق، مطالعه مستندات و کدنویسی به جامعه ما بپیوندید
         </p>
       </div>

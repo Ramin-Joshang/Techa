@@ -217,6 +217,7 @@ This set of fonts are used in this project under the license: (TRJC3OMS)
 html {
   scroll-behavior: smooth;
   font-family: var(--font-sans);
+  overflow-x: clip;
 }
 
 body {
@@ -224,6 +225,7 @@ body {
   background: var(--background);
   font-family: var(--font-sans);
   direction: rtl;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

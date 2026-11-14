@@ -107,7 +107,7 @@ export default function FaqAccordion({ items }: FaqAccordionProps) {
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-sm text-gray-600 leading-relaxed border-t border-gray-100 text-justify">
+                  <div className="px-4 sm:px-5 pb-5 pt-2 text-sm text-gray-600 leading-7 border-t border-gray-100 text-right">
                     {item.answer}
                   </div>
                 )}
