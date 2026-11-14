@@ -17,7 +17,8 @@ export class CoursesRepository {
     }
 
     if (query.tag) {
-      filter.tags = query.tag;
+      const escapedTag = escapeRegex(query.tag.trim());
+      filter.tags = { $regex: new RegExp(`^${escapedTag}$`, 'i') };
     }
 
     if (query.q) {

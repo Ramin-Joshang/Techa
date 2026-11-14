@@ -196,36 +196,95 @@ export function duplicateBlock(block: ContentBlock): ContentBlock {
   return cloned;
 }
 
+const VALID_CALLOUT_TYPES = new Set(['info', 'tip', 'warning', 'danger']);
+const VALID_CODE_LANGS = new Set([
+  'typescript',
+  'javascript',
+  'tsx',
+  'jsx',
+  'html',
+  'css',
+  'scss',
+  'json',
+  'bash',
+  'python',
+  'sql',
+  'markdown',
+  'yaml',
+]);
+const CODE_LANG_FALLBACKS: Record<string, string> = {
+  text: 'markdown',
+  plaintext: 'markdown',
+  txt: 'markdown',
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  sh: 'bash',
+  shell: 'bash',
+  yml: 'yaml',
+  tsql: 'sql',
+};
+
 export function cleanBlockBeforeSubmit(block: ContentBlock): ContentBlock {
   const copy = JSON.parse(JSON.stringify(block)) as any;
-  if (copy.type === 'codeBlock' && !copy.data.title?.trim()) delete copy.data.title;
-  if (copy.type === 'image') {
+  if (copy.type === 'codeBlock' && copy.data) {
+    if (!copy.data.title?.trim()) delete copy.data.title;
+    const rawLang = typeof copy.data.language === 'string' ? copy.data.language.trim().toLowerCase() : 'typescript';
+    copy.data.language = VALID_CODE_LANGS.has(rawLang)
+      ? rawLang
+      : CODE_LANG_FALLBACKS[rawLang] || 'markdown';
+  }
+  if (copy.type === 'image' && copy.data) {
     if (!copy.data.caption?.trim()) delete copy.data.caption;
     if (!copy.data.width) delete copy.data.width;
     if (!copy.data.height) delete copy.data.height;
+    if (!copy.data.altText?.trim()) copy.data.altText = 'تصویر آموزشی';
   }
-  if (copy.type === 'video') {
+  if (copy.type === 'video' && copy.data) {
     if (!copy.data.posterStorageKey?.trim()) delete copy.data.posterStorageKey;
     if (!copy.data.caption?.trim()) delete copy.data.caption;
     if (!copy.data.durationSeconds) delete copy.data.durationSeconds;
   }
-  if (copy.type === 'callout' && !copy.data.title?.trim()) delete copy.data.title;
-  if (copy.type === 'quote') {
+  if (copy.type === 'callout' && copy.data) {
+    if (!copy.data.title?.trim()) delete copy.data.title;
+    const rawType = typeof copy.data.type === 'string' ? copy.data.type.trim() : 'info';
+    copy.data.type =
+      rawType === 'success' ? 'tip' : VALID_CALLOUT_TYPES.has(rawType) ? rawType : 'info';
+  }
+  if (copy.type === 'quote' && copy.data) {
     if (!copy.data.author?.trim()) delete copy.data.author;
     if (!copy.data.citationUrl?.trim()) delete copy.data.citationUrl;
   }
-  if (copy.type === 'downloadableFile' && !copy.data.description?.trim()) {
+  if (copy.type === 'downloadableFile' && copy.data && !copy.data.description?.trim()) {
     delete copy.data.description;
   }
-  if (copy.type === 'interactiveExample' && !copy.data.description?.trim()) {
+  if (copy.type === 'interactiveExample' && copy.data && !copy.data.description?.trim()) {
     delete copy.data.description;
+  }
+  if (copy.type === 'list' && copy.data && Array.isArray(copy.data.items)) {
+    const filtered = copy.data.items
+      .map((item: unknown) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item: string) => item.length > 0);
+    copy.data.items = filtered.length > 0 ? filtered : ['مورد'];
   }
   if (copy.type === 'richText' && Array.isArray(copy.data?.spans)) {
-    copy.data.spans = copy.data.spans.map((sp: any) => {
-      const next = { ...sp };
-      if (!next.link?.url?.trim()) delete next.link;
-      return next;
-    });
+    copy.data.spans = copy.data.spans
+      .filter((sp: any) => sp && typeof sp.text === 'string' && sp.text.length > 0)
+      .map((sp: any) => {
+        const next = { ...sp };
+        const rawUrl = typeof next.link?.url === 'string' ? next.link.url.trim() : '';
+        if (!rawUrl) {
+          delete next.link;
+        } else if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://') && !rawUrl.startsWith('/')) {
+          const relMatch = rawUrl.match(/^(?:\.\.\/)+([a-z0-9-]+)(?:\/.*)?$/i);
+          if (relMatch?.[1]) {
+            next.link = { url: `/docs/${relMatch[1].toLowerCase()}`, openInNewTab: Boolean(next.link?.openInNewTab) };
+          } else {
+            delete next.link;
+          }
+        }
+        return next;
+      });
   }
   return copy as ContentBlock;
 }

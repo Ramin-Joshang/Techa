@@ -165,15 +165,19 @@ export default function InteractiveSandbox({
     [environment, initialFiles, instanceId, revokeCurrentBlob]
   );
 
+  const initialContentsRef = useRef(fileContents);
+  const hasCompiledInitialRef = useRef(false);
+
   useEffect(() => {
     setHasMounted(true);
-    void compileAndMount(fileContents);
+    if (!hasCompiledInitialRef.current) {
+      hasCompiledInitialRef.current = true;
+      void compileAndMount(initialContentsRef.current);
+    }
     return () => {
       revokeCurrentBlob();
     };
-    // Initial mount execution only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [compileAndMount, revokeCurrentBlob]);
 
   // Strict message validation scoped to this sandbox instance
   useEffect(() => {

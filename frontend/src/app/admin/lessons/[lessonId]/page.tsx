@@ -143,7 +143,7 @@ function LessonEditorContent() {
     setSlug(doc.slug);
     setOrder(doc.order ?? 0);
     setReadingTimeMinutes(doc.readingTimeMinutes ?? 1);
-    setContentBlocks(doc.contentBlocks || []);
+    setContentBlocks((doc.contentBlocks || []).map(cleanBlockBeforeSubmit));
     setSeo({
       metaTitle: doc.seo?.metaTitle || '',
       metaDescription: doc.seo?.metaDescription || '',

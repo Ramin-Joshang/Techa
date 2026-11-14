@@ -15,12 +15,13 @@ import {
 } from '../../../../lib/server';
 import ContentBlocksRenderer from '../../../../components/docs/content/ContentBlocksRenderer';
 import { extractLessonHeadings } from '../../../../components/docs/content/heading-utils';
-import CourseSidebar from '../../../../components/docs/CourseSidebar';
 import LessonTableOfContents from '../../../../components/docs/LessonTableOfContents';
+import LessonWorkspaceClient from '../../../../components/docs/LessonWorkspaceClient';
 import {
   LessonReadingProgress,
   CopyLessonLinkButton,
 } from '../../../../components/docs/LessonReadingTools';
+import { formatPersianCount, formatReadingDuration } from '../../../../lib/format-duration';
 
 interface LessonPageProps {
   params: Promise<{
@@ -109,6 +110,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       : null;
   const lessonNumber = currentIndex !== -1 ? currentIndex + 1 : lesson.order || 1;
   const totalLessons = flatLessons.length;
+  const readingDurationText = formatReadingDuration(lesson.readingTimeMinutes);
 
   // Extract all h2 & h3 heading anchors consistently with ContentBlocksRenderer
   const headings = extractLessonHeadings(lesson.contentBlocks).filter(
@@ -151,18 +153,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row items-start gap-6 xl:gap-8">
+    <>
       <LessonReadingProgress />
-
-      {/* Right Rail (RTL Start): Course Outline Sidebar */}
-      <CourseSidebar
+      <LessonWorkspaceClient
         outline={outline}
         courseSlug={courseSlug}
         courseTitle={outline?.course?.title}
-      />
-
-      {/* Main Reading Surface */}
-      <div className="flex-1 w-full min-w-0 max-w-4xl bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-8 lg:p-10 shadow-xs">
+        headings={headings}
+      >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleJsonLd) }}
@@ -209,7 +207,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
               {totalLessons > 0 && (
                 <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg tabular-nums">
-                  درس {lessonNumber} از {totalLessons}
+                  درس {formatPersianCount(lessonNumber)} از {formatPersianCount(totalLessons)}
                 </span>
               )}
             </div>
@@ -229,12 +227,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
                   <span>نمای کلی دوره</span>
                 </Link>
 
-                {lesson.readingTimeMinutes > 0 && (
+                {readingDurationText && (
                   <>
                     <span className="text-slate-300">·</span>
                     <span className="inline-flex items-center gap-1 font-medium">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
-                      <span>زمان مطالعه: {lesson.readingTimeMinutes} دقیقه</span>
+                      <span>زمان مطالعه: {readingDurationText}</span>
                     </span>
                   </>
                 )}
@@ -322,10 +320,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
             )}
           </footer>
         </article>
-      </div>
-
-      {/* Left Rail (RTL End, xl+): Sticky Dynamic Table of Contents */}
-      <LessonTableOfContents headings={headings} variant="rail" />
-    </div>
+      </LessonWorkspaceClient>
+    </>
   );
 }

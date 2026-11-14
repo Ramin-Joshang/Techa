@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Archive,
   CheckCircle2,
@@ -41,6 +41,7 @@ import { useUnsavedChangesWarning } from '../../../../lib/admin/use-unsaved-guar
 
 function CourseDetailContent() {
   const params = useParams<{ courseId: string }>();
+  const router = useRouter();
   const courseId = params?.courseId || '';
   const { hasPermission } = useAdminAuth();
   const toast = useAdminToast();
@@ -107,6 +108,7 @@ function CourseDetailContent() {
       setFormValues(courseDtoToFormValues(updated));
       setIsDirty(false);
       toast.success('تغییرات دوره ذخیره شد');
+      router.push('/admin/courses');
     } catch (err) {
       if (err instanceof AdminApiError && err.status === 409) {
         const details = err.details as { currentVersion?: number } | undefined;

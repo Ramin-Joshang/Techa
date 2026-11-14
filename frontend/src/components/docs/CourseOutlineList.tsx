@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, ChevronLeft, Clock, BookOpen, ArrowLeft, ChevronsUpDown } from 'lucide-react';
 import { CourseOutlinePublicDto } from '@techa/shared';
+import { formatReadingDuration } from '../../lib/format-duration';
 
 interface CourseOutlineListProps {
   courseSlug: string;
@@ -68,6 +69,7 @@ export default function CourseOutlineList({ courseSlug, chapters }: CourseOutlin
           const isOpen = openMap[chapter.id] !== false;
           const lessons = chapter.lessons || [];
           const chapterMinutes = lessons.reduce((acc, l) => acc + (l.readingTimeMinutes || 0), 0);
+          const chapterDuration = formatReadingDuration(chapterMinutes);
 
           return (
             <div
@@ -96,10 +98,10 @@ export default function CourseOutlineList({ courseSlug, chapters }: CourseOutlin
 
                 <div className="flex items-center gap-2.5 shrink-0 text-xs text-slate-500 tabular-nums">
                   <span className="hidden sm:inline">{lessons.length} درس</span>
-                  {chapterMinutes > 0 && (
+                  {chapterDuration && (
                     <>
                       <span className="hidden sm:inline text-slate-300">·</span>
-                      <span className="hidden sm:inline">{chapterMinutes} دقیقه</span>
+                      <span className="hidden sm:inline">{chapterDuration}</span>
                     </>
                   )}
                   {isOpen ? (
@@ -135,7 +137,7 @@ export default function CourseOutlineList({ courseSlug, chapters }: CourseOutlin
                           {lesson.readingTimeMinutes > 0 && (
                             <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 tabular-nums">
                               <Clock className="w-3 h-3" />
-                              <span>{lesson.readingTimeMinutes} دقیقه</span>
+                              <span>{formatReadingDuration(lesson.readingTimeMinutes)}</span>
                             </span>
                           )}
                           <span className="text-xs text-emerald-700 font-bold opacity-80 group-hover:opacity-100 inline-flex items-center gap-1">

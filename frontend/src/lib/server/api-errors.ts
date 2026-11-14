@@ -34,7 +34,7 @@ export class ValidationError extends ApiError {
 }
 
 export class ServiceUnavailableError extends ApiError {
-  constructor(message = 'سرویس پایگاه داده موقتاً در دسترس نیست.', details?: unknown) {
+  constructor(message = 'سرویس محتوا موقتاً در دسترس نیست.', details?: unknown) {
     super(message, 503, 'SERVICE_UNAVAILABLE', details);
     this.name = 'ServiceUnavailableError';
   }

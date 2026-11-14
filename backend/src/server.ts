@@ -16,12 +16,39 @@ async function bootstrap(): Promise<void> {
   });
 
   if (env.MONGODB_URI) {
-    connectToDatabase().catch((err) => {
-      logger.error({ err }, '[Bootstrap] Initial database connection failed.');
-      if (env.NODE_ENV === 'production') {
-        server.close(() => process.exit(1));
-      }
-    });
+    connectToDatabase()
+      .then(async () => {
+        if (env.NODE_ENV === 'test') return;
+        try {
+          const [{ LessonModel }, { normalizeContentBlocks }, { ContentBlockSchema }] = await Promise.all([
+            import('./models/lesson.model'),
+            import('./core/utils/dto-normalizer'),
+            import('@techa/shared'),
+          ]);
+          const lessons = await LessonModel.find({}).select({ _id: 1, contentBlocks: 1 }).lean();
+          let updatedCount = 0;
+          for (const lesson of lessons) {
+            const rawBlocks = JSON.parse(JSON.stringify(lesson.contentBlocks || []));
+            const cleaned = normalizeContentBlocks(rawBlocks);
+            if (JSON.stringify(rawBlocks) !== JSON.stringify(cleaned)) {
+              const validBlocks = cleaned.filter((blk) => ContentBlockSchema.safeParse(blk).success);
+              await LessonModel.updateOne({ _id: lesson._id }, { $set: { contentBlocks: validBlocks } });
+              updatedCount++;
+            }
+          }
+          if (updatedCount > 0) {
+            logger.info({ updatedCount }, '[Bootstrap] Normalized legacy lesson contentBlocks in MongoDB');
+          }
+        } catch (migrationErr) {
+          logger.warn({ err: migrationErr }, '[Bootstrap] Legacy lesson normalization skipped');
+        }
+      })
+      .catch((err) => {
+        logger.error({ err }, '[Bootstrap] Initial database connection failed.');
+        if (env.NODE_ENV === 'production') {
+          server.close(() => process.exit(1));
+        }
+      });
   } else {
     logger.warn('[Bootstrap] Starting server without database connection (MONGODB_URI not configured).');
   }

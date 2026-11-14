@@ -56,7 +56,8 @@ export const RichTextSpanSchema = z.object({
     .object({
       url: z
         .string()
-        .url('Link must be a valid URL')
+        .min(1, 'Link URL cannot be empty')
+        .max(500, 'Link URL cannot exceed 500 characters')
         .refine(
           (val) => isSafeHttpUrl(val) || (val.startsWith('/') && !val.startsWith('//')),
           'Link URL must use http, https, or a safe relative path'

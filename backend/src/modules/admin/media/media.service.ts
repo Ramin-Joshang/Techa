@@ -330,6 +330,9 @@ export class AdminMediaService {
     usages: MediaUsageItem[];
     usedInPublishedContent: boolean;
   }> {
+    if (!Types.ObjectId.isValid(mediaId)) {
+      throw new NotFoundError('رسانه مورد نظر یافت نشد');
+    }
     const doc = await MediaAssetModel.findById(mediaId).lean();
     if (!doc) {
       throw new NotFoundError('رسانه مورد نظر یافت نشد');
@@ -455,7 +458,11 @@ export class AdminMediaService {
       throw new NotFoundError('رسانه مورد نظر یافت نشد');
     }
 
-    await localMediaStorage.deleteFile(deleted.storageKey);
+    try {
+      await localMediaStorage.deleteFile(deleted.storageKey);
+    } catch {
+      // Do not fail DB deletion if orphaned disk file cannot be unlinked
+    }
 
     await adminAuditService.record({
       actorUserId: actor.objectId,
@@ -466,7 +473,7 @@ export class AdminMediaService {
       result: 'success',
       requestId: ctx.requestId,
       changedFields: ['deleted'],
-      changeSummary: `حذف فایل رسانه ${deleted.originalFileName}`,
+      changeSummary: `حذف فایل رسانه ${deleted.originalFileName || deleted.storageKey}`,
       ipHash: ctx.ipHash,
       userAgent: ctx.userAgent,
     });

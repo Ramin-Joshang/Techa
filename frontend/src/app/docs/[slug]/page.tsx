@@ -17,7 +17,9 @@ import {
   getCourseOutline,
   isNotFoundError,
 } from '../../../lib/server';
+import { formatPersianCount, formatReadingDuration } from '../../../lib/format-duration';
 import CourseOutlineList from '../../../components/docs/CourseOutlineList';
+import CourseCoverMedia from '../../../components/docs/CourseCoverMedia';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
@@ -82,6 +84,7 @@ export default async function CourseOverviewPage({ params }: CourseOverviewPageP
   }
 
   const levelLabel = LEVEL_MAP[course.level] || course.level;
+  const readingDurationText = formatReadingDuration(course.stats?.estimatedReadingTimeMinutes);
 
   // Find the first published lesson across any chapter
   const firstLesson = outline.chapters
@@ -152,87 +155,104 @@ export default async function CourseOverviewPage({ params }: CourseOverviewPageP
 
       {/* Course Hero Card */}
       <section className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs">
-        <div className="bg-[#042A1B] text-white p-6 sm:p-8 lg:p-10 space-y-5 border-b border-[#7AE36A]/20">
-          {/* Unboxed Metadata Strip */}
-          <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/80 font-medium tabular-nums">
-            <span className="text-[#7AE36A] font-bold inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#7AE36A]" />
-              <span>سطح {levelLabel}</span>
-            </span>
-
-            {course.stats?.totalChapters !== undefined && (
-              <>
-                <span className="text-white/25">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Layers className="h-3.5 w-3.5 text-[#7AE36A]" />
-                  <span>{course.stats.totalChapters} فصل</span>
+        <div className="bg-[#042A1B] text-white p-6 sm:p-8 lg:p-10 border-b border-[#7AE36A]/20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+            <div className="lg:col-span-8 space-y-5">
+              {/* Unboxed Metadata Strip */}
+              <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/80 font-medium tabular-nums">
+                <span className="text-[#7AE36A] font-bold inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7AE36A]" />
+                  <span>سطح {levelLabel}</span>
                 </span>
-              </>
-            )}
 
-            {course.stats?.totalLessons !== undefined && (
-              <>
-                <span className="text-white/25">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <BookOpen className="h-3.5 w-3.5 text-[#7AE36A]" />
-                  <span>{course.stats.totalLessons} درس</span>
-                </span>
-              </>
-            )}
+                {course.stats?.totalChapters !== undefined && (
+                  <>
+                    <span className="text-white/25">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Layers className="h-3.5 w-3.5 text-[#7AE36A]" />
+                      <span>{formatPersianCount(course.stats.totalChapters)} فصل</span>
+                    </span>
+                  </>
+                )}
 
-            {course.stats?.estimatedReadingTimeMinutes ? (
-              <>
-                <span className="text-white/25">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-[#7AE36A]" />
-                  <span>{course.stats.estimatedReadingTimeMinutes} دقیقه مطالعه</span>
-                </span>
-              </>
-            ) : null}
+                {course.stats?.totalLessons !== undefined && (
+                  <>
+                    <span className="text-white/25">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <BookOpen className="h-3.5 w-3.5 text-[#7AE36A]" />
+                      <span>{formatPersianCount(course.stats.totalLessons)} درس</span>
+                    </span>
+                  </>
+                )}
 
-            {publishedDate && (
-              <>
-                <span className="text-white/25">·</span>
-                <span className="inline-flex items-center gap-1 text-white/65">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>انتشار: {publishedDate}</span>
-                </span>
-              </>
-            )}
-          </div>
+                {readingDurationText ? (
+                  <>
+                    <span className="text-white/25">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-[#7AE36A]" />
+                      <span>{readingDurationText} مطالعه</span>
+                    </span>
+                  </>
+                ) : null}
 
-          <div className="space-y-3">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight text-balance">
-              {course.title}
-            </h1>
-            <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-3xl">
-              {course.summary}
-            </p>
-          </div>
-
-          {/* Primary Action CTA or Empty Lessons Guard */}
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            {firstLesson ? (
-              <Link
-                href={`/docs/${courseSlug}/${firstLesson.slug}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#7AE36A] hover:bg-[#6acf5a] text-[#042A1B] px-6 py-3 text-sm font-extrabold transition-colors"
-              >
-                <span>شروع یادگیری از درس اول</span>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2.5 text-xs sm:text-sm text-white/85 font-medium">
-                <AlertCircle className="h-4 w-4 text-[#7AE36A] shrink-0" />
-                <span>سرفصل‌ها و درس‌های این دوره هنوز منتشر نشده است</span>
+                {publishedDate && (
+                  <>
+                    <span className="text-white/25">·</span>
+                    <span className="inline-flex items-center gap-1 text-white/65">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>انتشار: {publishedDate}</span>
+                    </span>
+                  </>
+                )}
               </div>
-            )}
 
-            <Link
-              href="/docs"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 px-4 py-3 text-xs sm:text-sm text-white font-semibold transition-colors"
-            >
-              <span>بازگشت به فهرست دوره‌ها</span>
-            </Link>
+              <div className="space-y-3">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight text-balance">
+                  {course.title}
+                </h1>
+                <p className="text-sm sm:text-base text-white/80 leading-relaxed max-w-3xl">
+                  {course.summary}
+                </p>
+              </div>
+
+              {/* Primary Action CTA or Empty Lessons Guard */}
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                {firstLesson ? (
+                  <Link
+                    href={`/docs/${courseSlug}/${firstLesson.slug}`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#7AE36A] hover:bg-[#6acf5a] text-[#042A1B] px-6 py-3 text-sm font-extrabold transition-colors"
+                  >
+                    <span>شروع یادگیری از درس اول</span>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <div className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2.5 text-xs sm:text-sm text-white/85 font-medium">
+                    <AlertCircle className="h-4 w-4 text-[#7AE36A] shrink-0" />
+                    <span>سرفصل‌ها و درس‌های این دوره هنوز منتشر نشده است</span>
+                  </div>
+                )}
+
+                <Link
+                  href="/docs"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 px-4 py-3 text-xs sm:text-sm text-white font-semibold transition-colors"
+                >
+                  <span>بازگشت به فهرست دوره‌ها</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Course Visual Cover Card */}
+            <div className="lg:col-span-4">
+              <div className="rounded-2xl overflow-hidden border border-white/15 shadow-lg">
+                <CourseCoverMedia
+                  title={course.title}
+                  slug={course.slug}
+                  coverStorageKey={course.coverStorageKey}
+                  icon={course.icon}
+                  className="h-48 sm:h-52 lg:h-48"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

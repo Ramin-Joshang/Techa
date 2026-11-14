@@ -123,16 +123,16 @@ export default function RegisterForm() {
         <h1 className="text-xl sm:text-2xl font-black text-white mb-3">ثبت‌نام با موفقیت انجام شد</h1>
 
         <p className="text-slate-300 text-sm leading-relaxed mb-6">
-          حساب کاربری شما با شماره <span className="font-mono text-[#7AE36A] font-bold" dir="ltr">{registeredPhone}</span> در پایگاه داده ایجاد شد.
+          حساب کاربری شما با شماره <span className="font-mono text-[#7AE36A] font-bold" dir="ltr">{registeredPhone}</span> با موفقیت ایجاد شد.
         </p>
 
         <div className="bg-[#02180F] border border-[#7AE36A]/20 rounded-xl p-4 mb-6 text-right space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-[#7AE36A]">
             <ShieldCheck className="w-4 h-4" />
-            <span>وضعیت حساب: در انتظار تأیید پیامکی (Pending Verification)</span>
+            <span>وضعیت حساب: در انتظار تأیید شماره موبایل</span>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            مطابق پروتکل امنیتی تکا، تمام حساب‌های جدید در نقش دانشجوی تأییدنشده قرار می‌گیرند. در فاز آینده (اتصال سامانه پیامکی)، کد فعال‌سازی برای شماره موبایل شما ارسال خواهد شد.
+            حساب کاربری شما ایجاد شده است. هنگام ورود می‌توانید تأیید پیامکی شماره موبایل خود را با کد یک‌بارمصرف تکمیل کنید.
           </p>
         </div>
 

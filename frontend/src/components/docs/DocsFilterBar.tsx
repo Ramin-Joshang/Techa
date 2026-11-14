@@ -165,21 +165,37 @@ export default function DocsFilterBar({
         </div>
       </div>
 
-      {/* Active Tag Indicator Bar */}
-      {currentTag && (
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <span className="text-slate-500">برچسب فعال:</span>
-          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono font-semibold" dir="ltr">
-            #{currentTag}
-            <button
-              type="button"
-              onClick={() => updateQueryParams({ tag: undefined })}
-              aria-label="حذف فیلتر برچسب"
-              className="hover:text-red-600 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </span>
+      {/* Active Tag Indicator & Transition Status Bar */}
+      {(currentTag || isPending) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+          {currentTag ? (
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500">برچسب فعال:</span>
+              <span
+                className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono font-semibold"
+                dir="ltr"
+              >
+                #{currentTag}
+                <button
+                  type="button"
+                  onClick={() => updateQueryParams({ tag: undefined })}
+                  aria-label="حذف فیلتر برچسب"
+                  className="hover:text-red-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            </div>
+          ) : (
+            <span />
+          )}
+
+          {isPending && (
+            <span className="inline-flex items-center gap-2 text-emerald-700 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>در حال به‌روزرسانی فهرست دوره‌ها...</span>
+            </span>
+          )}
         </div>
       )}
     </div>

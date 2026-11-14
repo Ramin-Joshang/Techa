@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Image as ImageIcon, Sparkles } from 'lucide-react';
 import {
   AdminCreateCourseDto,
@@ -116,26 +116,54 @@ export function CourseForm({
 }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pickerTarget, setPickerTarget] = useState<'cover' | 'icon' | null>(null);
+  const formTopRef = useRef<HTMLDivElement>(null);
+
+  const FIELD_LABELS: Record<string, string> = {
+    title: 'عنوان دوره',
+    slug: 'اسلاگ URL',
+    summary: 'خلاصه کوتاه دوره',
+    description: 'توضیحات کامل دوره',
+    level: 'سطح دوره',
+    order: 'ترتیب نمایش',
+    tags: 'برچسب‌ها (Tags)',
+    prerequisites: 'پیش‌نیازها',
+    targetAudience: 'مخاطبان هدف',
+    coverStorageKey: 'تصویر کاور دوره',
+    'icon.name': 'شناسه آیکون سیستمی',
+    'icon.storageKey': 'آیکون رسانه‌ای',
+    'seo.metaTitle': 'عنوان سئو (Meta Title)',
+    'seo.metaDescription': 'توضیحات سئو (Meta Description)',
+    'seo.canonicalUrlOverride': 'آدرس Canonical',
+    'seo.ogImageStorageKey': 'تصویر Open Graph',
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
 
+    const normalizedTags = Array.from(
+      new Set(
+        values.tags
+          .map((t) => toSafeSlug(t) || t.trim().toLowerCase())
+          .filter(Boolean)
+      )
+    );
+
     const payload: AdminCreateCourseDto = {
       title: values.title.trim(),
-      slug: values.slug.trim(),
+      slug: values.slug.trim().toLowerCase(),
       summary: values.summary.trim(),
       description: values.description.trim(),
       level: values.level,
       order: Number.isFinite(values.order) ? Math.max(0, Math.trunc(values.order)) : 0,
       icon: values.icon,
       coverStorageKey: values.coverStorageKey?.trim() || undefined,
-      tags: values.tags,
-      prerequisites: values.prerequisites,
-      targetAudience: values.targetAudience,
+      tags: normalizedTags,
+      prerequisites: values.prerequisites.map((p) => p.trim()).filter(Boolean),
+      targetAudience: values.targetAudience.map((a) => a.trim()).filter(Boolean),
       seo: {
-        metaTitle: values.seo.metaTitle.trim(),
-        metaDescription: values.seo.metaDescription.trim(),
+        metaTitle: values.seo.metaTitle.trim() || values.title.trim().slice(0, 100),
+        metaDescription: values.seo.metaDescription.trim() || values.summary.trim().slice(0, 300),
         canonicalUrlOverride: values.seo.canonicalUrlOverride?.trim() || undefined,
         ogImageStorageKey: values.seo.ogImageStorageKey?.trim() || undefined,
       },
@@ -146,10 +174,20 @@ export function CourseForm({
     if (!parsed.success) {
       const nextErrs: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
-        const key = issue.path.join('.');
-        if (!nextErrs[key]) nextErrs[key] = issue.message;
+        const rawKey = issue.path.join('.');
+        const normalizedKey = rawKey.startsWith('tags.')
+          ? 'tags'
+          : rawKey.startsWith('prerequisites.')
+            ? 'prerequisites'
+            : rawKey.startsWith('targetAudience.')
+              ? 'targetAudience'
+              : rawKey || 'form';
+        if (!nextErrs[normalizedKey]) {
+          nextErrs[normalizedKey] = issue.message;
+        }
       }
       setFieldErrors(nextErrs);
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -159,10 +197,22 @@ export function CourseForm({
   const coverPreview = resolvePreviewMediaUrl(values.coverStorageKey);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <div ref={formTopRef} />
       {Object.keys(fieldErrors).length > 0 && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
-          لطفاً خطاهای مشخص‌شده در فرم را برطرف کنید.
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-800 space-y-2"
+        >
+          <p className="font-bold">لطفاً خطاهای مشخص‌شده در فرم را برطرف کنید:</p>
+          <ul className="list-disc pr-5 space-y-1">
+            {Object.entries(fieldErrors).map(([key, msg]) => (
+              <li key={key}>
+                <strong className="font-semibold">{FIELD_LABELS[key] || key}:</strong>{' '}
+                <span>{msg}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -416,6 +466,8 @@ export function CourseForm({
             label="برچسب‌ها (Tags)"
             values={values.tags}
             onChange={(tags) => onChange({ ...values, tags })}
+            normalizeItem={(val) => toSafeSlug(val)}
+            hint="فقط حروف کوچک انگلیسی، اعداد و خط‌تیره (مثال: react یا next-js)"
             placeholder="مثلاً react یا typescript"
             error={fieldErrors.tags}
           />
@@ -438,9 +490,31 @@ export function CourseForm({
 
       {/* SEO Section */}
       <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-        <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-          تنظیمات سئو (SEO)
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <h2 className="text-sm font-bold text-slate-900">
+            تنظیمات سئو (SEO)
+          </h2>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...values,
+                  seo: {
+                    ...values.seo,
+                    metaTitle: values.seo.metaTitle.trim() || values.title.trim().slice(0, 100),
+                    metaDescription:
+                      values.seo.metaDescription.trim() || values.summary.trim().slice(0, 300),
+                  },
+                })
+              }
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>تکمیل خودکار از عنوان و خلاصه</span>
+            </button>
+          )}
+        </div>
         <SeoFieldsSection
           seo={values.seo}
           onChange={(seo) => onChange({ ...values, seo })}

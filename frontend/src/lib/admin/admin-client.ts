@@ -608,8 +608,12 @@ export const adminClient = {
       method: 'DELETE',
     }),
 
-  getMediaUsage: (mediaId: string) =>
-    requestData<MediaUsageItem[]>(`/api/v1/admin/media/${mediaId}/usage`),
+  getMediaUsage: async (mediaId: string): Promise<MediaUsageItem[]> => {
+    const res = await requestData<
+      MediaUsageItem[] | { usages?: MediaUsageItem[] }
+    >(`/api/v1/admin/media/${mediaId}/usage`);
+    return Array.isArray(res) ? res : Array.isArray(res?.usages) ? res.usages : [];
+  },
 
   // ---------------------------------------------------------------------------
   // 6. Site Pages & Settings
@@ -678,8 +682,24 @@ export const adminClient = {
     order?: string;
   } = {}) => requestPaginated<AdminUserDto>(`/api/v1/admin/users${buildQueryString(query)}`),
 
-  getUserDetail: (userId: string) =>
-    requestData<AdminUserDetailDto>(`/api/v1/admin/users/${userId}`),
+  getUserDetail: async (userId: string): Promise<AdminUserDetailDto> => {
+    const res = await requestData<
+      AdminUserDetailDto | (AdminUserDto & { activeSessionsCount?: number })
+    >(`/api/v1/admin/users/${userId}`);
+    if (res && 'user' in res && res.user) {
+      return {
+        user: res.user,
+        activeSessionsCount: res.activeSessionsCount ?? 0,
+      };
+    }
+    const { activeSessionsCount = 0, ...userFields } = res as AdminUserDto & {
+      activeSessionsCount?: number;
+    };
+    return {
+      user: userFields as AdminUserDto,
+      activeSessionsCount,
+    };
+  },
 
   updateUserStatus: (userId: string, dto: AdminUpdateUserStatusDto) =>
     requestData<AdminUserDto>(`/api/v1/admin/users/${userId}/status`, {

@@ -17,7 +17,7 @@ export const CourseListQuerySchema = z
     page: z.coerce.number().int().positive('Page must be a positive integer').default(1),
     limit: z.coerce.number().int().positive('Limit must be a positive integer').max(50, 'Limit cannot exceed 50').default(20),
     level: CourseLevelSchema.optional(),
-    tag: CourseTagSchema.optional(),
+    tag: z.string().trim().min(1).max(50).optional(),
     q: z.string().min(1).max(100).optional(),
     sort: CourseListSortSchema.default('order'),
   })

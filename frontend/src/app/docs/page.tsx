@@ -19,6 +19,7 @@ import {
   isNetworkError,
   type PublicCoursesPage,
 } from '../../lib/server';
+import { formatPersianCount } from '../../lib/format-duration';
 import DocCard from '../../components/docs/DocCard';
 import DocsFilterBar from '../../components/docs/DocsFilterBar';
 import DocsRetryButton from '../../components/docs/DocsRetryButton';
@@ -63,6 +64,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   const searchQuery = resolvedSearchParams?.q ? resolvedSearchParams.q.trim() : undefined;
 
   let coursesResult: PublicCoursesPage;
+  let unfilteredCatalog: PublicCoursesPage | null = null;
   let lessonMatches: Array<{
     id: string;
     title: string;
@@ -70,11 +72,11 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
     courseSlug: string;
     lessonSlug: string;
   }> = [];
-  let fetchErrorKind: 'network' | 'database' | 'server' | null = null;
+  let fetchErrorKind: 'network' | 'service' | 'server' | null = null;
   let fetchErrorMessage: string | null = null;
 
   try {
-    const [coursesRes, searchRes] = await Promise.all([
+    const [coursesRes, catalogForTagsRes, searchRes] = await Promise.all([
       getPublishedCourses({
         page,
         limit: 12,
@@ -84,12 +86,15 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
         sort: validSort,
         noStore: true,
       }),
+      getPublishedCourses({ limit: 50, noStore: true }).catch(() => null),
       searchQuery && searchQuery.length >= 2
         ? searchPublicContent({ q: searchQuery, type: 'lessons', limit: 6 }).catch(() => null)
         : Promise.resolve(null),
     ]);
 
     coursesResult = coursesRes;
+    unfilteredCatalog = catalogForTagsRes;
+
     if (searchRes?.results) {
       lessonMatches = searchRes.results
         .filter((r) => r.type === 'lesson' && r.courseSlug && r.lessonSlug)
@@ -104,14 +109,13 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   } catch (err: unknown) {
     if (isNetworkError(err)) {
       fetchErrorKind = 'network';
-      fetchErrorMessage = 'امکان برقراری ارتباط با سرویس‌دهنده مستندات وجود ندارد.';
+      fetchErrorMessage = 'در حال حاضر برقراری ارتباط با سرویس‌دهنده امکان‌پذیر نیست. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.';
     } else if (isServiceUnavailable(err)) {
-      fetchErrorKind = 'database';
-      fetchErrorMessage = 'سرویس پایگاه داده یا API موقتاً در دسترس نیست.';
+      fetchErrorKind = 'service';
+      fetchErrorMessage = 'سرویس محتوا موقتاً در حال بروزرسانی است. لطفاً چند لحظه دیگر مجدداً تلاش کنید.';
     } else {
       fetchErrorKind = 'server';
-      fetchErrorMessage =
-        err instanceof Error ? err.message : 'خطای غیرمنتظره در بارگذاری فهرست مستندات';
+      fetchErrorMessage = 'دریافت فهرست دوره‌ها در این لحظه با اختلال مواجه شد. لطفاً صفحه را تازه‌سازی کنید.';
     }
 
     coursesResult = {
@@ -125,10 +129,15 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
 
   const { courses, total, totalPages } = coursesResult;
 
-  // Collect real tags present on returned courses for quick discovery
+  // Keep full topic discovery tags visible even when filtering by level, tag, or search query
+  const tagSourceCourses =
+    unfilteredCatalog?.courses && unfilteredCatalog.courses.length > 0
+      ? unfilteredCatalog.courses
+      : courses;
+
   const availableTags = Array.from(
-    new Set(courses.flatMap((c) => c.tags || []))
-  ).slice(0, 8);
+    new Set(tagSourceCourses.flatMap((c) => c.tags || []).map((t) => t.trim()).filter(Boolean))
+  ).slice(0, 14);
 
   const createPageUrl = (targetPage: number) => {
     const params = new URLSearchParams();
@@ -171,7 +180,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
         </header>
 
         {/* Filter & Search Bar */}
-        <Suspense fallback={<div className="h-16 rounded-2xl bg-white border border-slate-200" />}>
+        <Suspense fallback={<div className="h-16 rounded-2xl bg-white border border-slate-200 animate-pulse" />}>
           <DocsFilterBar
             currentLevel={validLevel || 'all'}
             currentSearch={searchQuery || ''}
@@ -208,8 +217,13 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
         {!fetchErrorKind && (
           <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 border-b border-slate-200/80 pb-3 gap-2">
             <span className="tabular-nums">
-              نمایش <strong className="text-slate-900 font-bold">{courses.length}</strong> از{' '}
-              <strong className="text-slate-900 font-bold">{total}</strong> دوره منتشر شده
+              نمایش{' '}
+              <strong className="text-slate-900 font-bold">
+                {formatPersianCount(courses.length)}
+              </strong>{' '}
+              از{' '}
+              <strong className="text-slate-900 font-bold">{formatPersianCount(total)}</strong>{' '}
+              دوره منتشر شده
             </span>
 
             {hasActiveFilters && (
@@ -236,7 +250,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
                 <span>درس‌های منطبق با «{searchQuery}»</span>
               </h2>
               <span className="text-xs text-slate-500 tabular-nums">
-                {lessonMatches.length} نتیجه
+                {formatPersianCount(lessonMatches.length)} نتیجه
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -259,13 +273,13 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
           </section>
         )}
 
-        {/* Main Grid / Distinguishable API/Network Error / Empty State */}
+        {/* Main Grid / Friendly Unavailable or Empty State */}
         {fetchErrorKind ? (
           <div className="rounded-2xl border border-amber-200 bg-white p-8 sm:p-12 text-center space-y-4 max-w-2xl mx-auto">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200 mx-auto">
               {fetchErrorKind === 'network' ? (
                 <WifiOff className="h-6 w-6" />
-              ) : fetchErrorKind === 'database' ? (
+              ) : fetchErrorKind === 'service' ? (
                 <ServerCrash className="h-6 w-6" />
               ) : (
                 <AlertCircle className="h-6 w-6" />
@@ -274,10 +288,8 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
             <div className="space-y-1.5">
               <h2 className="text-base sm:text-lg font-extrabold text-slate-950">
                 {fetchErrorKind === 'network'
-                  ? 'ارتباط با سرور مستندات برقرار نشد'
-                  : fetchErrorKind === 'database'
-                    ? 'سرویس پایگاه داده موقتاً در دسترس نیست'
-                    : 'خطا در دریافت فهرست مستندات'}
+                  ? 'ارتباط با سرویس‌دهنده برقرار نشد'
+                  : 'بارگذاری دوره‌ها با اختلال موقت مواجه شد'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
                 {fetchErrorMessage}
@@ -306,7 +318,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               {hasActiveFilters
                 ? 'عبارت جستجو، سطح یا برچسب انتخابی را تغییر دهید تا دوره‌های دیگر نمایش داده شوند.'
-                : 'در حال حاضر هیچ دوره‌ای در وضعیت منتشر شده در پایگاه داده ثبت نشده است.'}
+                : 'دوره‌ها و مستندات جدید به‌زودی در این بخش منتشر خواهند شد.'}
             </p>
             {hasActiveFilters && (
               <div className="pt-2">
@@ -348,9 +360,9 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
 
             <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 px-3 tabular-nums">
               <span>صفحه</span>
-              <strong className="text-slate-950 font-bold">{page}</strong>
+              <strong className="text-slate-950 font-bold">{formatPersianCount(page)}</strong>
               <span>از</span>
-              <strong className="text-slate-950 font-bold">{totalPages}</strong>
+              <strong className="text-slate-950 font-bold">{formatPersianCount(totalPages)}</strong>
             </div>
 
             {page < totalPages ? (

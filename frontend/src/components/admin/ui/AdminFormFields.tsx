@@ -95,6 +95,7 @@ export function AdminStringListInput({
   maxItems = 10,
   hint,
   error,
+  normalizeItem,
 }: {
   label: string;
   values: string[];
@@ -103,11 +104,13 @@ export function AdminStringListInput({
   maxItems?: number;
   hint?: string;
   error?: string;
+  normalizeItem?: (value: string) => string;
 }) {
   const [draft, setDraft] = useState('');
 
   const addItem = () => {
-    const trimmed = draft.trim();
+    const rawTrimmed = draft.trim();
+    const trimmed = normalizeItem ? normalizeItem(rawTrimmed) : rawTrimmed;
     if (!trimmed) return;
     if (values.length >= maxItems) return;
     if (values.includes(trimmed)) {

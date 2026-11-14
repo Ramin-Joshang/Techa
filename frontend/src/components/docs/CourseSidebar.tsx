@@ -15,18 +15,24 @@ import {
   X,
   Search,
   Clock,
+  PanelRightClose,
 } from 'lucide-react';
+import { formatPersianCount } from '../../lib/format-duration';
 
 interface CourseSidebarProps {
   outline: CourseOutlinePublicDto;
   courseSlug: string;
   courseTitle?: string;
+  desktopCollapsed?: boolean;
+  onToggleDesktopCollapse?: () => void;
 }
 
 export default function CourseSidebar({
   outline,
   courseSlug,
   courseTitle,
+  desktopCollapsed = false,
+  onToggleDesktopCollapse,
 }: CourseSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -104,26 +110,40 @@ export default function CourseSidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full space-y-3.5">
-      {/* Course Link */}
+      {/* Course Link & Collapse Toggle */}
       <div className="pb-3 border-b border-slate-200/80 space-y-1.5">
-        <Link
-          href={`/docs/${courseSlug}`}
-          onClick={() => setMobileOpen(false)}
-          className={`flex items-center gap-2 p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-colors ${
-            pathname === `/docs/${courseSlug}`
-              ? 'bg-emerald-50 text-emerald-800'
-              : 'text-slate-900 hover:bg-slate-100 hover:text-emerald-800'
-          }`}
-        >
-          <Layers className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span className="line-clamp-2 leading-snug">
-            {courseTitle || outline.course?.title || 'نمای کلی دوره'}
-          </span>
-        </Link>
+        <div className="flex items-start justify-between gap-2">
+          <Link
+            href={`/docs/${courseSlug}`}
+            onClick={() => setMobileOpen(false)}
+            className={`flex-1 flex items-center gap-2 p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-colors min-w-0 ${
+              pathname === `/docs/${courseSlug}`
+                ? 'bg-emerald-50 text-emerald-800'
+                : 'text-slate-900 hover:bg-slate-100 hover:text-emerald-800'
+            }`}
+          >
+            <Layers className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="line-clamp-2 leading-snug">
+              {courseTitle || outline.course?.title || 'نمای کلی دوره'}
+            </span>
+          </Link>
+
+          {onToggleDesktopCollapse && (
+            <button
+              type="button"
+              onClick={onToggleDesktopCollapse}
+              title="بستن فهرست سرفصل‌ها"
+              aria-label="بستن فهرست سرفصل‌ها"
+              className="hidden lg:inline-flex p-1.5 mt-1 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0"
+            >
+              <PanelRightClose className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2 px-2 text-[11px] text-slate-500 tabular-nums">
-          <span>{outline.chapters?.length ?? 0} فصل</span>
+          <span>{formatPersianCount(outline.chapters?.length ?? 0)} فصل</span>
           <span className="text-slate-300">·</span>
-          <span>{totalLessonsCount} درس</span>
+          <span>{formatPersianCount(totalLessonsCount)} درس</span>
         </div>
       </div>
 
@@ -205,7 +225,7 @@ export default function CourseSidebar({
                                 active ? 'text-white/75' : 'text-slate-400'
                               }`}
                             >
-                              {lesson.readingTimeMinutes}د
+                              {formatPersianCount(lesson.readingTimeMinutes)}د
                             </span>
                           )}
                         </Link>
@@ -259,12 +279,14 @@ export default function CourseSidebar({
       </div>
 
       {/* Desktop Persistent Sticky Sidebar */}
-      <aside
-        aria-label="ناوبری سرفصل‌های دوره"
-        className="hidden lg:block w-72 shrink-0 sticky top-24 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs"
-      >
-        {sidebarContent}
-      </aside>
+      {!desktopCollapsed && (
+        <aside
+          aria-label="ناوبری سرفصل‌های دوره"
+          className="hidden lg:block w-72 shrink-0 sticky top-24 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs"
+        >
+          {sidebarContent}
+        </aside>
+      )}
 
       {/* Mobile Slide-Over Drawer */}
       {mobileOpen && (

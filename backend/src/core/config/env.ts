@@ -1,5 +1,8 @@
+import path from 'node:path';
 import './load-env';
 import { z } from 'zod';
+
+const DEFAULT_MEDIA_STORAGE_ROOT = path.resolve(__dirname, '../../../storage/media');
 
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -29,7 +32,7 @@ export const EnvSchema = z.object({
   KAVENEGAR_LIVE_TEST_ENABLED: z.coerce.boolean().default(false),
   KAVENEGAR_LIVE_TEST_RECEPTOR: z.string().optional(),
   // Phase 6 CMS Media Storage & Cache Revalidation
-  TECHA_MEDIA_STORAGE_ROOT: z.string().min(1).default('./var/media'),
+  TECHA_MEDIA_STORAGE_ROOT: z.string().min(1).default(DEFAULT_MEDIA_STORAGE_ROOT),
   MEDIA_MAX_IMAGE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   MEDIA_MAX_DOCUMENT_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   MEDIA_MAX_VIDEO_BYTES: z.coerce.number().int().positive().default(200 * 1024 * 1024),

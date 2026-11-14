@@ -13,406 +13,204 @@ This set of fonts are used in this project under the license: (TRJC3OMS)
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 100;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Thin.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Thin.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Thin.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Thin.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 200;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-UltraLight.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-UltraLight.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-UltraLight.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-UltraLight.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 300;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Light.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Light.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Light.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Light.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 500;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Medium.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Medium.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Medium.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Medium.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 600;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-DemiBold.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-DemiBold.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-DemiBold.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-DemiBold.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 800;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-ExtraBold.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-ExtraBold.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-ExtraBold.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-ExtraBold.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 900;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Black.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Black.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Black.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Black.woff") format("woff");
 }
+
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 950;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-ExtraBlack.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-ExtraBlack.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-ExtraBlack.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-ExtraBlack.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: 1000;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Heavy.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Heavy.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Heavy.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Heavy.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: bold;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Bold.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Bold.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Bold.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Bold.woff") format("woff");
 }
 
 @font-face {
   font-family: IRANYekanXFaNum;
   font-style: normal;
   font-weight: normal;
+  font-display: swap;
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXFaNum-Regular.woff")
-      format("woff"),
-    url("../../public/fonts/IranYekanX/woff2/IRANYekanXFaNum-Regular.woff2")
-      format("woff2");
+    url("/fonts/IranYekanX/woff2/IRANYekanXFaNum-Regular.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXFaNum-Regular.woff") format("woff");
 }
 
 @font-face {
   font-family: "IRANYekanXVFaNumVF";
   src:
-    url("../../public/fonts/IranYekanX/woff/IRANYekanXVFaNumVF.woff")
-      format("woff-variations"),
-    /* will be the standard and works in Safari now */
-      url("../../public/fonts/IranYekanX/woff/IRANYekanXVFaNumVF.woff")
-      format("woff");
-  /* for the other supporting browsers */
+    url("/fonts/IranYekanX/woff2/IRANYekanXVFaNumVF.woff2") format("woff2-variations"),
+    url("/fonts/IranYekanX/woff/IRANYekanXVFaNumVF.woff") format("woff-variations"),
+    url("/fonts/IranYekanX/woff2/IRANYekanXVFaNumVF.woff2") format("woff2"),
+    url("/fonts/IranYekanX/woff/IRANYekanXVFaNumVF.woff") format("woff");
   font-weight: 100 1000;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Black.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Black.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Black.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Black.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Black.ttf") format("truetype");
-  font-weight: 900;
-  font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-BlackItalic.eot");
   src:
-    url("../../public/fonts/poppins/eot/Poppins-BlackItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-BlackItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-BlackItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-BlackItalic.ttf")
-      format("truetype");
-  font-weight: 900;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Bold.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Bold.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Bold.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Bold.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Bold.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-BoldItalic.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-BoldItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-BoldItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-BoldItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-BoldItalic.ttf")
-      format("truetype");
-  font-weight: bold;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-ExtraBold.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-ExtraBold.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-ExtraBold.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-ExtraBold.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-ExtraBold.ttf")
-      format("truetype");
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-ExtraBoldItalic.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-ExtraBoldItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-ExtraBoldItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-ExtraBoldItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-ExtraBoldItalic.ttf")
-      format("truetype");
-  font-weight: bold;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-ExtraLight.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-ExtraLight.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-ExtraLight.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-ExtraLight.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-ExtraLight.ttf")
-      format("truetype");
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-ExtraLightItalic.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-ExtraLightItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-ExtraLightItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-ExtraLightItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-ExtraLightItalic.ttf")
-      format("truetype");
-  font-weight: 200;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Italic.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Italic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Italic.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Italic.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Italic.ttf") format("truetype");
-  font-weight: normal;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Light.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Light.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Light.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Light.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Light.ttf") format("truetype");
+    url("/fonts/poppins/woff2/Poppins-Light.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-Light.woff") format("woff");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
 }
 
 @font-face {
   font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-LightItalic.eot");
   src:
-    url("../../public/fonts/poppins/eot/Poppins-LightItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-LightItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-LightItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-LightItalic.ttf")
-      format("truetype");
-  font-weight: 300;
-  font-style: italic;
+    url("/fonts/poppins/woff2/Poppins-Regular.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
   font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
 }
 
 @font-face {
   font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Medium.eot");
   src:
-    url("../../public/fonts/poppins/eot/Poppins-Medium.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Medium.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Medium.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Medium.ttf") format("truetype");
+    url("/fonts/poppins/woff2/Poppins-Medium.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
 }
 
 @font-face {
   font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-MediumItalic.eot");
   src:
-    url("../../public/fonts/poppins/eot/Poppins-MediumItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-MediumItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-MediumItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-MediumItalic.ttf")
-      format("truetype");
-  font-weight: 500;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Regular.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Regular.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Regular.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Regular.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Regular.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-SemiBold.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-SemiBold.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-SemiBold.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-SemiBold.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-SemiBold.ttf")
-      format("truetype");
+    url("/fonts/poppins/woff2/Poppins-SemiBold.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-SemiBold.woff") format("woff");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
 }
 
 @font-face {
   font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-SemiBoldItalic.eot");
   src:
-    url("../../public/fonts/poppins/eot/Poppins-SemiBoldItalic.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-SemiBoldItalic.woff2")
-      format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-SemiBoldItalic.woff")
-      format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-SemiBoldItalic.ttf")
-      format("truetype");
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../../public/fonts/poppins/eot/Poppins-Thin.eot");
-  src:
-    url("../../public/fonts/poppins/eot/Poppins-Thin.eot?#iefix")
-      format("embedded-opentype"),
-    url("../../public/fonts/poppins/woff2/Poppins-Thin.woff2") format("woff2"),
-    url("../../public/fonts/poppins/woff/Poppins-Thin.woff") format("woff"),
-    url("../../public/fonts/poppins/ttf/Poppins-Thin.ttf") format("truetype");
-  font-weight: 100;
+    url("/fonts/poppins/woff2/Poppins-Bold.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-Bold.woff") format("woff");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src:
+    url("/fonts/poppins/woff2/Poppins-ExtraBold.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-ExtraBold.woff") format("woff");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src:
+    url("/fonts/poppins/woff2/Poppins-Black.woff2") format("woff2"),
+    url("/fonts/poppins/woff/Poppins-Black.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A, U+00C0-024F;
 }
 
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
-  --font-sans: IRANYekanXVFaNumVF, IRANYekanXFaNum, Poppins, system-ui, -apple-system, sans-serif;
+  --font-sans: "Poppins", "IRANYekanXVFaNumVF", "IRANYekanXFaNum", system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -532,4 +330,25 @@ code::after {
   direction: ltr;
   unicode-bidi: isolate;
   display: inline-block;
+}
+
+@keyframes floatAstronaut {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) rotate(2deg);
+  }
+}
+
+.animate-float-astronaut {
+  animation: floatAstronaut 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-astronaut {
+    animation: none;
+  }
 }

@@ -79,12 +79,12 @@ describe('Public API: Courses Endpoints', () => {
       expect(countSpy).toHaveBeenCalledWith({
         status: 'published',
         level: 'beginner',
-        tags: 'react',
+        tags: { $regex: /^react$/i },
       });
       expect(findSpy).toHaveBeenCalledWith({
         status: 'published',
         level: 'beginner',
-        tags: 'react',
+        tags: { $regex: /^react$/i },
       });
       expect(response.body.meta.page).toBe(2);
       expect(response.body.meta.limit).toBe(10);

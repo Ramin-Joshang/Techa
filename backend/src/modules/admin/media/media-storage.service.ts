@@ -214,14 +214,20 @@ export class LocalMediaStorageProvider {
   }
 
   public async deleteFile(storageKey: string): Promise<void> {
-    const targetPath = this.resolveSafePath(storageKey);
+    let targetPath: string;
+    try {
+      targetPath = this.resolveSafePath(storageKey);
+    } catch {
+      return;
+    }
     try {
       const stat = await fsp.lstat(targetPath);
       if (!stat.isSymbolicLink() && stat.isFile()) {
         await fsp.unlink(targetPath);
       }
     } catch (err: unknown) {
-      if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code !== 'ENOENT' && code !== 'ENOTDIR') {
         throw err;
       }
     }

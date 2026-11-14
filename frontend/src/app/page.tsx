@@ -6,23 +6,22 @@ import {
   ArrowLeft,
   CheckCircle2,
   Code2,
-  Layers,
-  Search,
   Cpu,
   GraduationCap,
   Briefcase,
   FileCode2,
   Terminal,
-  AlertTriangle,
+  AlertCircle,
   Compass,
 } from 'lucide-react';
 import {
   getHomepage,
   getPublishedCourses,
   getCourseOutline,
-  isServiceUnavailable,
 } from '../lib/server';
 import DocCard from '../components/docs/DocCard';
+import LearningRoadmap from '../components/roadmap/LearningRoadmap';
+import { formatPersianCount, formatReadingDuration } from '../lib/format-duration';
 
 export const revalidate = 60;
 
@@ -77,12 +76,11 @@ export default async function HomePage() {
   let homeConfig: Awaited<ReturnType<typeof getHomepage>> = null;
   let publishedCourses: Awaited<ReturnType<typeof getPublishedCourses>>['courses'] = [];
   let totalCourses = 0;
-  let isDatabaseError = false;
-  let loadErrorMessage: string | null = null;
+  let coursesUnavailable = false;
 
   const [homeRes, coursesRes] = await Promise.allSettled([
     getHomepage(),
-    getPublishedCourses({ limit: 6 }),
+    getPublishedCourses({ limit: 24 }),
   ]);
 
   if (homeRes.status === 'fulfilled') {
@@ -93,19 +91,17 @@ export default async function HomePage() {
     publishedCourses = coursesRes.value?.courses || [];
     totalCourses = coursesRes.value?.total || publishedCourses.length;
   } else {
-    const err = coursesRes.reason;
-    isDatabaseError = isServiceUnavailable(err);
-    loadErrorMessage =
-      err instanceof Error ? err.message : 'خطا در دریافت اطلاعات دوره‌ها';
+    coursesUnavailable = true;
   }
 
-  // Strictly use configured featuredCourses when present; otherwise fall back to ordered published courses
   const showcaseCourses =
     homeConfig?.featuredCourses && homeConfig.featuredCourses.length > 0
       ? homeConfig.featuredCourses.slice(0, 6)
       : publishedCourses.slice(0, 6);
 
-  // Determine a genuine interactive lesson entry link if available
+  const roadmapCourses =
+    publishedCourses.length > 0 ? publishedCourses : showcaseCourses;
+
   const firstCourseWithLessons =
     showcaseCourses.find((c) => (c.stats?.totalLessons ?? 0) > 0) || showcaseCourses[0];
   let firstInteractiveLessonUrl = firstCourseWithLessons
@@ -124,11 +120,6 @@ export default async function HomePage() {
     }
   }
 
-  // Extract genuine topic tags from published courses
-  const realTopicTags = Array.from(
-    new Set(publishedCourses.flatMap((c) => c.tags || []))
-  ).slice(0, 6);
-
   const heroTitle =
     homeConfig?.heroSection?.title || 'پلتفرم آموزشی و کارآموزی تکا';
   const heroSubtitle =
@@ -141,6 +132,10 @@ export default async function HomePage() {
   );
 
   const realStats = homeConfig?.statistics;
+  const formattedTotalDuration = formatReadingDuration(
+    realStats?.totalReadingTimeMinutes
+  );
+
   const platformFeatures =
     homeConfig?.features && homeConfig.features.length > 0
       ? homeConfig.features
@@ -198,10 +193,9 @@ export default async function HomePage() {
       />
 
       {/* =========================================================================
-          1. HERO SECTION — Deep Emerald Authority (#042A1B) + Real Search & Stats
+          1. HERO SECTION — Clean Deep Emerald (#042A1B) + Animated Astronaut
           ========================================================================= */}
       <section className="relative bg-[#042A1B] text-white pt-12 pb-16 lg:pt-16 lg:pb-24 overflow-hidden border-b border-[#7AE36A]/20">
-        {/* Subtle Architectural Grid & Soft Emerald Radial Light */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -213,12 +207,12 @@ export default async function HomePage() {
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-24 right-1/4 w-[420px] h-[420px] bg-[#7AE36A]/10 rounded-full blur-3xl"
+          className="pointer-events-none absolute -top-28 right-1/4 w-[440px] h-[440px] bg-[#7AE36A]/10 rounded-full blur-3xl"
         />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Hero Copy & Search */}
+            {/* Hero Copy & Primary Actions */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-right">
               <div className="inline-flex items-center gap-2 bg-[#7AE36A]/15 text-[#7AE36A] px-3.5 py-1.5 rounded-lg border border-[#7AE36A]/30 font-bold text-xs">
                 <span>اعتبار بگیر، مسلط شو، وارد بازار کار شو</span>
@@ -242,55 +236,10 @@ export default async function HomePage() {
                 {heroSubtitle}
               </p>
 
-              {/* Search Bar */}
-              <div className="pt-1 max-w-xl mx-auto lg:mr-0 space-y-3">
-                <form
-                  action="/docs"
-                  method="GET"
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#031F14] p-2 rounded-2xl border border-[#7AE36A]/30 shadow-xl"
-                >
-                  <div className="relative flex-1 flex items-center">
-                    <Search className="h-4 w-4 text-[#7AE36A] absolute right-3.5 pointer-events-none" />
-                    <input
-                      type="text"
-                      name="q"
-                      aria-label="جستجو در دوره‌ها و درس‌ها"
-                      placeholder="جستجو در دوره‌ها و مباحث (مثال: React، TypeScript)..."
-                      className="w-full bg-transparent text-white text-sm pr-10 pl-3 py-2.5 focus:outline-none placeholder:text-white/50"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-[#7AE36A] hover:bg-[#6acf5a] text-[#042A1B] font-extrabold text-sm rounded-xl transition-colors shrink-0 inline-flex items-center justify-center gap-1.5"
-                  >
-                    <span>جستجو</span>
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                </form>
-
-                {/* Genuine Topic Quick Filters Derived from Published Courses */}
-                {realTopicTags.length > 0 && (
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 text-xs text-white/75">
-                    <span className="text-[#7AE36A] font-semibold">مباحث موجود:</span>
-                    {realTopicTags.map((tag) => (
-                      <Link
-                        key={tag}
-                        href={`/docs?tag=${encodeURIComponent(tag)}`}
-                        className="font-mono text-[11px] bg-white/5 hover:bg-[#7AE36A]/15 hover:text-[#7AE36A] border border-white/10 px-2.5 py-0.5 rounded-md transition-colors"
-                        dir="ltr"
-                      >
-                        #{tag}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Primary CTAs */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
                 <Link
                   href={primaryCtaUrl}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#7AE36A] text-[#042A1B] font-extrabold text-sm rounded-xl hover:bg-[#6acf5a] transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#7AE36A] text-[#042A1B] font-extrabold text-sm rounded-xl hover:bg-[#6acf5a] transition-colors shadow-lg shadow-[#7AE36A]/15"
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>{primaryCtaLabel}</span>
@@ -298,47 +247,53 @@ export default async function HomePage() {
 
                 <Link
                   href={firstInteractiveLessonUrl}
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-xl border border-white/20 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-xl border border-white/20 transition-colors"
                 >
                   <Code2 className="h-4 w-4 text-[#7AE36A]" />
                   <span>شروع مطالعه مستندات</span>
                 </Link>
+
+                <Link
+                  href="/roadmap"
+                  className="inline-flex items-center gap-1.5 px-4 py-3.5 text-[#7AE36A] hover:text-white font-bold text-sm transition-colors"
+                >
+                  <span>نقشه راه یادگیری</span>
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
               </div>
             </div>
 
-            {/* Hero Visual & Authentic DB Stats Strip */}
+            {/* Hero Floating Astronaut + Real Stats */}
             <div className="lg:col-span-5 flex flex-col items-center gap-6">
-              <div className="relative w-64 sm:w-80 h-64 sm:h-80">
+              <div className="relative w-64 sm:w-80 h-64 sm:h-80 animate-float-astronaut">
                 <Image
                   src="/images/aster.png"
-                  alt="نشان پلتفرم آموزشی تکا"
+                  alt="فضانورد و نشان پلتفرم آموزشی تکا"
                   fill
                   priority
-                  className="object-contain drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+                  className="object-contain drop-shadow-[0_20px_42px_rgba(0,0,0,0.48)]"
                 />
               </div>
 
-              {/* Only render real live MongoDB catalog statistics when available */}
               {realStats && realStats.totalCourses > 0 && (
                 <div className="w-full max-w-md grid grid-cols-3 gap-2 rounded-2xl bg-[#031F14]/90 border border-[#7AE36A]/25 p-3.5 text-center tabular-nums">
                   <div>
                     <div className="text-lg sm:text-xl font-black text-[#7AE36A]">
-                      {realStats.totalCourses}
+                      {formatPersianCount(realStats.totalCourses)}
                     </div>
                     <div className="text-[11px] text-white/70 font-medium">دوره منتشرشده</div>
                   </div>
                   <div className="border-x border-white/10">
                     <div className="text-lg sm:text-xl font-black text-white">
-                      {realStats.totalLessons}
+                      {formatPersianCount(realStats.totalLessons)}
                     </div>
                     <div className="text-[11px] text-white/70 font-medium">درس ساختاریافته</div>
                   </div>
                   <div>
-                    <div className="text-lg sm:text-xl font-black text-white">
-                      {realStats.totalReadingTimeMinutes}
-                      <span className="text-[11px] font-medium text-white/60 mr-0.5">دقیقه</span>
+                    <div className="text-xs sm:text-sm font-black text-white leading-tight pt-0.5">
+                      {formattedTotalDuration || '—'}
                     </div>
-                    <div className="text-[11px] text-white/70 font-medium">محتوای آموزشی</div>
+                    <div className="text-[11px] text-white/70 font-medium mt-0.5">محتوای آموزشی</div>
                   </div>
                 </div>
               )}
@@ -348,7 +303,7 @@ export default async function HomePage() {
       </section>
 
       {/* =========================================================================
-          2. PUBLISHED COURSES SHOWCASE (Strictly Authentic DB Records)
+          2. PUBLISHED COURSES SHOWCASE (Crisp White Canvas)
           ========================================================================= */}
       <section className="py-16 lg:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -391,24 +346,20 @@ export default async function HomePage() {
                 href="/docs"
                 className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-800 transition-colors tabular-nums"
               >
-                <span>مشاهده همه ({totalCourses})</span>
+                <span>مشاهده همه ({formatPersianCount(totalCourses)})</span>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>
           </div>
 
-          {isDatabaseError || loadErrorMessage ? (
-            <div className="bg-amber-50/80 rounded-2xl p-8 text-center border border-amber-200 text-amber-950 space-y-2 max-w-2xl mx-auto">
-              <AlertTriangle className="h-9 w-9 text-amber-600 mx-auto" />
-              <h3 className="text-base font-bold text-amber-950">
-                {isDatabaseError
-                  ? 'سرویس پایگاه داده در حال حاضر در دسترس نیست'
-                  : 'خطا در بارگذاری دوره‌های آموزشی'}
+          {coursesUnavailable ? (
+            <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 text-slate-800 space-y-2 max-w-xl mx-auto">
+              <AlertCircle className="h-9 w-9 text-amber-600 mx-auto" />
+              <h3 className="text-base font-bold text-slate-950">
+                دوره‌های آموزشی هم‌اکنون در حال آماده‌سازی هستند
               </h3>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                {isDatabaseError
-                  ? 'ارتباط با سرور داده‌ها برقرار نیست یا در حال بازیابی اتصال است.'
-                  : loadErrorMessage}
+              <p className="text-xs text-slate-600 leading-relaxed">
+                امکان دریافت دوره‌ها در این لحظه وجود ندارد. لطفاً کمی بعد دوباره تلاش کنید.
               </p>
             </div>
           ) : showcaseCourses.length > 0 ? (
@@ -421,10 +372,10 @@ export default async function HomePage() {
             <div className="bg-slate-50 rounded-2xl p-10 text-center border border-dashed border-slate-300">
               <BookOpen className="h-9 w-9 text-slate-400 mx-auto mb-2.5" />
               <h3 className="text-base font-bold text-slate-800">
-                هنوز دوره‌ای در وضعیت منتشرشده ثبت نشده است
+                به زودی دوره‌های جدید در این بخش منتشر می‌شوند
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                دوره‌ها پس از انتشار از پنل مدیریت در این بخش نمایش داده می‌شوند.
+                برای مشاهده فهرست به‌روز می‌توانید صفحه مستندات را دنبال کنید.
               </p>
             </div>
           )}
@@ -432,35 +383,53 @@ export default async function HomePage() {
       </section>
 
       {/* =========================================================================
-          3. PLATFORM CAPABILITIES (Real CMS Features + Architecture Highlights)
+          3. EDITORIAL ARCHITECTURE STRIP (Varied Asymmetric Layout)
           ========================================================================= */}
       <section className="py-16 lg:py-20 bg-slate-50 border-y border-slate-200/80">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mb-12 space-y-2">
-            <span className="text-xs font-bold text-emerald-700">معماری و کیفیت محتوا</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
-              چرا یادگیری در مستندات تکا متفاوت است؟
-            </h2>
-            <p className="text-slate-600 text-sm leading-relaxed">
-              ساختار محتوایی تکا به‌جای متن‌های پراکنده، هر موضوع را با کدهای تست‌شده، مثال‌های تعاملی و مسیر منظم ارائه می‌دهد.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {platformFeatures.map((feat, idx) => (
-              <div
-                key={idx}
-                className="bg-white p-6 rounded-2xl border border-slate-200/90 hover:border-emerald-300 transition-colors space-y-3"
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            <div className="lg:col-span-4 space-y-3 lg:sticky lg:top-24">
+              <span className="text-xs font-bold text-emerald-700 block">معماری و کیفیت محتوا</span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight text-balance">
+                چرا یادگیری در مستندات تکا متفاوت است؟
+              </h2>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                ساختار محتوایی تکا به‌جای متن‌های پراکنده، هر موضوع را با کدهای تست‌شده، مثال‌های تعاملی و مسیر منظم ارائه می‌دهد.
+              </p>
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 pt-1"
               >
-                <div className="h-11 w-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                  {renderFeatureIcon(feat.icon)}
+                <span>آشنایی بیشتر با استاندارد تکا</span>
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="lg:col-span-8 divide-y divide-slate-200/80 bg-white rounded-3xl border border-slate-200/90 px-6 sm:px-8 shadow-xs">
+              {platformFeatures.map((feat, idx) => (
+                <div
+                  key={idx}
+                  className="py-6 sm:py-7 flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6"
+                >
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-mono text-sm font-black text-emerald-700/70 tabular-nums">
+                      0{idx + 1}.
+                    </span>
+                    <div className="h-11 w-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                      {renderFeatureIcon(feat.icon)}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-950">
+                      {feat.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {feat.description}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-base font-extrabold text-slate-950">{feat.title}</h3>
-                <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
-                  {feat.description}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -494,7 +463,7 @@ export default async function HomePage() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[#7AE36A] shrink-0" />
-                  <span>فهرست عناوین پویا برای پرش سریع میان بخش‌های هر درس</span>
+                  <span>فهرست عناوین پویا و جمع‌شونده برای مطالعه با تمرکز بالا</span>
                 </li>
               </ul>
 
@@ -515,7 +484,6 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Clean Code & Runtime Card Preview */}
             <div
               className="lg:col-span-6 bg-[#0d131a] rounded-2xl p-5 border border-slate-800 shadow-2xl text-left"
               dir="ltr"
@@ -558,87 +526,33 @@ export default function Counter() {
       </section>
 
       {/* =========================================================================
-          5. COMPREHENSIVE LEARNING ROADMAP
+          5. INTERACTIVE 7-STAGE LEARNING ROADMAP (Linked to Real Courses)
           ========================================================================= */}
       <section className="py-16 lg:py-20 bg-[#042A1B] text-white border-t border-[#7AE36A]/20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 text-xs font-bold text-[#7AE36A]">
                 <Compass className="h-4 w-4" />
-                <span>مسیر گام‌به‌گام یادگیری</span>
+                <span>مسیر ۷ مرحله‌ای یادگیری تا بازار کار</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 نقشه راه جامع مهندسی نرم‌افزار وب
               </h2>
               <p className="text-white/75 text-sm leading-relaxed">
-                از مبانی استاندارد فرانت‌اند تا معماری بک‌اند و استقرار نرم‌افزار در محیط واقعی.
+                روی هر مرحله کلیک کنید تا مهارت‌های کلیدی و دوره‌های مرتبط تکا برای آن گام را مشاهده کنید.
               </p>
             </div>
             <Link
               href="/roadmap"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7AE36A] text-[#042A1B] rounded-xl font-extrabold text-xs sm:text-sm hover:bg-[#6acf5a] transition-colors shrink-0 self-start md:self-auto"
             >
-              <span>مشاهده نقشه راه کامل</span>
+              <span>مشاهده صفحه کامل نقشه راه</span>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            {[
-              {
-                step: '01',
-                title: 'مبانی و فرانت‌اند پایه',
-                desc: 'تسلط بر HTML5 معنایی، CSS3 واکنش‌گرا، فلکس‌باکس، گرید و جاوااسکریپت مدرن.',
-                stack: 'HTML · CSS · Modern JS',
-              },
-              {
-                step: '02',
-                title: 'فریم‌ورک‌های مدرن رابط کاربری',
-                desc: 'طراحی کامپوننت‌های پیشرفته با React 19، TypeScript، Next.js App Router و Tailwind.',
-                stack: 'React 19 · TypeScript · Next.js',
-              },
-              {
-                step: '03',
-                title: 'مهندسی بک‌اند و داده',
-                desc: 'پیاده‌سازی سرویس‌های مقیاس‌پذیر با Node.js، Express 5، اعتبارسنجی Zod و MongoDB.',
-                stack: 'Node.js · Express 5 · MongoDB',
-              },
-              {
-                step: '04',
-                title: 'پروژه عملی و استقرار',
-                desc: 'تست‌نویسی، مستندسازی، کنترل کیفیت کد و استقرار سامانه‌های واقعی در تولید.',
-                stack: 'Testing · Security · Deploy',
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="bg-[#053723] border border-[#7AE36A]/20 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[#7AE36A]/60 transition-colors"
-              >
-                <div className="space-y-2">
-                  <span className="text-2xl font-black text-[#7AE36A]/50 font-mono tabular-nums block">
-                    {item.step}
-                  </span>
-                  <h3 className="text-base font-extrabold text-white">{item.title}</h3>
-                  <p className="text-xs text-white/75 leading-relaxed">{item.desc}</p>
-                </div>
-                <div className="text-[11px] text-[#7AE36A] font-mono pt-2 border-t border-white/10" dir="ltr">
-                  {item.stack}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-[#031F14] rounded-2xl p-5 sm:p-8 border border-[#7AE36A]/20">
-            <div className="relative w-full max-w-4xl mx-auto h-56 sm:h-80 rounded-xl overflow-hidden">
-              <Image
-                src="/images/Roadmap.png"
-                alt="نقشه راه مهندسی نرم‌افزار تکا"
-                fill
-                className="object-contain"
-              />
-            </div>
-          </div>
+          <LearningRoadmap courses={roadmapCourses} />
         </div>
       </section>
 
