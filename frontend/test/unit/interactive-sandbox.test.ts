@@ -198,4 +198,58 @@ describe('InteractiveSandbox Compiler, Security & Lesson Heading Utilities', () 
     expect(payload.files.some((f) => f.path === 'script.js' && f.entryPoint)).toBe(true);
     expect(payload.files.some((f) => f.path === 'index.html')).toBe(true);
   });
+
+  it('guards for/while/do loops even when conditions contain nested function calls or string parens', () => {
+    const code = `
+      function getLimit() { return 10; }
+      for (let i = 0; i < getLimit(); i++) {
+        console.log("while (true) {");
+      }
+      do {
+        console.log("step");
+      } while (false);
+    `;
+    const guarded = injectLoopGuard(code);
+    expect(guarded).toContain('for (let i = 0; i < getLimit(); i++) { if (__techaTicks >= 0) __techaTick();');
+    expect(guarded).toContain('do { if (__techaTicks >= 0) __techaTick();');
+    // Does not mutate string literal containing "while (true) {"
+    expect(guarded).toContain('"while (true) {"');
+  });
+
+  it('compiles expanded Tailwind utilities (aspect, opacity, grid cols, shadow-2xl, z-index)', () => {
+    const css = generateTailwindUtilitiesCss(
+      'className="grid grid-cols-3 col-span-2 aspect-video opacity-75 shadow-2xl z-20 rounded-2xl"'
+    );
+    expect(css).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(css).toContain('grid-column: span 2 / span 2;');
+    expect(css).toContain('aspect-ratio: 16 / 9;');
+    expect(css).toContain('opacity: 0.75;');
+    expect(css).toContain('z-index: 20;');
+  });
+
+  it('renders InteractiveSandbox SSR markup with fixed height container and zero iframe/script tags', async () => {
+    const React = await import('react');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const { default: InteractiveSandbox } = await import(
+      '../../src/components/docs/content/InteractiveSandbox'
+    );
+
+    const longCode = Array.from({ length: 120 }, (_, i) => `console.log(${i});`).join('\n');
+    const html = renderToStaticMarkup(
+      React.createElement(InteractiveSandbox, {
+        environment: 'html-css-js',
+        title: 'آزمون ارتفاع ثابت',
+        files: [
+          { path: 'script.js', language: 'javascript', content: longCode, entryPoint: true },
+        ],
+      })
+    );
+
+    expect(html).toContain('h-[580px] lg:h-[460px]');
+    expect(html).toContain('console.log(119);');
+    expect(html).not.toContain('<iframe');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('srcdoc');
+  });
 });
+

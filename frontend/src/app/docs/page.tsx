@@ -20,20 +20,20 @@ import {
   type PublicCoursesPage,
 } from '../../lib/server';
 import { formatPersianCount } from '../../lib/format-duration';
+import { buildPageMetadata, getSiteUrl } from '../../lib/seo';
 import DocCard from '../../components/docs/DocCard';
 import DocsFilterBar from '../../components/docs/DocsFilterBar';
 import DocsRetryButton from '../../components/docs/DocsRetryButton';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'کاتالوگ دوره‌ها و مستندات آموزشی | TECHA',
+export const metadata = buildPageMetadata({
+  title: 'کاتالوگ دوره‌ها و مستندات آموزشی | تکا',
   description:
-    'مجموعه مستندات استاندارد، دوره‌های آموزشی مهندسی وب و درس‌های تعاملی تکا با امکان جستجو و فیلتر تخصصی.',
-  alternates: {
-    canonical: '/docs',
-  },
-};
+    'مجموعه مستندات استاندارد، دوره‌های آموزشی مهندسی وب و درس‌های تعاملی تکا با امکان جستجو، فیلتر سطح و اجرای زنده کد.',
+  path: '/docs',
+  keywords: ['دوره‌های برنامه‌نویسی', 'مستندات فنی', 'آموزش وب', 'تکا', 'TECHA'],
+});
 
 interface DocsPageProps {
   searchParams: Promise<{
@@ -161,9 +161,32 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   };
 
   const hasActiveFilters = Boolean(validLevel || tag || searchQuery || validSort !== 'order');
+  const siteUrl = getSiteUrl();
+
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'مستندات و دوره‌های تخصصی مهندسی وب تکا',
+    url: `${siteUrl}/docs`,
+    inLanguage: 'fa-IR',
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: courses.length,
+      itemListElement: courses.map((course, idx) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        url: `${siteUrl}/docs/${course.slug}`,
+        name: course.title,
+      })),
+    },
+  };
 
   return (
     <div className="w-full bg-slate-50/70 min-h-screen py-10 sm:py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-7">
         {/* Catalog Header */}
         <header className="space-y-3">

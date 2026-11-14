@@ -13,14 +13,17 @@ import {
   Users,
 } from 'lucide-react';
 import { getPublishedCourses } from '../../lib/server';
+import { buildPageMetadata, getSiteUrl } from '../../lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'درباره ما | پلتفرم آموزشی تکا',
   description:
     'آشنایی با ماموریت آکادمیک و صنعتی پلتفرم آموزشی تکا، استانداردهای تولید مستندات فنی و مسیر توانمندسازی دانشجویان برای بازار کار.',
-};
+  path: '/about',
+  keywords: ['درباره تکا', 'آموزش مهندسی وب', 'مستندات ۱۳ بلوکی', 'تیم تکا'],
+});
 
 const VALUES = [
   {
@@ -81,8 +84,26 @@ export default async function AboutPage() {
     publishedCourseCount = 0;
   }
 
+  const siteUrl = getSiteUrl();
+  const aboutJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'درباره پلتفرم آموزشی تکا',
+    url: `${siteUrl}/about`,
+    inLanguage: 'fa-IR',
+    mainEntity: {
+      '@type': 'EducationalOrganization',
+      name: 'TECHA - پلتفرم آموزشی و کارآموزی تکا',
+      url: siteUrl,
+    },
+  };
+
   return (
     <div className="w-full bg-slate-50 text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
       {/* Hero Banner */}
       <section className="bg-[#042A1B] text-white py-14 sm:py-20 border-b border-[#7AE36A]/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

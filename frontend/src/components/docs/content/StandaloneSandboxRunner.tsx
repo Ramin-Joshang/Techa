@@ -245,7 +245,7 @@ export default function StandaloneSandboxRunner({
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-[#0d131a] flex flex-col">
+    <div className="h-[calc(100dvh-4rem)] bg-[#0d131a] flex flex-col overflow-hidden">
       <InteractiveSandbox
         environment={state.environment}
         preset={state.preset}

@@ -1,11 +1,14 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import RegisterForm from './RegisterForm';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'ثبت‌نام در پلتفرم | تکا (TECHA)',
   description: 'عضویت در پلتفرم آموزش و مستندات مهندسی تکا',
-};
+  path: '/register',
+  noIndex: true,
+});
 
 export default async function RegisterPage() {
   return (

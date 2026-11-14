@@ -2,12 +2,15 @@ import React from 'react';
 import Link from 'next/link';
 import { HelpCircle, ArrowLeft, PhoneCall } from 'lucide-react';
 import FaqAccordion, { FaqItem } from '../../components/faq/FaqAccordion';
+import { buildPageMetadata, getSiteUrl } from '../../lib/seo';
 
-export const metadata = {
-  title: 'پرسش‌های متداول و قوانین استفاده | TECHA',
+export const metadata = buildPageMetadata({
+  title: 'پرسش‌های متداول و قوانین استفاده | تکا',
   description:
     'پاسخ به سوالات پرتکرار دانشجویان درباره نحوه مطالعه مستندات، مسیر کارآموزی، ثبت‌نام، پیش‌نیاز دوره‌ها و قوانین پلتفرم تکا.',
-};
+  path: '/faq',
+  keywords: ['سوالات متداول تکا', 'قوانین استفاده', 'راهنمای کارآموزی تکا'],
+});
 
 const FAQ_ITEMS: FaqItem[] = [
   {
@@ -55,8 +58,28 @@ const FAQ_ITEMS: FaqItem[] = [
 ];
 
 export default function FaqPage() {
+  const siteUrl = getSiteUrl();
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    url: `${siteUrl}/faq`,
+    inLanguage: 'fa-IR',
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+
   return (
     <div className="w-full bg-slate-50 text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Header Band */}
       <section className="bg-[#042A1B] text-white py-12 sm:py-16 border-b border-[#7AE36A]/20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-3">

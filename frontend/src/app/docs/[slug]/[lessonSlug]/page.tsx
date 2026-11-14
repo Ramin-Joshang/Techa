@@ -22,6 +22,7 @@ import {
   CopyLessonLinkButton,
 } from '../../../../components/docs/LessonReadingTools';
 import { formatPersianCount, formatReadingDuration } from '../../../../lib/format-duration';
+import { buildPageMetadata, getSiteUrl } from '../../../../lib/seo';
 
 interface LessonPageProps {
   params: Promise<{
@@ -39,22 +40,17 @@ export async function generateMetadata({ params }: LessonPageProps) {
 
   try {
     const lesson = await getPublishedLessonDetail(courseSlug, lessonSlug);
-    return {
+    return buildPageMetadata({
       title: lesson.seo?.metaTitle || `${lesson.title} | مستندات تکا`,
-      description: lesson.seo?.metaDescription || `درس ${lesson.title} از مستندات جامع تکا`,
-      alternates: {
-        canonical: `/docs/${courseSlug}/${lessonSlug}`,
-      },
-      robots: 'index, follow',
-      openGraph: {
-        title: lesson.seo?.metaTitle || `${lesson.title} | مستندات تکا`,
-        description: lesson.seo?.metaDescription || `درس ${lesson.title} از مستندات جامع تکا`,
-        type: 'article',
-      },
-    };
+      description:
+        lesson.seo?.metaDescription ||
+        `مطالعه درس «${lesson.title}» همراه با توضیحات ساختاریافته و مثال‌های تعاملی کدنویسی در پلتفرم تکا.`,
+      path: `/docs/${courseSlug}/${lessonSlug}`,
+      type: 'article',
+    });
   } catch (err: unknown) {
     if (isNotFoundError(err)) {
-      return { title: 'درس یافت نشد | تکا' };
+      return { title: 'درس یافت نشد | تکا', robots: { index: false, follow: false } };
     }
     return { title: 'مستندات آموزشی | تکا' };
   }
@@ -117,17 +113,22 @@ export default async function LessonPage({ params }: LessonPageProps) {
     (h) => h.level === 2 || h.level === 3
   );
 
+  const siteUrl = getSiteUrl();
+
   const techArticleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
     headline: lesson.title,
-    description: lesson.seo?.metaDescription || lesson.title,
+    description:
+      lesson.seo?.metaDescription ||
+      `درس ${lesson.title} از دوره ${outline?.course?.title || courseSlug} در مستندات تکا`,
+    url: `${siteUrl}/docs/${courseSlug}/${lessonSlug}`,
     articleSection: outline?.course?.title,
     inLanguage: 'fa-IR',
     publisher: {
       '@type': 'Organization',
       name: 'TECHA',
-      url: 'https://techa.ir',
+      url: siteUrl,
     },
   };
 
@@ -135,19 +136,19 @@ export default async function LessonPage({ params }: LessonPageProps) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'صفحه اصلی', item: 'https://techa.ir/' },
-      { '@type': 'ListItem', position: 2, name: 'مستندات', item: 'https://techa.ir/docs' },
+      { '@type': 'ListItem', position: 1, name: 'صفحه اصلی', item: `${siteUrl}/` },
+      { '@type': 'ListItem', position: 2, name: 'مستندات', item: `${siteUrl}/docs` },
       {
         '@type': 'ListItem',
         position: 3,
         name: outline?.course?.title || courseSlug,
-        item: `https://techa.ir/docs/${courseSlug}`,
+        item: `${siteUrl}/docs/${courseSlug}`,
       },
       {
         '@type': 'ListItem',
         position: 4,
         name: lesson.title,
-        item: `https://techa.ir/docs/${courseSlug}/${lessonSlug}`,
+        item: `${siteUrl}/docs/${courseSlug}/${lessonSlug}`,
       },
     ],
   };

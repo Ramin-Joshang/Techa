@@ -2,11 +2,14 @@ import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import ResetPasswordForm from './ResetPasswordForm';
 import { Loader2 } from 'lucide-react';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'تغییر رمز عبور | تکا ۲.۰',
   description: 'ثبت رمز عبور جدید پس از تایید کد پیامکی',
-};
+  path: '/reset-password',
+  noIndex: true,
+});
 
 export default function ResetPasswordPage() {
   return (

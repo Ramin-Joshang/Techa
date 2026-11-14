@@ -1,11 +1,14 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import LoginForm from './LoginForm';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'ورود به حساب کاربری | تکا (TECHA)',
   description: 'ورود به حساب کاربری در پلتفرم آموزش و مستندات مهندسی تکا',
-};
+  path: '/login',
+  noIndex: true,
+});
 
 export default async function LoginPage() {
   return (

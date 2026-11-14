@@ -4,14 +4,17 @@ import { ArrowLeft, BookOpen, Compass } from 'lucide-react';
 import { getPublishedCourses } from '../../lib/server';
 import DocCard from '../../components/docs/DocCard';
 import LearningRoadmap from '../../components/roadmap/LearningRoadmap';
+import { buildPageMetadata, getSiteUrl } from '../../lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'نقشه راه یادگیری و کارآموزی مهندسی وب | TECHA',
+export const metadata = buildPageMetadata({
+  title: 'نقشه راه یادگیری و کارآموزی مهندسی وب | تکا',
   description:
     'مسیر گام‌به‌گام تبدیل شدن به مهندس نرم‌افزار وب در پلتفرم تکا؛ از HTML، CSS، JavaScript، Tailwind و React تا کارآموزی، استخدام و فریلنسری.',
-};
+  path: '/roadmap',
+  keywords: ['نقشه راه برنامه‌نویسی', 'نقشه راه فرانت اند', 'کارآموزی وب', 'HTML', 'CSS', 'React'],
+});
 
 export default async function RoadmapPage() {
   let courses: Awaited<ReturnType<typeof getPublishedCourses>>['courses'] = [];
@@ -22,8 +25,32 @@ export default async function RoadmapPage() {
     courses = [];
   }
 
+  const siteUrl = getSiteUrl();
+  const roadmapJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'نقشه راه جامع مهندسی نرم‌افزار وب تکا',
+    description:
+      'مسیر ۷ مرحله‌ای یادگیری توسعه وب مدرن از HTML و CSS تا React، کارآموزی و ورود به بازار کار.',
+    url: `${siteUrl}/roadmap`,
+    inLanguage: 'fa-IR',
+    step: [
+      { '@type': 'HowToStep', position: 1, name: 'HTML5 و ساختار معنایی وب' },
+      { '@type': 'HowToStep', position: 2, name: 'CSS3 و طراحی واکنش‌گرا' },
+      { '@type': 'HowToStep', position: 3, name: 'JavaScript مدرن و تایپ‌اسکریپت' },
+      { '@type': 'HowToStep', position: 4, name: 'Tailwind CSS و سیستم طراحی' },
+      { '@type': 'HowToStep', position: 5, name: 'React 19 و معماری کامپوننت' },
+      { '@type': 'HowToStep', position: 6, name: 'کارآموزی و پروژه تیمی واقعی' },
+      { '@type': 'HowToStep', position: 7, name: 'استخدام حرفه‌ای و فریلنسری' },
+    ],
+  };
+
   return (
     <div className="w-full bg-slate-50 text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(roadmapJsonLd) }}
+      />
       {/* Interactive 7-Stage Roadmap Hero */}
       <section className="bg-[#042A1B] text-white py-14 sm:py-18 border-b border-[#7AE36A]/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">

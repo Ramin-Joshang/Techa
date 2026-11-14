@@ -51,14 +51,15 @@ const SPACING_SCALE: Record<string, string> = {
   '0': '0px', '0.5': '0.125rem', '1': '0.25rem', '1.5': '0.375rem', '2': '0.5rem',
   '2.5': '0.625rem', '3': '0.75rem', '3.5': '0.875rem', '4': '1rem', '5': '1.25rem',
   '6': '1.5rem', '7': '1.75rem', '8': '2rem', '9': '2.25rem', '10': '2.5rem',
-  '12': '3rem', '14': '3.5rem', '16': '4rem', '20': '5rem', '24': '6rem',
-  'px': '1px', 'auto': 'auto', 'full': '100%',
+  '11': '2.75rem', '12': '3rem', '14': '3.5rem', '16': '4rem', '20': '5rem', '24': '6rem',
+  '32': '8rem', '40': '10rem', '48': '12rem', '56': '14rem', '64': '16rem',
+  px: '1px', auto: 'auto', full: '100%',
 };
 
 const WIDTH_SCALE: Record<string, string> = {
   ...SPACING_SCALE,
   xs: '20rem', sm: '24rem', md: '28rem', lg: '32rem', xl: '36rem', '2xl': '42rem',
-  '3xl': '48rem', '4xl': '56rem', '5xl': '64rem',
+  '3xl': '48rem', '4xl': '56rem', '5xl': '64rem', '6xl': '72rem',
   '1/2': '50%', '1/3': '33.333333%', '2/3': '66.666667%', '1/4': '25%', '3/4': '75%',
   fit: 'fit-content', screen: '100vw',
 };
@@ -107,7 +108,6 @@ function resolveScaleVal(val: string, map: Record<string, string>): string | nul
 }
 
 function cssDeclForUtility(util: string): { decl: string; childSelector?: string } | null {
-  // Display & Layout
   const exactMap: Record<string, string> = {
     block: 'display: block;',
     'inline-block': 'display: inline-block;',
@@ -115,6 +115,7 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
     flex: 'display: flex;',
     'inline-flex': 'display: inline-flex;',
     grid: 'display: grid;',
+    'inline-grid': 'display: inline-grid;',
     hidden: 'display: none;',
     'flex-col': 'flex-direction: column;',
     'flex-row': 'flex-direction: row;',
@@ -124,12 +125,19 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
     'items-center': 'align-items: center;',
     'items-start': 'align-items: flex-start;',
     'items-end': 'align-items: flex-end;',
+    'items-stretch': 'align-items: stretch;',
+    'items-baseline': 'align-items: baseline;',
+    'self-center': 'align-self: center;',
     'justify-center': 'justify-content: center;',
     'justify-between': 'justify-content: space-between;',
+    'justify-around': 'justify-content: space-around;',
+    'justify-evenly': 'justify-content: space-evenly;',
     'justify-start': 'justify-content: flex-start;',
     'justify-end': 'justify-content: flex-end;',
     relative: 'position: relative;',
     absolute: 'position: absolute;',
+    fixed: 'position: fixed;',
+    'inset-0': 'inset: 0;',
     'text-center': 'text-align: center;',
     'text-right': 'text-align: right;',
     'text-left': 'text-align: left;',
@@ -144,21 +152,46 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
     italic: 'font-style: italic;',
     underline: 'text-decoration-line: underline;',
     'line-through': 'text-decoration-line: line-through;',
+    uppercase: 'text-transform: uppercase;',
+    lowercase: 'text-transform: lowercase;',
+    capitalize: 'text-transform: capitalize;',
+    truncate: 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
+    'whitespace-nowrap': 'white-space: nowrap;',
+    'whitespace-pre-wrap': 'white-space: pre-wrap;',
+    'break-words': 'overflow-wrap: break-word;',
     'cursor-pointer': 'cursor: pointer;',
     'select-none': 'user-select: none;',
+    'outline-none': 'outline: 2px solid transparent; outline-offset: 2px;',
     'overflow-hidden': 'overflow: hidden;',
+    'overflow-auto': 'overflow: auto;',
     'overflow-x-auto': 'overflow-x: auto;',
+    'overflow-y-auto': 'overflow-y: auto;',
+    'object-cover': 'object-fit: cover;',
+    'object-contain': 'object-fit: contain;',
+    'aspect-square': 'aspect-ratio: 1 / 1;',
+    'aspect-video': 'aspect-ratio: 16 / 9;',
     'transition-all': 'transition: all 150ms cubic-bezier(0.4,0,0.2,1);',
     'transition-colors': 'transition: color, background-color, border-color 150ms cubic-bezier(0.4,0,0.2,1);',
+    'transition-transform': 'transition: transform 150ms cubic-bezier(0.4,0,0.2,1);',
+    'scale-95': 'transform: scale(0.95);',
+    'scale-100': 'transform: scale(1);',
+    'scale-105': 'transform: scale(1.05);',
     border: 'border-width: 1px; border-style: solid; border-color: #e2e8f0;',
+    'border-2': 'border-width: 2px; border-style: solid; border-color: #e2e8f0;',
+    'border-4': 'border-width: 4px; border-style: solid; border-color: #e2e8f0;',
     'border-b': 'border-bottom-width: 1px; border-bottom-style: solid; border-color: #e2e8f0;',
     'border-t': 'border-top-width: 1px; border-top-style: solid; border-color: #e2e8f0;',
+    'border-r': 'border-right-width: 1px; border-right-style: solid; border-color: #e2e8f0;',
+    'border-l': 'border-left-width: 1px; border-left-style: solid; border-color: #e2e8f0;',
+    'border-dashed': 'border-style: dashed;',
+    'shadow-none': 'box-shadow: none;',
     'shadow-xs': 'box-shadow: 0 1px 2px 0 rgba(0,0,0,0.04);',
     'shadow-sm': 'box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);',
     shadow: 'box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);',
     'shadow-md': 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
     'shadow-lg': 'box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);',
     'shadow-xl': 'box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);',
+    'shadow-2xl': 'box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);',
     'text-xs': 'font-size: 0.75rem; line-height: 1rem;',
     'text-sm': 'font-size: 0.875rem; line-height: 1.25rem;',
     'text-base': 'font-size: 1rem; line-height: 1.5rem;',
@@ -167,22 +200,29 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
     'text-2xl': 'font-size: 1.5rem; line-height: 2rem;',
     'text-3xl': 'font-size: 1.875rem; line-height: 2.25rem;',
     'text-4xl': 'font-size: 2.25rem; line-height: 2.5rem;',
-    'leading-relaxed': 'line-height: 1.625;',
+    'leading-none': 'line-height: 1;',
     'leading-tight': 'line-height: 1.25;',
+    'leading-snug': 'line-height: 1.375;',
+    'leading-normal': 'line-height: 1.5;',
+    'leading-relaxed': 'line-height: 1.625;',
+    'leading-loose': 'line-height: 2;',
     'w-full': 'width: 100%;',
     'h-full': 'height: 100%;',
+    'h-screen': 'height: 100vh;',
     'min-h-screen': 'min-height: 100vh;',
     'mx-auto': 'margin-left: auto; margin-right: auto;',
-    'space-y-2': '',
   };
   if (exactMap[util]) return { decl: exactMap[util] };
 
   // Spacing: p, px, py, pt, pb, pl, pr, m, mx, my, mt, mb, ml, mr, gap, gap-x, gap-y
-  const spaceMatch = /^(p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap-x|gap-y|gap)-(.+)$/.exec(util);
+  const negative = util.startsWith('-');
+  const normalizedUtil = negative ? util.slice(1) : util;
+  const spaceMatch = /^(p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap-x|gap-y|gap)-(.+)$/.exec(normalizedUtil);
   if (spaceMatch) {
     const [, prop, rawVal] = spaceMatch;
-    const val = resolveScaleVal(rawVal, SPACING_SCALE);
-    if (val) {
+    const baseVal = resolveScaleVal(rawVal, SPACING_SCALE);
+    if (baseVal) {
+      const val = negative && baseVal !== 'auto' ? `-${baseVal}` : baseVal;
       const propMap: Record<string, string> = {
         p: `padding: ${val};`,
         px: `padding-left: ${val}; padding-right: ${val};`,
@@ -219,7 +259,7 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
   }
 
   // Width & Height
-  const sizeMatch = /^(w|h|min-w|max-w|min-h)-(.+)$/.exec(util);
+  const sizeMatch = /^(w|h|min-w|max-w|min-h|max-h)-(.+)$/.exec(util);
   if (sizeMatch) {
     const val = resolveScaleVal(sizeMatch[2], WIDTH_SCALE);
     if (val) {
@@ -229,22 +269,51 @@ function cssDeclForUtility(util: string): { decl: string; childSelector?: string
         'min-w': `min-width: ${val};`,
         'max-w': `max-width: ${val};`,
         'min-h': `min-height: ${val};`,
+        'max-h': `max-height: ${val};`,
       };
       return { decl: map[sizeMatch[1]] };
     }
   }
 
-  // Grid cols
+  // Opacity & z-index
+  const opacityMatch = /^opacity-(\d+)$/.exec(util);
+  if (opacityMatch) {
+    const num = Math.min(100, Math.max(0, Number(opacityMatch[1])));
+    return { decl: `opacity: ${(num / 100).toString()};` };
+  }
+  const zMatch = /^z-(\d+)$/.exec(util);
+  if (zMatch) {
+    return { decl: `z-index: ${zMatch[1]};` };
+  }
+
+  // Grid cols & col-span
   const gridMatch = /^grid-cols-(\d+)$/.exec(util);
   if (gridMatch) {
     return { decl: `grid-template-columns: repeat(${gridMatch[1]}, minmax(0, 1fr));` };
+  }
+  const colSpanMatch = /^col-span-(\d+)$/.exec(util);
+  if (colSpanMatch) {
+    return { decl: `grid-column: span ${colSpanMatch[1]} / span ${colSpanMatch[1]};` };
   }
 
   // Border radius
   if (util === 'rounded') return { decl: `border-radius: ${RADIUS_SCALE.DEFAULT};` };
   if (util.startsWith('rounded-')) {
-    const r = RADIUS_SCALE[util.slice('rounded-'.length)];
+    const token = util.slice('rounded-'.length);
+    const r = token.startsWith('[') && token.endsWith(']') ? token.slice(1, -1) : RADIUS_SCALE[token];
     if (r) return { decl: `border-radius: ${r};` };
+  }
+
+  // Ring utilities
+  if (util === 'ring' || util === 'ring-1') return { decl: 'box-shadow: 0 0 0 1px rgba(59,130,246,0.45);' };
+  if (util === 'ring-2') return { decl: 'box-shadow: 0 0 0 2px rgba(59,130,246,0.45);' };
+
+  // Arbitrary font size e.g. text-[15px]
+  if (util.startsWith('text-[') && util.endsWith(']')) {
+    const inner = util.slice(6, -1);
+    if (/^\d+(\.\d+)?(px|rem|em|vw|%)$/.test(inner)) {
+      return { decl: `font-size: ${inner};` };
+    }
   }
 
   // Colors: bg-*, text-*, border-*
@@ -269,7 +338,7 @@ function escapeCssSelector(cls: string): string {
 }
 
 export function generateTailwindUtilitiesCss(sourceText: string): string {
-  const tokenRegex = /[A-Za-z0-9_:\-[\]/.#]+/g;
+  const tokenRegex = /-?[A-Za-z0-9_:\-[\]/.#]+/g;
   const seen = new Set<string>();
   const baseRules: string[] = [
     '*, *::before, *::after { box-sizing: border-box; }',
@@ -294,6 +363,7 @@ export function generateTailwindUtilitiesCss(sourceText: string): string {
       if (mod === 'hover') pseudo = ':hover';
       else if (mod === 'focus') pseudo = ':focus';
       else if (mod === 'active') pseudo = ':active';
+      else if (mod === 'disabled') pseudo = ':disabled';
       else if (mod === 'sm' || mod === 'md' || mod === 'lg') bp = mod;
     }
 
@@ -314,22 +384,124 @@ export function generateTailwindUtilitiesCss(sourceText: string): string {
 }
 
 /**
- * Injects lightweight loop guard checks into while / for / do loops so infinite loops abort
- * gracefully without freezing the browser tab.
+ * Injects lightweight loop guard checks into while / for / do loops using a
+ * string/comment-aware parenthesis-balanced scanner so nested calls like
+ * `for (let i = 0; i < arr.length(); i++) {` are guarded cleanly.
  */
 export function injectLoopGuard(code: string): string {
-  let guardIdx = 0;
   const header = `var __techaTicks = 0; function __techaTick() { if (++__techaTicks > 50000) { throw new Error('خطای حلقه بی‌نهایت: اجرای حلقه بیش از حد مجاز (۵۰۰۰۰ تکرار) طول کشید.'); } }\n`;
 
-  const guarded = code.replace(
-    /\b(while|for)\s*\(([^)]*)\)\s*\{/g,
-    (_m, kw, cond) => {
-      guardIdx++;
-      return `${kw} (${cond}) { if (__techaTicks >= 0) __techaTick(); /* guard_${guardIdx} */`;
-    }
-  );
+  let out = '';
+  let i = 0;
+  let guardIdx = 0;
+  const len = code.length;
 
-  return header + guarded;
+  const isIdentChar = (ch: string) => /[A-Za-z0-9_$]/.test(ch);
+
+  while (i < len) {
+    const ch = code[i];
+
+    // Skip single-line comments
+    if (ch === '/' && code[i + 1] === '/') {
+      const end = code.indexOf('\n', i);
+      const sliceEnd = end === -1 ? len : end + 1;
+      out += code.slice(i, sliceEnd);
+      i = sliceEnd;
+      continue;
+    }
+
+    // Skip multi-line comments
+    if (ch === '/' && code[i + 1] === '*') {
+      const end = code.indexOf('*/', i + 2);
+      const sliceEnd = end === -1 ? len : end + 2;
+      out += code.slice(i, sliceEnd);
+      i = sliceEnd;
+      continue;
+    }
+
+    // Skip string literals ('...', "...", `...`)
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const quote = ch;
+      let j = i + 1;
+      while (j < len) {
+        if (code[j] === '\\') {
+          j += 2;
+          continue;
+        }
+        if (code[j] === quote) {
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      out += code.slice(i, j);
+      i = j;
+      continue;
+    }
+
+    // Detect `while (...) {`, `for (...) {`, or `do {`
+    const prevCh = i > 0 ? code[i - 1] : '';
+    if (!isIdentChar(prevCh)) {
+      const rest = code.slice(i);
+      const kwMatch = /^(while|for)\b/.exec(rest);
+      if (kwMatch) {
+        const kw = kwMatch[1];
+        let j = i + kw.length;
+        while (j < len && /\s/.test(code[j])) j++;
+        if (code[j] === '(') {
+          let depth = 0;
+          let k = j;
+          while (k < len) {
+            const c = code[k];
+            if (c === "'" || c === '"' || c === '`') {
+              const q = c;
+              k++;
+              while (k < len) {
+                if (code[k] === '\\') { k += 2; continue; }
+                if (code[k] === q) { k++; break; }
+                k++;
+              }
+              continue;
+            }
+            if (c === '(') depth++;
+            else if (c === ')') {
+              depth--;
+              if (depth === 0) {
+                k++;
+                break;
+              }
+            }
+            k++;
+          }
+
+          if (depth === 0) {
+            let afterParen = k;
+            while (afterParen < len && /\s/.test(code[afterParen])) afterParen++;
+            if (code[afterParen] === '{') {
+              guardIdx++;
+              out += code.slice(i, afterParen + 1) + ` if (__techaTicks >= 0) __techaTick(); /* guard_${guardIdx} */`;
+              i = afterParen + 1;
+              continue;
+            }
+          }
+        }
+      } else if (rest.startsWith('do') && !isIdentChar(rest[2] || '')) {
+        let j = i + 2;
+        while (j < len && /\s/.test(code[j])) j++;
+        if (code[j] === '{') {
+          guardIdx++;
+          out += code.slice(i, j + 1) + ` if (__techaTicks >= 0) __techaTick(); /* guard_${guardIdx} */`;
+          i = j + 1;
+          continue;
+        }
+      }
+    }
+
+    out += ch;
+    i++;
+  }
+
+  return header + out;
 }
 
 function escapeInlineScript(code: string): string {
@@ -349,13 +521,11 @@ function prepareReactSourceBundle(files: SandboxFileInput[]): string {
   const chunks: string[] = [];
   for (const file of jsFiles) {
     let src = file.content || '';
-    // Strip external & local ES imports since React hooks & multi-file scope are shared in sandbox
     src = src
       .replace(/^\s*import\s+['"][^'"]+['"]\s*;?\s*$/gm, '')
       .replace(/^\s*import\s+[\s\S]*?\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm, '');
 
     if (file.entryPoint) {
-      // Rewrite default export cleanly to capture App component
       if (/export\s+default\s+function\s+([A-Za-z0-9_]+)/.test(src)) {
         src = src.replace(
           /export\s+default\s+function\s+([A-Za-z0-9_]+)/,
@@ -419,14 +589,18 @@ function buildBridgeScript(instanceId: string): string {
       console.clear = function() { emit('clear', {}); };
       window.addEventListener('error', function(e) {
         var msg = (e && e.message) ? e.message : 'خطای اجرای ناشناخته';
-        emit('runtime-error', { message: msg, line: e && e.lineno ? e.lineno : undefined });
+        emit('runtime-error', {
+          message: msg,
+          line: e && e.lineno ? e.lineno : undefined,
+          col: e && e.colno ? e.colno : undefined
+        });
       });
       window.addEventListener('unhandledrejection', function(e) {
         var reason = e && e.reason ? formatArg(e.reason) : 'Promise rejection';
         emit('runtime-error', { message: reason });
       });
-      window.__techaReportError = function(msg) {
-        emit('runtime-error', { message: String(msg || 'خطای اجرای ناشناخته') });
+      window.__techaReportError = function(msg, line) {
+        emit('runtime-error', { message: String(msg || 'خطای اجرای ناشناخته'), line: line });
       };
       emit('ready', {});
     })();
@@ -461,7 +635,7 @@ export function buildIsolatedSandboxDocument(params: {
     for (const file of files) {
       if (/\.html?$/i.test(file.path)) rawHtml += file.content + '\n';
       else if (/\.css$/i.test(file.path)) css += file.content + '\n';
-      else if (/\.jsx?$/i.test(file.path)) js += file.content + '\n';
+      else if (/\.(jsx?|tsx?)$/i.test(file.path)) js += file.content + '\n';
     }
 
     let docDir: 'rtl' | 'ltr' = 'rtl';
@@ -480,13 +654,11 @@ export function buildIsolatedSandboxDocument(params: {
         if (langMatch) docLang = langMatch[1];
       }
 
-      // Extract inline <style> tags inside HTML
       bodyHtml = bodyHtml.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_m, styleContent) => {
         extractedCss += '\n' + styleContent;
         return '';
       });
 
-      // Extract inline <script> blocks without src attribute
       bodyHtml = bodyHtml.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (_m, attrs, scriptContent) => {
         if (/\bsrc\s*=/i.test(attrs)) {
           return '';
@@ -497,7 +669,6 @@ export function buildIsolatedSandboxDocument(params: {
         return '';
       });
 
-      // If full document with <body>, take inner <body> content
       const bodyMatch = /<body\b[^>]*>([\s\S]*?)<\/body>/i.exec(bodyHtml);
       if (bodyMatch) {
         bodyHtml = bodyMatch[1];
@@ -519,8 +690,8 @@ export function buildIsolatedSandboxDocument(params: {
     if (babel && combinedJs.trim()) {
       try {
         const res = babel.transform(combinedJs, {
-          filename: 'script.js',
-          presets: ['env'],
+          filename: 'script.ts',
+          presets: ['env', 'typescript'],
         });
         transpiledJs = res.code || combinedJs;
       } catch (err: unknown) {
@@ -643,6 +814,7 @@ export function buildIsolatedSandboxDocument(params: {
 
       var useState = React.useState;
       var useEffect = React.useEffect;
+      var useLayoutEffect = React.useLayoutEffect;
       var useRef = React.useRef;
       var useMemo = React.useMemo;
       var useCallback = React.useCallback;
@@ -650,6 +822,11 @@ export function buildIsolatedSandboxDocument(params: {
       var useContext = React.useContext;
       var useId = React.useId;
       var createContext = React.createContext;
+      var createRef = React.createRef;
+      var forwardRef = React.forwardRef;
+      var memo = React.memo;
+      var Children = React.Children;
+      var cloneElement = React.cloneElement;
       var Fragment = React.Fragment;
 
       function SandboxErrorBoundary(props) {

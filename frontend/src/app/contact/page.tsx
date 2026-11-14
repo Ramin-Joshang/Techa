@@ -2,16 +2,39 @@ import React from 'react';
 import Link from 'next/link';
 import { Clock, Mail, MapPin, PhoneCall, HelpCircle, ArrowLeft } from 'lucide-react';
 import ContactForm from '../../components/contact/ContactForm';
+import { buildPageMetadata, getSiteUrl } from '../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'تماس با ما | پلتفرم آموزشی تکا',
   description:
     'راه‌های ارتباطی رسمی با پلتفرم آموزشی تکا، شماره تلفن پشتیبانی، پست الکترونیکی، نشانی مجموعه دانشگاهی و فرم ارسال مستقیم پیام.',
-};
+  path: '/contact',
+  keywords: ['تماس با تکا', 'پشتیبانی تکا', 'مشاوره کارآموزی تکا'],
+});
 
 export default function ContactPage() {
+  const siteUrl = getSiteUrl();
+  const contactJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'تماس با ما و پشتیبانی آموزشی تکا',
+    url: `${siteUrl}/contact`,
+    inLanguage: 'fa-IR',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'TECHA',
+      url: siteUrl,
+      email: 'info@techa.ir',
+      telephone: '+98-21-82800003',
+    },
+  };
+
   return (
     <div className="w-full bg-slate-50 text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+      />
       {/* Header Band */}
       <section className="bg-[#042A1B] text-white py-12 sm:py-16 border-b border-[#7AE36A]/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-3">

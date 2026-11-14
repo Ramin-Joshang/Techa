@@ -55,6 +55,10 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Low-level typed fetcher for Techa public APIs.
  * Validates request parameters and enforces the shared Zod response contracts.
@@ -102,25 +106,45 @@ export async function fetchFromPublicApi<T>(
     (fetchInit as unknown as { next?: unknown }).next = nextOptions;
   }
 
-  let response: Response;
+  let response: Response | undefined;
+  let lastError: unknown;
+  const retryDelayMs = process.env.VITEST ? 5 : 220;
+
   try {
     response = await fetchWithTimeout(targetUrl.toString(), fetchInit, timeoutMs);
   } catch (err: unknown) {
+    lastError = err;
     const internalBaseUrl = getInternalBackendApiBaseUrl();
     const isLoopback = targetUrl.hostname === '127.0.0.1' || targetUrl.hostname === 'localhost';
+
     if (isLoopback && baseUrl !== internalBaseUrl) {
       try {
         const fallbackUrl = buildTargetUrl(internalBaseUrl, cleanEndpoint, options.searchParams);
         response = await fetchWithTimeout(fallbackUrl.toString(), fetchInit, timeoutMs);
       } catch (fallbackErr: unknown) {
-        const fallbackDetails = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-        throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', fallbackDetails);
+        lastError = fallbackErr;
       }
-    } else {
-      const errorDetails = err instanceof Error ? err.message : String(err);
-      // Never leak internal hostnames or credentials to clients
-      throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', errorDetails);
     }
+
+    // Retry briefly against internal loopback if backend is completing startup/restart
+    if (!response && isLoopback) {
+      const retryBase = baseUrl !== internalBaseUrl ? internalBaseUrl : baseUrl;
+      for (let attempt = 0; attempt < 2 && !response; attempt++) {
+        await sleep(retryDelayMs * (attempt + 1));
+        try {
+          const retryUrl = buildTargetUrl(retryBase, cleanEndpoint, options.searchParams);
+          response = await fetchWithTimeout(retryUrl.toString(), fetchInit, timeoutMs);
+        } catch (retryErr: unknown) {
+          lastError = retryErr;
+        }
+      }
+    }
+  }
+
+  if (!response) {
+    const errorDetails = lastError instanceof Error ? lastError.message : String(lastError);
+    // Never leak internal hostnames or credentials to clients
+    throw new NetworkError('امکان برقراری ارتباط با سرور داده‌ها وجود ندارد.', errorDetails);
   }
 
   // Parse JSON response body

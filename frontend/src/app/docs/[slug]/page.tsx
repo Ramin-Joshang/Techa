@@ -18,6 +18,7 @@ import {
   isNotFoundError,
 } from '../../../lib/server';
 import { formatPersianCount, formatReadingDuration } from '../../../lib/format-duration';
+import { buildPageMetadata, getSiteUrl } from '../../../lib/seo';
 import CourseOutlineList from '../../../components/docs/CourseOutlineList';
 import CourseCoverMedia from '../../../components/docs/CourseCoverMedia';
 
@@ -28,23 +29,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   try {
     const course = await getPublishedCourseDetail(courseSlug);
-    return {
+    return buildPageMetadata({
       title: course.seo?.metaTitle || `${course.title} | مستندات تکا`,
       description: course.seo?.metaDescription || course.summary,
+      path: `/docs/${course.slug}`,
+      type: 'article',
       keywords: course.tags,
-      alternates: {
-        canonical: `/docs/${course.slug}`,
-      },
-      robots: 'index, follow',
-      openGraph: {
-        title: course.seo?.metaTitle || `${course.title} | مستندات تکا`,
-        description: course.seo?.metaDescription || course.summary,
-        type: 'article',
-      },
-    };
+    });
   } catch (err: unknown) {
     if (isNotFoundError(err)) {
-      return { title: 'دوره یافت نشد | تکا' };
+      return { title: 'دوره یافت نشد | تکا', robots: { index: false, follow: false } };
     }
     return { title: 'مستندات آموزشی | تکا' };
   }
@@ -99,16 +93,19 @@ export default async function CourseOverviewPage({ params }: CourseOverviewPageP
       }).format(new Date(course.publishedAt))
     : null;
 
+  const siteUrl = getSiteUrl();
+
   const courseJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Course',
     name: course.title,
     description: course.summary,
+    url: `${siteUrl}/docs/${courseSlug}`,
     inLanguage: 'fa-IR',
     provider: {
       '@type': 'Organization',
       name: 'TECHA',
-      url: 'https://techa.ir',
+      url: siteUrl,
     },
   };
 
@@ -116,13 +113,13 @@ export default async function CourseOverviewPage({ params }: CourseOverviewPageP
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'صفحه اصلی', item: 'https://techa.ir/' },
-      { '@type': 'ListItem', position: 2, name: 'مستندات و دوره‌ها', item: 'https://techa.ir/docs' },
+      { '@type': 'ListItem', position: 1, name: 'صفحه اصلی', item: `${siteUrl}/` },
+      { '@type': 'ListItem', position: 2, name: 'مستندات و دوره‌ها', item: `${siteUrl}/docs` },
       {
         '@type': 'ListItem',
         position: 3,
         name: course.title,
-        item: `https://techa.ir/docs/${courseSlug}`,
+        item: `${siteUrl}/docs/${courseSlug}`,
       },
     ],
   };

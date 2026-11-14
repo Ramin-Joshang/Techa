@@ -20,10 +20,12 @@ import {
   getCourseOutline,
 } from '../lib/server';
 import DocCard from '../components/docs/DocCard';
+import DocsRetryButton from '../components/docs/DocsRetryButton';
 import LearningRoadmap from '../components/roadmap/LearningRoadmap';
 import { formatPersianCount, formatReadingDuration } from '../lib/format-duration';
+import { buildPageMetadata, getSiteUrl } from '../lib/seo';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 function normalizePublicCtaUrl(url?: string): string {
   if (!url) return '/docs';
@@ -47,29 +49,30 @@ function renderFeatureIcon(iconName?: string) {
 }
 
 export async function generateMetadata() {
+  const defaultTitle = 'تکا | مرجع تخصصی آموزش و مستندات برنامه‌نویسی وب';
+  const defaultDescription =
+    'آموزش جامع و استاندارد برنامه‌نویسی وب، React و TypeScript با ۱۳ بلوک محتوایی و آزمایشگاه اجرای زنده کد در مرورگر به زبان فارسی.';
+
   try {
-    const page = await getHomepage();
+    const page = await getHomepage({ noStore: true });
     if (page?.seo) {
-      return {
-        title: page.seo.metaTitle || 'تکا | مرجع تخصصی آموزش و مستندات برنامه‌نویسی وب',
-        description:
-          page.seo.metaDescription ||
-          'آموزش جامع و ساختاریافته برنامه‌نویسی وب، ری‌اکت، تایپ‌اسکریپت و معماری نرم‌افزار به زبان فارسی.',
+      return buildPageMetadata({
+        title: page.seo.metaTitle || defaultTitle,
+        description: page.seo.metaDescription || defaultDescription,
+        path: '/',
         keywords: ['آموزش برنامه‌نویسی', 'تکا', 'TECHA', 'ری‌اکت', 'تایپ‌اسکریپت', 'مستندات فنی'],
-        alternates: { canonical: '/' },
-        robots: 'index, follow',
-      };
+      });
     }
   } catch {
     // Graceful fallback
   }
 
-  return {
-    title: 'تکا | مرجع تخصصی آموزش و مستندات برنامه‌نویسی وب',
-    description:
-      'آموزش جامع و استاندارد برنامه‌نویسی وب با ۱۳ بلوک محتوایی و محیط اجرای زنده کد به زبان فارسی.',
-    alternates: { canonical: '/' },
-  };
+  return buildPageMetadata({
+    title: defaultTitle,
+    description: defaultDescription,
+    path: '/',
+    keywords: ['آموزش برنامه‌نویسی', 'تکا', 'TECHA', 'ری‌اکت', 'تایپ‌اسکریپت', 'مستندات فنی'],
+  });
 }
 
 export default async function HomePage() {
@@ -79,8 +82,8 @@ export default async function HomePage() {
   let coursesUnavailable = false;
 
   const [homeRes, coursesRes] = await Promise.allSettled([
-    getHomepage(),
-    getPublishedCourses({ limit: 24 }),
+    getHomepage({ noStore: true }),
+    getPublishedCourses({ limit: 24, noStore: true }),
   ]);
 
   if (homeRes.status === 'fulfilled') {
@@ -90,6 +93,9 @@ export default async function HomePage() {
   if (coursesRes.status === 'fulfilled') {
     publishedCourses = coursesRes.value?.courses || [];
     totalCourses = coursesRes.value?.total || publishedCourses.length;
+  } else if (homeConfig?.featuredCourses && homeConfig.featuredCourses.length > 0) {
+    publishedCourses = homeConfig.featuredCourses;
+    totalCourses = homeConfig.statistics?.totalCourses || publishedCourses.length;
   } else {
     coursesUnavailable = true;
   }
@@ -98,6 +104,10 @@ export default async function HomePage() {
     homeConfig?.featuredCourses && homeConfig.featuredCourses.length > 0
       ? homeConfig.featuredCourses.slice(0, 6)
       : publishedCourses.slice(0, 6);
+
+  if (!totalCourses) {
+    totalCourses = homeConfig?.statistics?.totalCourses || showcaseCourses.length;
+  }
 
   const roadmapCourses =
     publishedCourses.length > 0 ? publishedCourses : showcaseCourses;
@@ -160,15 +170,17 @@ export default async function HomePage() {
           },
         ];
 
+  const siteUrl = getSiteUrl();
+
   const websiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: homeConfig?.branding?.siteName || 'TECHA',
     alternateName: 'پلتفرم آموزشی تکا',
-    url: 'https://techa.ir',
+    url: siteUrl,
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://techa.ir/docs?q={search_term_string}',
+      target: `${siteUrl}/docs?q={search_term_string}`,
       'query-input': 'required name=search_term_string',
     },
   };
@@ -177,7 +189,7 @@ export default async function HomePage() {
     '@context': 'https://schema.org',
     '@type': 'EducationalOrganization',
     name: 'TECHA - آکادمی و پلتفرم آموزش برنامه‌نویسی تکا',
-    url: 'https://techa.ir',
+    url: siteUrl,
     description: heroSubtitle,
   };
 
@@ -353,14 +365,19 @@ export default async function HomePage() {
           </div>
 
           {coursesUnavailable ? (
-            <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 text-slate-800 space-y-2 max-w-xl mx-auto">
+            <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 text-slate-800 space-y-4 max-w-xl mx-auto">
               <AlertCircle className="h-9 w-9 text-amber-600 mx-auto" />
-              <h3 className="text-base font-bold text-slate-950">
-                دوره‌های آموزشی هم‌اکنون در حال آماده‌سازی هستند
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                امکان دریافت دوره‌ها در این لحظه وجود ندارد. لطفاً کمی بعد دوباره تلاش کنید.
-              </p>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-slate-950">
+                  دوره‌های آموزشی هم‌اکنون در حال آماده‌سازی هستند
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  امکان دریافت دوره‌ها در این لحظه وجود ندارد. لطفاً چند لحظه دیگر دوباره تلاش کنید.
+                </p>
+              </div>
+              <div className="pt-1 flex justify-center">
+                <DocsRetryButton />
+              </div>
             </div>
           ) : showcaseCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

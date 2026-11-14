@@ -1,11 +1,14 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import ForgotPasswordForm from './ForgotPasswordForm';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'بازیابی رمز عبور | تکا ۲.۰',
   description: 'بازیابی امن رمز عبور حساب کاربری با پیامک اعتبارسنجی',
-};
+  path: '/forgot-password',
+  noIndex: true,
+});
 
 export default function ForgotPasswordPage() {
   return (

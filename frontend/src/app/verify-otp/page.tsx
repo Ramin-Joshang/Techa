@@ -2,11 +2,14 @@ import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import VerifyOtpForm from './VerifyOtpForm';
 import { Loader2 } from 'lucide-react';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'تأیید کد اعتبارسنجی پیامکی | تکا ۲.۰',
   description: 'اعتبارسنجی شماره موبایل و ورود امن به پلتفرم تکا',
-};
+  path: '/verify-otp',
+  noIndex: true,
+});
 
 export default function VerifyOtpPage() {
   return (

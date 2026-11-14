@@ -52,13 +52,15 @@ export type HomePageAggregateDto = z.infer<typeof HomePageAggregateDtoSchema>;
  * Fetches homepage CMS configuration.
  * Returns null on NotFoundError so the homepage can render safely without breaking.
  */
-export async function getHomepage(): Promise<HomePageAggregateDto | null> {
+export async function getHomepage(options?: { noStore?: boolean }): Promise<HomePageAggregateDto | null> {
+  const disableCache = Boolean(options?.noStore);
   try {
     const result = await fetchFromPublicApi(
       '/home',
       HomePageAggregateDtoSchema,
       {
-        revalidate: 60,
+        noStore: disableCache,
+        revalidate: disableCache ? 0 : 60,
         tags: ['techa-home'],
       }
     );

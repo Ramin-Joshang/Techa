@@ -2,25 +2,65 @@ import '../styles/globals.css';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { AuthProvider } from '../context/AuthContext';
+import { getSiteUrl, SEO_DEFAULT_OG_IMAGE } from '../lib/seo';
+
+const siteUrl = getSiteUrl();
+const defaultTitle = 'تکا | آموزش برنامه‌نویسی وب و مستندات فنی';
+const defaultDescription =
+  'آموزش استاندارد برنامه‌نویسی وب، React، TypeScript و معماری نرم‌افزار با ۱۳ بلوک محتوایی و آزمایشگاه زنده کد به زبان فارسی.';
 
 export const metadata = {
   title: {
-    default: 'پلتفرم آموزشی تکا | TECHA',
-    template: '%s | TECHA',
+    default: defaultTitle,
+    template: '%s | تکا (TECHA)',
   },
   icons: {
     icon: '/images/favicon.svg',
   },
-  description: 'پلتفرم مدرن و استاندارد آموزش برنامه‌نویسی وب و مهندسی نرم‌افزار به زبان فارسی',
-  keywords: ['آموزش برنامه‌نویسی', 'تکا', 'Techa', 'پایتون', 'ری‌اکت', 'نکست جی‌اس', 'جاوا اسکریپت'],
-  metadataBase: new URL('https://techa.ir'),
+  description: defaultDescription,
+  keywords: [
+    'آموزش برنامه‌نویسی',
+    'تکا',
+    'TECHA',
+    'آموزش React',
+    'آموزش TypeScript',
+    'مستندات مهندسی وب',
+    'کارآموزی برنامه‌نویسی',
+  ],
+  metadataBase: new URL(siteUrl),
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
   openGraph: {
-    title: 'پلتفرم آموزشی تکا | TECHA',
-    description: 'آموزش جامع و استاندارد برنامه‌نویسی با معماری مدرن و درس‌های تعاملی',
-    url: 'https://techa.ir',
+    title: defaultTitle,
+    description: defaultDescription,
+    url: siteUrl,
     siteName: 'TECHA',
     locale: 'fa_IR',
     type: 'website',
+    images: [
+      {
+        url: `${siteUrl}${SEO_DEFAULT_OG_IMAGE}`,
+        alt: defaultTitle,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [`${siteUrl}${SEO_DEFAULT_OG_IMAGE}`],
   },
   other: {
     enamad: '5807521',

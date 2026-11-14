@@ -173,4 +173,36 @@ describe('Frontend Server-Side API Client (fetchFromPublicApi)', () => {
       }
     }
   });
+
+  it('recovers from transient loopback ECONNREFUSED on same internal host via bounded retry', async () => {
+    const prevUrl = process.env.TECHA_API_BASE_URL;
+    delete process.env.TECHA_API_BASE_URL;
+
+    try {
+      let calls = 0;
+      global.fetch = vi.fn(async () => {
+        calls += 1;
+        if (calls === 1) {
+          throw new Error('connect ECONNREFUSED 127.0.0.1:3500');
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            success: true,
+            statusCode: 200,
+            data: { id: 'course_retry', name: 'After Retry' },
+          }),
+        } as unknown as Response;
+      }) as unknown as typeof fetch;
+
+      const result = await fetchFromPublicApi('/courses', TestPayloadSchema);
+      expect(result.data).toEqual({ id: 'course_retry', name: 'After Retry' });
+      expect(calls).toBe(2);
+    } finally {
+      if (prevUrl !== undefined) {
+        process.env.TECHA_API_BASE_URL = prevUrl;
+      }
+    }
+  });
 });
