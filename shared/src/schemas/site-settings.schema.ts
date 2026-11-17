@@ -20,6 +20,12 @@ export const FooterLinkGroupSchema = z.object({
   links: z.array(NavigationItemSchema).max(10).default([]),
 });
 
+export const MediaUploadSettingsSchema = z.object({
+  maxImageSizeMb: z.number().min(1).max(200).default(10),
+  maxVideoSizeMb: z.number().min(5).max(2048).default(200),
+  maxDocumentSizeMb: z.number().min(1).max(500).default(50),
+});
+
 export const SiteSettingsSchema = z.object({
   id: ObjectIdSchema.optional(),
   settingsKey: z.literal('global').default('global'),
@@ -60,6 +66,11 @@ export const SiteSettingsSchema = z.object({
     supportContact: z.string().max(100).optional(),
     timezone: z.string().default('Asia/Tehran'),
   }),
+  media: MediaUploadSettingsSchema.default({
+    maxImageSizeMb: 10,
+    maxVideoSizeMb: 200,
+    maxDocumentSizeMb: 50,
+  }),
   updatedBy: ObjectIdSchema.optional(),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
@@ -83,6 +94,7 @@ export const PublicSiteSettingsDtoSchema = SiteSettingsSchema.pick({
 export type NavigationItem = z.infer<typeof NavigationItemSchema>;
 export type SocialLink = z.infer<typeof SocialLinkSchema>;
 export type FooterLinkGroup = z.infer<typeof FooterLinkGroupSchema>;
+export type MediaUploadSettings = z.infer<typeof MediaUploadSettingsSchema>;
 export type SiteSettings = z.infer<typeof SiteSettingsSchema>;
-export type UpdateSiteSettingsDto = z.infer<typeof UpdateSiteSettingsDtoSchema>;
+export type UpdateSiteSettingsDto = z.input<typeof UpdateSiteSettingsDtoSchema>;
 export type PublicSiteSettingsDto = z.infer<typeof PublicSiteSettingsDtoSchema>;

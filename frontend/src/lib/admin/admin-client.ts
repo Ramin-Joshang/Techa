@@ -10,6 +10,7 @@ import {
   AdminUpdateCourseDto,
   AdminUpdateLessonDto,
   AdminUpdateMediaDto,
+  AdminUpdateMediaLimitsDto,
   AdminUpdateSitePageDto,
   AdminUpdateSiteSettingsDto,
   AdminUpdateUserRolesDto,
@@ -33,6 +34,7 @@ import {
   AdminLessonDto,
   AdminLessonPreviewDto,
   AdminMediaDto,
+  AdminMediaOverviewDto,
   AdminSitePageDto,
   AdminSiteSettingsDto,
   AdminUserDetailDto,
@@ -246,12 +248,23 @@ async function requestPaginated<T>(
   };
 }
 
+export interface UploadProgressTelemetry {
+  percent: number;
+  loadedBytes: number;
+  totalBytes: number;
+  speedBytesPerSec: number;
+  etaSeconds: number | null;
+  phase: 'uploading' | 'processing' | 'done';
+}
+
 export interface UploadMediaOptions {
   file: File;
   category: MediaCategory;
   visibility?: MediaVisibility;
   altText?: string;
+  signal?: AbortSignal;
   onProgress?: (percent: number) => void;
+  onProgressDetails?: (telemetry: UploadProgressTelemetry) => void;
 }
 
 function sendMediaXhr(
@@ -259,6 +272,11 @@ function sendMediaXhr(
   csrfToken: string | null
 ): Promise<AdminMediaDto> {
   return new Promise((resolve, reject) => {
+    if (options.signal?.aborted) {
+      reject(new AdminApiError(0, 'UPLOAD_ABORTED', 'آپلود فایل لغو شد.'));
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/v1/admin/media/upload', true);
     xhr.withCredentials = true;
@@ -267,14 +285,84 @@ function sendMediaXhr(
       xhr.setRequestHeader('x-csrf-token', csrfToken);
     }
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && options.onProgress) {
-        const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
-        options.onProgress(percent);
+    const startTime = performance.now();
+    let lastSampleTime = startTime;
+    let lastSampleBytes = 0;
+    let smoothedSpeed = 0;
+
+    const cleanupSignal = () => {
+      if (options.signal) {
+        options.signal.removeEventListener('abort', onAbort);
       }
     };
 
+    const onAbort = () => {
+      xhr.abort();
+    };
+
+    if (options.signal) {
+      options.signal.addEventListener('abort', onAbort, { once: true });
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const now = performance.now();
+      const totalBytes = event.total || options.file.size;
+      const loadedBytes = event.loaded;
+      const percent = Math.min(100, Math.round((loadedBytes / Math.max(1, totalBytes)) * 100));
+
+      const dtSec = (now - lastSampleTime) / 1000;
+      if (dtSec >= 0.25 || loadedBytes === totalBytes) {
+        const deltaBytes = loadedBytes - lastSampleBytes;
+        const instantSpeed = dtSec > 0 ? deltaBytes / dtSec : 0;
+        smoothedSpeed =
+          smoothedSpeed > 0 ? smoothedSpeed * 0.65 + instantSpeed * 0.35 : instantSpeed;
+        lastSampleTime = now;
+        lastSampleBytes = loadedBytes;
+      }
+
+      const elapsedSec = Math.max(0.1, (now - startTime) / 1000);
+      const effectiveSpeed = smoothedSpeed > 0 ? smoothedSpeed : loadedBytes / elapsedSec;
+      const remainingBytes = Math.max(0, totalBytes - loadedBytes);
+      const etaSeconds =
+        effectiveSpeed > 0 && remainingBytes > 0 ? remainingBytes / effectiveSpeed : 0;
+
+      if (options.onProgress) {
+        options.onProgress(percent);
+      }
+      if (options.onProgressDetails) {
+        options.onProgressDetails({
+          percent,
+          loadedBytes,
+          totalBytes,
+          speedBytesPerSec: Math.max(0, effectiveSpeed),
+          etaSeconds: loadedBytes >= totalBytes ? 0 : etaSeconds,
+          phase: loadedBytes >= totalBytes ? 'processing' : 'uploading',
+        });
+      }
+    };
+
+    xhr.upload.onload = () => {
+      if (options.onProgressDetails) {
+        const elapsedSec = Math.max(0.1, (performance.now() - startTime) / 1000);
+        options.onProgressDetails({
+          percent: 100,
+          loadedBytes: options.file.size,
+          totalBytes: options.file.size,
+          speedBytesPerSec: smoothedSpeed || options.file.size / elapsedSec,
+          etaSeconds: 0,
+          phase: 'processing',
+        });
+      }
+    };
+
+    xhr.onabort = () => {
+      cleanupSignal();
+      reject(new AdminApiError(0, 'UPLOAD_ABORTED', 'آپلود فایل توسط کاربر لغو شد.'));
+    };
+
     xhr.onerror = () => {
+      cleanupSignal();
       reject(
         new AdminApiError(
           0,
@@ -285,6 +373,7 @@ function sendMediaXhr(
     };
 
     xhr.onload = () => {
+      cleanupSignal();
       let parsed: any = null;
       try {
         parsed = JSON.parse(xhr.responseText);
@@ -294,6 +383,16 @@ function sendMediaXhr(
 
       if (xhr.status >= 200 && xhr.status < 300) {
         if (options.onProgress) options.onProgress(100);
+        if (options.onProgressDetails) {
+          options.onProgressDetails({
+            percent: 100,
+            loadedBytes: options.file.size,
+            totalBytes: options.file.size,
+            speedBytesPerSec: smoothedSpeed,
+            etaSeconds: 0,
+            phase: 'done',
+          });
+        }
         resolve(parsed?.data as AdminMediaDto);
         return;
       }
@@ -308,10 +407,11 @@ function sendMediaXhr(
     };
 
     const formData = new FormData();
-    formData.append('file', options.file);
+    // Append metadata fields BEFORE binary file so Busboy knows target category folder immediately
     formData.append('category', options.category);
     if (options.visibility) formData.append('visibility', options.visibility);
     if (options.altText) formData.append('altText', options.altText);
+    formData.append('file', options.file);
 
     xhr.send(formData);
   });
@@ -577,6 +677,15 @@ export const adminClient = {
     sort?: string;
     order?: string;
   } = {}) => requestPaginated<AdminMediaDto>(`/api/v1/admin/media${buildQueryString(query)}`),
+
+  getMediaOverview: () =>
+    requestData<AdminMediaOverviewDto>('/api/v1/admin/media/overview'),
+
+  updateMediaLimits: (dto: AdminUpdateMediaLimitsDto) =>
+    requestData<AdminMediaOverviewDto>('/api/v1/admin/media/limits', {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    }),
 
   getMedia: (mediaId: string) =>
     requestData<AdminMediaDto>(`/api/v1/admin/media/${mediaId}`),

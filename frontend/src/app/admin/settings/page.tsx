@@ -13,6 +13,7 @@ import {
   Search,
   Settings,
   Trash2,
+  UploadCloud,
 } from 'lucide-react';
 import { AdminUpdateSiteSettingsDtoSchema, NavigationItem, SocialLink } from '@techa/shared';
 import AdminGuard from '../../../components/admin/auth/AdminGuard';
@@ -36,7 +37,7 @@ import { formatPersianDateTime, resolvePreviewMediaUrl } from '../../../lib/admi
 import { AdminSiteSettingsDto } from '../../../lib/admin/admin-types';
 import { useUnsavedChangesWarning } from '../../../lib/admin/use-unsaved-guard';
 
-type SettingsTab = 'general' | 'branding' | 'header' | 'footer' | 'seo';
+type SettingsTab = 'general' | 'branding' | 'header' | 'footer' | 'seo' | 'media';
 
 interface SettingsFormState {
   general: {
@@ -73,6 +74,11 @@ interface SettingsFormState {
     defaultMetaTitle: string;
     defaultMetaDescription: string;
     robotsPolicy: 'index, follow' | 'noindex, nofollow' | 'index, nofollow';
+  };
+  media: {
+    maxImageSizeMb: number;
+    maxVideoSizeMb: number;
+    maxDocumentSizeMb: number;
   };
 }
 
@@ -128,6 +134,11 @@ function mapDtoToForm(dto: AdminSiteSettingsDto): SettingsFormState {
       defaultMetaTitle: dto.seo?.defaultMetaTitle || '',
       defaultMetaDescription: dto.seo?.defaultMetaDescription || '',
       robotsPolicy: dto.seo?.robotsPolicy || 'index, follow',
+    },
+    media: {
+      maxImageSizeMb: dto.media?.maxImageSizeMb ?? 10,
+      maxVideoSizeMb: dto.media?.maxVideoSizeMb ?? 200,
+      maxDocumentSizeMb: dto.media?.maxDocumentSizeMb ?? 50,
     },
   };
 }
@@ -251,6 +262,11 @@ function SettingsContent() {
         defaultMetaDescription: form.seo.defaultMetaDescription.trim(),
         robotsPolicy: form.seo.robotsPolicy,
       },
+      media: {
+        maxImageSizeMb: Number(form.media.maxImageSizeMb) || 10,
+        maxVideoSizeMb: Number(form.media.maxVideoSizeMb) || 200,
+        maxDocumentSizeMb: Number(form.media.maxDocumentSizeMb) || 50,
+      },
     };
 
     const parsed = AdminUpdateSiteSettingsDtoSchema.safeParse(payload);
@@ -304,6 +320,7 @@ function SettingsContent() {
     { key: 'header', label: 'ناوبری هدر', icon: <Layout className="w-4 h-4" /> },
     { key: 'footer', label: 'فوتر و شبکه‌های اجتماعی', icon: <Globe className="w-4 h-4" /> },
     { key: 'seo', label: 'تنظیمات پیش‌فرض سئو', icon: <Search className="w-4 h-4" /> },
+    { key: 'media', label: 'سقف حجم آپلود', icon: <UploadCloud className="w-4 h-4" /> },
   ];
 
   const moveNavItem = (index: number, delta: -1 | 1) => {
@@ -1151,6 +1168,78 @@ function SettingsContent() {
                 <option value="noindex, nofollow">noindex, nofollow</option>
               </AdminSelect>
             </AdminField>
+          </div>
+        )}
+
+        {activeTab === 'media' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <AdminField
+                label="حداکثر حجم آپلود تصویر (مگابایت)"
+                hint="بازه مجاز: ۱ تا ۲۰۰ مگابایت"
+                required
+              >
+                <AdminInput
+                  type="number"
+                  dir="ltr"
+                  min={1}
+                  max={200}
+                  disabled={!canUpdate}
+                  value={form.media.maxImageSizeMb}
+                  onChange={(e) =>
+                    patchForm((p) => ({
+                      ...p,
+                      media: { ...p.media, maxImageSizeMb: Number(e.target.value) || 1 },
+                    }))
+                  }
+                />
+              </AdminField>
+
+              <AdminField
+                label="حداکثر حجم آپلود ویدیو (مگابایت)"
+                hint="بازه مجاز: ۵ تا ۲۰۴۸ مگابایت"
+                required
+              >
+                <AdminInput
+                  type="number"
+                  dir="ltr"
+                  min={5}
+                  max={2048}
+                  disabled={!canUpdate}
+                  value={form.media.maxVideoSizeMb}
+                  onChange={(e) =>
+                    patchForm((p) => ({
+                      ...p,
+                      media: { ...p.media, maxVideoSizeMb: Number(e.target.value) || 5 },
+                    }))
+                  }
+                />
+              </AdminField>
+
+              <AdminField
+                label="حداکثر حجم آپلود اسناد و فایل‌ها (مگابایت)"
+                hint="بازه مجاز: ۱ تا ۵۰۰ مگابایت"
+                required
+              >
+                <AdminInput
+                  type="number"
+                  dir="ltr"
+                  min={1}
+                  max={500}
+                  disabled={!canUpdate}
+                  value={form.media.maxDocumentSizeMb}
+                  onChange={(e) =>
+                    patchForm((p) => ({
+                      ...p,
+                      media: { ...p.media, maxDocumentSizeMb: Number(e.target.value) || 1 },
+                    }))
+                  }
+                />
+              </AdminField>
+            </div>
+            <p className="text-xs text-slate-500">
+              این محدودیت‌ها بلافاصله هنگام آپلود فایل در بخش کتابخانه رسانه و ویرایشگر درس‌ها اعمال می‌شوند.
+            </p>
           </div>
         )}
       </div>

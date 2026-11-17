@@ -336,7 +336,7 @@ export class AuthController {
 
   /**
    * POST /api/v1/auth/otp/request
-   * Requests an OTP challenge for login (with anti-enumeration protection)
+   * Requests an OTP challenge for login
    */
   requestOtp = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -605,6 +605,34 @@ export class AuthController {
 
   private mapOtpError(err: unknown): { status: number; code: string; message: string } {
     const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('ACCOUNT_NOT_FOUND')) {
+      return {
+        status: 404,
+        code: 'ACCOUNT_NOT_FOUND',
+        message: 'شما حساب کاربری ندارید. لطفاً ابتدا ثبت‌نام کنید.',
+      };
+    }
+    if (msg.includes('PHONE_NOT_VERIFIED')) {
+      return {
+        status: 403,
+        code: 'PHONE_NOT_VERIFIED',
+        message: 'شماره موبایل این حساب کاربری هنوز تأیید نشده است. لطفاً ابتدا شماره خود را تأیید نمایید.',
+      };
+    }
+    if (msg.includes('ACCOUNT_SUSPENDED')) {
+      return {
+        status: 403,
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'حساب کاربری شما مسدود شده است. لطفاً با پشتیبانی تماس بگیرید.',
+      };
+    }
+    if (msg.includes('ACCOUNT_DISABLED')) {
+      return {
+        status: 403,
+        code: 'ACCOUNT_DISABLED',
+        message: 'حساب کاربری شما غیرفعال شده است.',
+      };
+    }
     if (msg.includes('OTP_EXPIRED')) {
       return { status: 410, code: 'OTP_EXPIRED', message: 'کد اعتبارسنجی منقضی شده است. لطفاً درخواست کد جدید ثبت کنید.' };
     }

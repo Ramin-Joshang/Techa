@@ -3,15 +3,17 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { StorageKeySchema, MediaType } from '@techa/shared';
+import { MEDIA_CATEGORIES, MediaCategory, MediaType, StorageKeySchema } from '@techa/shared';
 import { env } from '../../../core/config/env';
 import { BadRequestError, ForbiddenError } from '../../../core/errors/app-error';
 import {
-  getSpecByMimeType,
+  FORBIDDEN_MIME_OR_EXT,
+  MediaSizeLimitsBytes,
+  getDefaultMediaLimitsBytes,
   getMaxBytesForMediaType,
+  resolveAllowedMediaSpec,
   sanitizeOriginalFilename,
   verifyMagicBytes,
-  FORBIDDEN_MIME_OR_EXT,
 } from './media-validation';
 
 export interface StoredMediaResult {
@@ -22,6 +24,52 @@ export interface StoredMediaResult {
   mediaType: MediaType;
   sizeBytes: number;
   checksumSha256: string;
+}
+
+export type ParsedByteRange =
+  | { kind: 'range'; start: number; end: number }
+  | { kind: 'unsatisfiable' }
+  | null;
+
+export function parseHttpByteRange(
+  rangeHeader: string | undefined,
+  totalSize: number
+): ParsedByteRange {
+  if (!rangeHeader || !rangeHeader.trim()) return null;
+  if (totalSize <= 0) return { kind: 'unsatisfiable' };
+
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+  if (!match) return { kind: 'unsatisfiable' };
+
+  const [, rawStart, rawEnd] = match;
+  if (!rawStart && !rawEnd) return { kind: 'unsatisfiable' };
+
+  let start: number;
+  let end: number;
+
+  if (!rawStart && rawEnd) {
+    const suffixLength = Number(rawEnd);
+    if (!Number.isFinite(suffixLength) || suffixLength <= 0) {
+      return { kind: 'unsatisfiable' };
+    }
+    start = Math.max(0, totalSize - suffixLength);
+    end = totalSize - 1;
+  } else {
+    start = Number(rawStart);
+    end = rawEnd ? Number(rawEnd) : totalSize - 1;
+    if (
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      start < 0 ||
+      start >= totalSize ||
+      end < start
+    ) {
+      return { kind: 'unsatisfiable' };
+    }
+    end = Math.min(end, totalSize - 1);
+  }
+
+  return { kind: 'range', start, end };
 }
 
 export class LocalMediaStorageProvider {
@@ -46,15 +94,20 @@ export class LocalMediaStorageProvider {
     return resolved;
   }
 
-  public generateStorageTarget(canonicalExt: string, date = new Date()): {
+  public generateStorageTarget(
+    canonicalExt: string,
+    category: MediaCategory = 'site_asset',
+    date = new Date()
+  ): {
     storageKey: string;
     safeFilename: string;
   } {
+    const safeCategory = MEDIA_CATEGORIES.includes(category) ? category : 'site_asset';
     const year = String(date.getUTCFullYear());
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const uuid = crypto.randomUUID();
     const safeFilename = `${uuid}.${canonicalExt}`;
-    const storageKey = `media/${year}/${month}/${safeFilename}`;
+    const storageKey = `media/${safeCategory}/${year}/${month}/${safeFilename}`;
     return { storageKey, safeFilename };
   }
 
@@ -62,6 +115,8 @@ export class LocalMediaStorageProvider {
     fileStream: Readable;
     originalFileName: string;
     claimedMimeType: string;
+    category?: MediaCategory;
+    limits?: MediaSizeLimitsBytes;
   }): Promise<StoredMediaResult> {
     const cleanOriginal = sanitizeOriginalFilename(params.originalFileName);
     const ext = path.extname(cleanOriginal).toLowerCase();
@@ -71,10 +126,12 @@ export class LocalMediaStorageProvider {
       throw new BadRequestError(`پسوند فایل "${ext}" از نظر امنیتی غیرمجاز است`);
     }
 
-    const spec = getSpecByMimeType(params.claimedMimeType);
+    const spec = resolveAllowedMediaSpec(params.claimedMimeType, ext);
     if (!spec) {
       params.fileStream.resume();
-      throw new BadRequestError(`نوع فایل "${params.claimedMimeType}" مجاز نیست`);
+      throw new BadRequestError(
+        `نوع فایل "${params.claimedMimeType}" یا پسوند "${ext || 'نامشخص'}" مجاز نیست`
+      );
     }
 
     if (ext && !spec.extensions.includes(ext)) {
@@ -84,8 +141,12 @@ export class LocalMediaStorageProvider {
       );
     }
 
-    const maxBytes = getMaxBytesForMediaType(spec.mediaType);
-    const { storageKey, safeFilename } = this.generateStorageTarget(spec.canonicalExt);
+    const activeLimits = params.limits || getDefaultMediaLimitsBytes();
+    const maxBytes = getMaxBytesForMediaType(spec.mediaType, activeLimits);
+    const { storageKey, safeFilename } = this.generateStorageTarget(
+      spec.canonicalExt,
+      params.category || 'site_asset'
+    );
     const finalPath = this.resolveSafePath(storageKey);
     const tempPath = `${finalPath}.tmp-${crypto.randomUUID()}`;
 
@@ -122,9 +183,10 @@ export class LocalMediaStorageProvider {
           if (aborted) return;
           totalBytes += chunk.length;
           if (totalBytes > maxBytes) {
+            const maxMb = Number((maxBytes / (1024 * 1024)).toFixed(1));
             fail(
               new BadRequestError(
-                `حجم فایل از سقف مجاز (${Math.round(maxBytes / (1024 * 1024))} مگابایت) بیشتر است`
+                `حجم فایل از سقف مجاز (${maxMb} مگابایت) بیشتر است`
               )
             );
             return;
@@ -185,6 +247,36 @@ export class LocalMediaStorageProvider {
     }
   }
 
+  /**
+   * Relocates a newly stored file into its exact category folder when the multipart
+   * `category` field arrives after the binary `file` stream in a request.
+   */
+  public async relocateToCategoryFolder(params: {
+    currentStorageKey: string;
+    targetCategory: MediaCategory;
+    safeFilename: string;
+    date?: Date;
+  }): Promise<string> {
+    const safeCategory = MEDIA_CATEGORIES.includes(params.targetCategory)
+      ? params.targetCategory
+      : 'site_asset';
+    const expectedPrefix = `media/${safeCategory}/`;
+    if (params.currentStorageKey.startsWith(expectedPrefix)) {
+      return params.currentStorageKey;
+    }
+
+    const d = params.date || new Date();
+    const year = String(d.getUTCFullYear());
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const nextStorageKey = `media/${safeCategory}/${year}/${month}/${params.safeFilename}`;
+
+    const srcPath = this.resolveSafePath(params.currentStorageKey);
+    const destPath = this.resolveSafePath(nextStorageKey);
+    await fsp.mkdir(path.dirname(destPath), { recursive: true });
+    await fsp.rename(srcPath, destPath);
+    return nextStorageKey;
+  }
+
   public async exists(storageKey: string): Promise<boolean> {
     try {
       const targetPath = this.resolveSafePath(storageKey);
@@ -198,7 +290,10 @@ export class LocalMediaStorageProvider {
     }
   }
 
-  public async openReadStreamSafe(storageKey: string): Promise<{
+  public async openReadStreamSafe(
+    storageKey: string,
+    range?: { start: number; end: number }
+  ): Promise<{
     stream: fs.ReadStream;
     sizeBytes: number;
   }> {
@@ -208,7 +303,9 @@ export class LocalMediaStorageProvider {
       throw new ForbiddenError('دسترسی به فایل نامعتبر مسدود شد');
     }
     return {
-      stream: fs.createReadStream(targetPath),
+      stream: range
+        ? fs.createReadStream(targetPath, { start: range.start, end: range.end })
+        : fs.createReadStream(targetPath),
       sizeBytes: stat.size,
     };
   }

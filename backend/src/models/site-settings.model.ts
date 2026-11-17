@@ -54,6 +54,11 @@ export interface SiteSettingsRaw {
     supportContact?: string;
     timezone: string;
   };
+  media?: {
+    maxImageSizeMb: number;
+    maxVideoSizeMb: number;
+    maxDocumentSizeMb: number;
+  };
   version: number;
   updatedBy?: Types.ObjectId | null;
   createdAt: Date;
@@ -151,6 +156,11 @@ export const SiteSettingsSchema = new Schema<SiteSettingsRaw>(
       primaryDomain: { type: String, required: true, default: 'techa.ir' },
       supportContact: { type: String },
       timezone: { type: String, default: 'Asia/Tehran' },
+    },
+    media: {
+      maxImageSizeMb: { type: Number, min: 1, max: 200, default: 10 },
+      maxVideoSizeMb: { type: Number, min: 5, max: 2048, default: 200 },
+      maxDocumentSizeMb: { type: Number, min: 1, max: 500, default: 50 },
     },
     version: { type: Number, required: true, default: 1, min: 1 },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },

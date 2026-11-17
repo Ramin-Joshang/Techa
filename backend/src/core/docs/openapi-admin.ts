@@ -16,7 +16,9 @@ import {
   AdminReorderLessonsDtoSchema,
   AdminLessonDtoSchema,
   AdminMediaListQuerySchema,
+  AdminMediaOverviewDtoSchema,
   AdminUpdateMediaDtoSchema,
+  AdminUpdateMediaLimitsDtoSchema,
   AdminMediaDtoSchema,
   AdminSitePageListQuerySchema,
   AdminCreateSitePageDtoSchema,
@@ -438,6 +440,34 @@ export function registerAdminOpenApiRoutes(registry: OpenAPIRegistry): void {
     request: { query: ensureOpenApi(AdminMediaListQuerySchema) },
     responses: {
       200: { description: 'Media assets listed.', content: { 'application/json': { schema: ensureOpenApi(ApiResponseSchema(z.array(AdminMediaDtoRef))) } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/admin/media/overview',
+    summary: 'Get media storage overview, folder breakdown, and active upload size limits',
+    description: 'Returns category folder usage statistics, persistent GridFS status, and configured upload size limits.',
+    tags: ['Admin Media'],
+    security: authSecurity,
+    responses: {
+      200: { description: 'Media overview retrieved.', content: { 'application/json': { schema: ensureOpenApi(ApiResponseSchema(AdminMediaOverviewDtoSchema)) } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'patch',
+    path: '/api/v1/admin/media/limits',
+    summary: 'Update configurable upload size limits',
+    description: 'Updates maximum upload size (in MB) for images, videos, and documents in SiteSettings.',
+    tags: ['Admin Media'],
+    security: writeSecurity,
+    request: {
+      body: { content: { 'application/json': { schema: ensureOpenApi(AdminUpdateMediaLimitsDtoSchema) } } },
+    },
+    responses: {
+      200: { description: 'Upload limits updated.', content: { 'application/json': { schema: ensureOpenApi(ApiResponseSchema(AdminMediaOverviewDtoSchema)) } } },
+      ...stdWriteErrors,
     },
   });
 

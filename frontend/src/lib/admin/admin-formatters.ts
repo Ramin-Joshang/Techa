@@ -128,6 +128,26 @@ export function formatBytes(bytes: number | null | undefined): string {
   return `${formatted} ${units[idx]}`;
 }
 
+export function formatUploadSpeed(bytesPerSecond: number | null | undefined): string {
+  if (typeof bytesPerSecond !== 'number' || Number.isNaN(bytesPerSecond) || bytesPerSecond <= 0) {
+    return '0 KB/s';
+  }
+  return `${formatBytes(bytesPerSecond)}/s`;
+}
+
+export function formatEtaPersian(seconds: number | null | undefined): string {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) {
+    return 'در حال محاسبه...';
+  }
+  const rounded = Math.ceil(seconds);
+  if (rounded <= 1) return 'کمتر از ۱ ثانیه';
+  if (rounded < 60) return `${formatPersianNumber(rounded)} ثانیه`;
+  const mins = Math.floor(rounded / 60);
+  const secs = rounded % 60;
+  if (secs === 0) return `${formatPersianNumber(mins)} دقیقه`;
+  return `${formatPersianNumber(mins)} دقیقه و ${formatPersianNumber(secs)} ثانیه`;
+}
+
 export function formatPersianDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const date = new Date(iso);
@@ -203,9 +223,16 @@ export function sanitizeAdminReturnPath(candidate: string | null | undefined): s
 
 /**
  * Resolves a CMS media storageKey into a renderable URL for admin preview.
- * Uploaded assets live under "media/..." and are served via /api/v1/public/media/...
+ * Admin-only files resolve via /api/v1/admin/media/:id/file; public files via /api/v1/public/media/...
  */
-export function resolvePreviewMediaUrl(storageKey: string | undefined): string | undefined {
+export function resolvePreviewMediaUrl(
+  storageKey: string | undefined,
+  mediaId?: string,
+  visibility?: 'public' | 'admin'
+): string | undefined {
+  if (visibility === 'admin' && mediaId) {
+    return `/api/v1/admin/media/${mediaId}/file`;
+  }
   if (!storageKey) return undefined;
   if (
     storageKey.startsWith('http://') ||

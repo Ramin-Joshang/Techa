@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   ShieldCheck,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -47,6 +48,20 @@ export default function RegisterForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [registeredPhone, setRegisteredPhone] = useState('');
+  const [noAccountNotice, setNoAccountNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const phoneParam = params.get('phone');
+    const reasonParam = params.get('reason');
+    if (phoneParam) {
+      setPhone((prev) => prev || normalizePersianDigits(phoneParam));
+    }
+    if (reasonParam === 'no_account') {
+      setNoAccountNotice(true);
+    }
+  }, []);
 
   const handleRetryVerificationOtp = async () => {
     if (!registeredPhone || isRequestingOtp) return;
@@ -209,6 +224,19 @@ export default function RegisterForm() {
           برای یادگیری عمیق، مطالعه مستندات و کدنویسی به جامعه ما بپیوندید
         </p>
       </div>
+
+      {/* Notice when redirected from OTP login */}
+      {noAccountNotice && !errorMessage && (
+        <div
+          role="status"
+          className="mb-6 p-3.5 sm:p-4 rounded-xl bg-amber-950/50 border border-amber-400/40 text-amber-100 text-xs sm:text-sm flex items-start gap-3"
+        >
+          <Info className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            شما هنوز حساب کاربری با این شماره نداشتید. لطفاً فرم زیر را تکمیل کرده و ثبت‌نام کنید.
+          </div>
+        </div>
+      )}
 
       {/* Error Alert */}
       {errorMessage && (

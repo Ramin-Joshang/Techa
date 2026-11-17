@@ -93,4 +93,39 @@ describe('Public Auth Client & Header Navigation Controls', () => {
     expect(html).toContain('href="/roadmap"');
     expect(html).toContain('href="/faq"');
   });
+
+  it('propagates 404 ACCOUNT_NOT_FOUND code and message when requesting login OTP without an account', async () => {
+    const mockFetch = vi.fn(async (url: string) => {
+      if (url === '/api/v1/auth/csrf') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true, data: { csrfToken: 'csrf_otp_123' } }),
+        } as unknown as Response;
+      }
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({
+          success: false,
+          error: {
+            code: 'ACCOUNT_NOT_FOUND',
+            message: 'شما حساب کاربری ندارید. لطفاً ابتدا ثبت‌نام کنید.',
+          },
+        }),
+      } as unknown as Response;
+    });
+
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    try {
+      await authClient.requestOtp('09991112233');
+      expect.unreachable('Should reject with ACCOUNT_NOT_FOUND');
+    } catch (err: unknown) {
+      const apiErr = err as Error & { status?: number; code?: string };
+      expect(apiErr.status).toBe(404);
+      expect(apiErr.code).toBe('ACCOUNT_NOT_FOUND');
+      expect(apiErr.message).toContain('حساب کاربری ندارید');
+    }
+  });
 });

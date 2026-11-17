@@ -3,6 +3,8 @@ import { ContentBlock } from '@techa/shared';
 import {
   diffRevisionSnapshots,
   formatBytes,
+  formatEtaPersian,
+  formatUploadSpeed,
   generateBlockId,
   prepareBlocksForPreview,
   resolvePreviewMediaUrl,
@@ -54,6 +56,9 @@ describe('Phase 7 Revisions Diff, Media Preview Helpers & Formatters', () => {
     expect(resolvePreviewMediaUrl('media/lesson_image/hero.png')).toBe(
       '/api/v1/public/media/media/lesson_image/hero.png'
     );
+    expect(resolvePreviewMediaUrl('media/lesson_image/secret.png', '650000000000000000000111', 'admin')).toBe(
+      '/api/v1/admin/media/650000000000000000000111/file'
+    );
     expect(resolvePreviewMediaUrl('https://cdn.example.com/a.png')).toBe(
       'https://cdn.example.com/a.png'
     );
@@ -90,10 +95,14 @@ describe('Phase 7 Revisions Diff, Media Preview Helpers & Formatters', () => {
     );
   });
 
-  it('formats byte sizes, generates valid blk_* IDs, and normalizes slugs', () => {
+  it('formats byte sizes, upload speed, Persian ETA, generates valid blk_* IDs, and normalizes slugs', () => {
     expect(formatBytes(0)).toBe('0 B');
     expect(formatBytes(512)).toBe('512 B');
     expect(formatBytes(1024 * 1024)).toBe('1.0 MB');
+    expect(formatUploadSpeed(0)).toBe('0 KB/s');
+    expect(formatUploadSpeed(2 * 1024 * 1024)).toBe('2.0 MB/s');
+    expect(formatEtaPersian(1)).toBe('کمتر از ۱ ثانیه');
+    expect(formatEtaPersian(90)).toContain('دقیقه');
 
     const blockId = generateBlockId();
     expect(blockId).toMatch(/^blk_[a-zA-Z0-9_-]{8,32}$/);

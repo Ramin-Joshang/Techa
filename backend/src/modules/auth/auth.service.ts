@@ -272,7 +272,7 @@ export class AuthService {
 
   /**
    * Request Login OTP
-   * User enumeration protection: returns identical envelope for existing and non-existing users.
+   * Explicitly detects unregistered or unverified accounts so the client can guide the user to register/verify.
    */
   async requestLoginOtp(
     phone: string,
@@ -281,26 +281,28 @@ export class AuthService {
     const phoneE164 = normalizePhoneE164(phone);
     const user = await this.repo.findUserByPhone(phoneE164);
 
-    // Only dispatch real SMS if user exists and is active & verified
-    if (user && user.status === 'active' && user.phoneVerifiedAt) {
-      return this.otp.requestOtp({
-        phone: phoneE164,
-        purpose: 'login',
-        userId: user._id,
-        ipAddress,
-      });
+    if (!user) {
+      throw new Error('ACCOUNT_NOT_FOUND');
     }
 
-    // Anti-enumeration synthetic response
-    return {
-      challengeId: crypto.randomUUID(),
+    if (user.status === 'suspended') {
+      throw new Error('ACCOUNT_SUSPENDED');
+    }
+
+    if (user.status === 'disabled') {
+      throw new Error('ACCOUNT_DISABLED');
+    }
+
+    if (user.status !== 'active' || !user.phoneVerifiedAt) {
+      throw new Error('PHONE_NOT_VERIFIED');
+    }
+
+    return this.otp.requestOtp({
+      phone: phoneE164,
       purpose: 'login',
-      maskedPhone: maskPhoneNumber(phoneE164),
-      expiresInSeconds: 300,
-      resendAvailableAt: new Date(Date.now() + 60000).toISOString(),
-      retryAfterSeconds: 60,
-      message: 'در صورت وجود حساب فعال، کد ورود برای شماره شما ارسال خواهد شد.',
-    };
+      userId: user._id,
+      ipAddress,
+    });
   }
 
   /**

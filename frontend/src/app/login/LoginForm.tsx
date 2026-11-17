@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft, MessageSquare, KeyRound } from 'lucide-react';
+import { Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft, MessageSquare, KeyRound, UserPlus } from 'lucide-react';
 import { hasAnyAdminAccess } from '@techa/shared';
 import { useAuth } from '../../context/AuthContext';
 import { authClient } from '../../lib/auth-client';
@@ -44,6 +44,21 @@ export default function LoginForm() {
   const [isSendingVerificationOtp, setIsSendingVerificationOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [needsPhoneVerification, setNeedsPhoneVerification] = useState(false);
+  const [redirectingToRegisterUrl, setRedirectingToRegisterUrl] = useState<string | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearRedirectTimer = () => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearRedirectTimer();
+    };
+  }, []);
 
   const handleRequestRegistrationVerification = async () => {
     const trimmedPhone = normalizePersianDigits(phone.trim());
@@ -74,8 +89,10 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearRedirectTimer();
     setErrorMessage(null);
     setNeedsPhoneVerification(false);
+    setRedirectingToRegisterUrl(null);
 
     const trimmedPhone = normalizePersianDigits(phone.trim());
     if (!trimmedPhone) {
@@ -124,8 +141,28 @@ export default function LoginForm() {
           setErrorMessage('خطایی در درخواست کد رخ داد. لطفاً مجدداً تلاش نمایید.');
         }
       } catch (err: unknown) {
+        const errCode = (err as { code?: string })?.code;
+        const errStatus = (err as { status?: number })?.status;
         const msg = err instanceof Error ? err.message : 'خطا در ارسال کد اعتبارسنجی';
-        setErrorMessage(msg);
+
+        if (
+          errCode === 'ACCOUNT_NOT_FOUND' ||
+          errStatus === 404 ||
+          msg.includes('حساب کاربری ندارید')
+        ) {
+          const registerUrl = `/register?phone=${encodeURIComponent(trimmedPhone)}&reason=no_account`;
+          setErrorMessage('شما حساب کاربری ندارید. در حال هدایت به صفحه ثبت‌نام...');
+          setRedirectingToRegisterUrl(registerUrl);
+          clearRedirectTimer();
+          redirectTimerRef.current = setTimeout(() => {
+            router.push(registerUrl);
+          }, 1800);
+        } else if (errCode === 'PHONE_NOT_VERIFIED' || msg.includes('تأیید نشده')) {
+          setErrorMessage(msg);
+          setNeedsPhoneVerification(true);
+        } else {
+          setErrorMessage(msg);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -150,9 +187,11 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={() => {
+            clearRedirectTimer();
             setMode('password');
             setErrorMessage(null);
             setNeedsPhoneVerification(false);
+            setRedirectingToRegisterUrl(null);
           }}
           className={`py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === 'password'
@@ -166,9 +205,11 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={() => {
+            clearRedirectTimer();
             setMode('otp');
             setErrorMessage(null);
             setNeedsPhoneVerification(false);
+            setRedirectingToRegisterUrl(null);
           }}
           className={`py-2 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === 'otp'
@@ -191,6 +232,17 @@ export default function LoginForm() {
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="leading-relaxed">{errorMessage}</div>
           </div>
+          {redirectingToRegisterUrl && (
+            <Link
+              href={redirectingToRegisterUrl}
+              onClick={() => clearRedirectTimer()}
+              className="w-full py-2.5 px-3 rounded-lg bg-[#7AE36A] hover:bg-[#6bd65b] text-[#042A1B] font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>انتقال به صفحه ثبت‌نام</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
+          )}
           {needsPhoneVerification && (
             <button
               type="button"
@@ -231,7 +283,14 @@ export default function LoginForm() {
               type="tel"
               dir="ltr"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                clearRedirectTimer();
+                if (redirectingToRegisterUrl) {
+                  setRedirectingToRegisterUrl(null);
+                  setErrorMessage(null);
+                }
+                setPhone(e.target.value);
+              }}
               placeholder="09123456789"
               autoComplete="tel"
               disabled={isLoading}

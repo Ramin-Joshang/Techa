@@ -472,6 +472,75 @@ describe('Phase 6 — Admin CMS & Governance API Integration Tests', () => {
       expect(deleteBlockedRes.status).toBe(409);
       expect(deleteBlockedRes.body.error.code).toBe('CONFLICT');
     });
+
+    it('uploads an MP4 into lesson_video category folder, supports HTTP 206 Byte-Range streaming, and returns overview/limits', async () => {
+      const adminAuth = makeAuthSession(['admin']);
+      const validMp4 = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32]),
+        Buffer.from('0123456789abcdef', 'ascii'),
+      ]);
+
+      let savedPayload: Record<string, unknown> = {};
+      vi.spyOn(MediaAssetModel, 'create').mockImplementation(async (doc: any) => {
+        savedPayload = doc;
+        return {
+          _id: new Types.ObjectId('650000000000000000000405'),
+          ...doc,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      });
+
+      const uploadRes = await request(app)
+        .post('/api/v1/admin/media/upload')
+        .set('Cookie', adminAuth.cookies)
+        .set('x-csrf-token', adminAuth.csrfHeader)
+        .field('category', 'lesson_video')
+        .field('visibility', 'public')
+        .attach('file', validMp4, { filename: 'intro.mp4', contentType: 'video/mp4' });
+
+      expect(uploadRes.status).toBe(201);
+      expect(uploadRes.body.data.mediaType).toBe('video');
+      expect(uploadRes.body.data.storageKey).toMatch(/^media\/lesson_video\//);
+
+      const storageKey = String(savedPayload.storageKey);
+      vi.spyOn(adminMediaService, 'findPublicServableByStorageKey').mockResolvedValue({
+        _id: new Types.ObjectId('650000000000000000000405'),
+        storageKey,
+        originalFileName: 'intro.mp4',
+        mimeType: 'video/mp4',
+        mediaType: 'video',
+        visibility: 'public',
+        status: 'ready',
+      } as any);
+
+      // HTTP 206 Partial Content Range request
+      const rangeRes = await request(app)
+        .get(`/api/v1/public/media/${storageKey}`)
+        .set('Range', 'bytes=0-9');
+
+      expect(rangeRes.status).toBe(206);
+      expect(rangeRes.headers['accept-ranges']).toBe('bytes');
+      expect(rangeRes.headers['content-range']).toBe(`bytes 0-9/${validMp4.length}`);
+      expect(rangeRes.headers['content-length']).toBe('10');
+
+      // Unsatisfiable range returns 416
+      const badRangeRes = await request(app)
+        .get(`/api/v1/public/media/${storageKey}`)
+        .set('Range', 'bytes=9999-10000');
+      expect(badRangeRes.status).toBe(416);
+
+      // Media overview endpoint
+      vi.spyOn(MediaAssetModel, 'aggregate').mockResolvedValue([
+        { _id: 'lesson_video', count: 1, totalBytes: validMp4.length },
+      ] as any);
+      const overviewRes = await request(app)
+        .get('/api/v1/admin/media/overview')
+        .set('Cookie', adminAuth.cookies);
+      expect(overviewRes.status).toBe(200);
+      expect(overviewRes.body.data.limits.maxVideoSizeMb).toBeGreaterThanOrEqual(5);
+      expect(overviewRes.body.data.storage.folders.find((f: any) => f.category === 'lesson_video').count).toBe(1);
+    });
   });
 
   describe('6. Live MongoDB Real Persistence Check (Explicit BLOCKED Handling)', () => {

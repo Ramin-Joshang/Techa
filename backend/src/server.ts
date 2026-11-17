@@ -15,6 +15,10 @@ async function bootstrap(): Promise<void> {
     );
   });
 
+  // Allow up to 15 minutes for large video uploads / streaming
+  server.requestTimeout = 15 * 60 * 1000;
+  server.headersTimeout = 15 * 60 * 1000 + 10000;
+
   if (env.MONGODB_URI) {
     connectToDatabase()
       .then(async () => {

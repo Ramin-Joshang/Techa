@@ -29,16 +29,40 @@ export const ALLOWED_MEDIA_SPECS: readonly AllowedMediaSpec[] = [
     canonicalExt: 'webp',
   },
   {
+    mimeType: 'image/gif',
+    mediaType: 'image',
+    extensions: ['.gif'],
+    canonicalExt: 'gif',
+  },
+  {
     mimeType: 'video/mp4',
     mediaType: 'video',
-    extensions: ['.mp4'],
+    extensions: ['.mp4', '.m4v'],
     canonicalExt: 'mp4',
+  },
+  {
+    mimeType: 'video/x-m4v',
+    mediaType: 'video',
+    extensions: ['.m4v', '.mp4'],
+    canonicalExt: 'm4v',
+  },
+  {
+    mimeType: 'video/quicktime',
+    mediaType: 'video',
+    extensions: ['.mov'],
+    canonicalExt: 'mov',
   },
   {
     mimeType: 'video/webm',
     mediaType: 'video',
     extensions: ['.webm'],
     canonicalExt: 'webm',
+  },
+  {
+    mimeType: 'video/ogg',
+    mediaType: 'video',
+    extensions: ['.ogv', '.ogg'],
+    canonicalExt: 'ogv',
   },
   {
     mimeType: 'application/pdf',
@@ -48,6 +72,12 @@ export const ALLOWED_MEDIA_SPECS: readonly AllowedMediaSpec[] = [
   },
   {
     mimeType: 'application/zip',
+    mediaType: 'document',
+    extensions: ['.zip'],
+    canonicalExt: 'zip',
+  },
+  {
+    mimeType: 'application/x-zip-compressed',
     mediaType: 'document',
     extensions: ['.zip'],
     canonicalExt: 'zip',
@@ -82,14 +112,68 @@ export function getSpecByMimeType(mimeType: string): AllowedMediaSpec | null {
   return ALLOWED_MEDIA_SPECS.find((s) => s.mimeType === normalized) || null;
 }
 
-export function getMaxBytesForMediaType(mediaType: MediaType): number {
+export function getSpecByExtension(ext: string): AllowedMediaSpec | null {
+  const normalized = (ext || '').trim().toLowerCase();
+  if (!normalized) return null;
+  return ALLOWED_MEDIA_SPECS.find((s) => s.extensions.includes(normalized)) || null;
+}
+
+/**
+ * Resolves the allowed media spec from MIME type, falling back to extension
+ * only when the browser sends an ambiguous generic MIME (e.g. application/octet-stream).
+ * Actual binary content is always verified afterward via Magic Bytes.
+ */
+export function resolveAllowedMediaSpec(
+  claimedMimeType: string,
+  ext: string
+): AllowedMediaSpec | null {
+  const normalizedMime = (claimedMimeType || '').split(';')[0].trim().toLowerCase();
+  const byMime = getSpecByMimeType(normalizedMime);
+  if (byMime) {
+    // Normalize zip alias to canonical application/zip
+    if (byMime.mimeType === 'application/x-zip-compressed') {
+      return getSpecByMimeType('application/zip');
+    }
+    return byMime;
+  }
+
+  if (
+    (!normalizedMime ||
+      normalizedMime === 'application/octet-stream' ||
+      normalizedMime === 'binary/octet-stream') &&
+    ext
+  ) {
+    return getSpecByExtension(ext);
+  }
+
+  return null;
+}
+
+export interface MediaSizeLimitsBytes {
+  image: number;
+  video: number;
+  document: number;
+}
+
+export function getDefaultMediaLimitsBytes(): MediaSizeLimitsBytes {
+  return {
+    image: env.MEDIA_MAX_IMAGE_BYTES,
+    video: env.MEDIA_MAX_VIDEO_BYTES,
+    document: env.MEDIA_MAX_DOCUMENT_BYTES,
+  };
+}
+
+export function getMaxBytesForMediaType(
+  mediaType: MediaType,
+  limits: MediaSizeLimitsBytes = getDefaultMediaLimitsBytes()
+): number {
   switch (mediaType) {
     case 'image':
-      return env.MEDIA_MAX_IMAGE_BYTES;
+      return limits.image;
     case 'video':
-      return env.MEDIA_MAX_VIDEO_BYTES;
+      return limits.video;
     case 'document':
-      return env.MEDIA_MAX_DOCUMENT_BYTES;
+      return limits.document;
   }
 }
 
@@ -133,12 +217,27 @@ export function verifyMagicBytes(headerBuffer: Buffer, expectedMimeType: string)
         headerBuffer.subarray(8, 12).toString('ascii') === 'WEBP'
       );
 
+    case 'image/gif': {
+      // GIF87a or GIF89a
+      if (headerBuffer.length < 6) return false;
+      const sig = headerBuffer.subarray(0, 6).toString('ascii');
+      return sig === 'GIF87a' || sig === 'GIF89a';
+    }
+
     case 'video/mp4':
+    case 'video/x-m4v':
       // ....ftyp at offset 4
       return (
         headerBuffer.length >= 8 &&
         headerBuffer.subarray(4, 8).toString('ascii') === 'ftyp'
       );
+
+    case 'video/quicktime': {
+      // QuickTime (.mov): ftyp, moov, mdat, wide, or free at offset 4
+      if (headerBuffer.length < 8) return false;
+      const atom = headerBuffer.subarray(4, 8).toString('ascii');
+      return ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip'].includes(atom);
+    }
 
     case 'video/webm':
       // EBML header: 1A 45 DF A3
@@ -150,6 +249,10 @@ export function verifyMagicBytes(headerBuffer: Buffer, expectedMimeType: string)
         headerBuffer[3] === 0xa3
       );
 
+    case 'video/ogg':
+      // OggS
+      return headerBuffer.subarray(0, 4).toString('ascii') === 'OggS';
+
     case 'application/pdf':
       // %PDF-
       return (
@@ -158,6 +261,7 @@ export function verifyMagicBytes(headerBuffer: Buffer, expectedMimeType: string)
       );
 
     case 'application/zip':
+    case 'application/x-zip-compressed':
       // PK\x03\x04 (standard zip) or PK\x05\x06 (empty zip)
       return (
         headerBuffer.length >= 4 &&

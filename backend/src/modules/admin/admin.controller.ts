@@ -23,6 +23,7 @@ import {
   AdminReorderLessonsDtoSchema,
   AdminMediaListQuerySchema,
   AdminUpdateMediaDtoSchema,
+  AdminUpdateMediaLimitsDtoSchema,
   AdminSitePageListQuerySchema,
   AdminCreateSitePageDtoSchema,
   AdminUpdateSitePageDtoSchema,
@@ -42,7 +43,6 @@ import { adminCoursesService } from './courses/admin-courses.service';
 import { adminChaptersService } from './chapters/admin-chapters.service';
 import { adminLessonsService } from './lessons/admin-lessons.service';
 import { adminMediaService, RequestAuditContext } from './media/media.service';
-import { localMediaStorage } from './media/media-storage.service';
 import { adminPagesService } from './pages/admin-pages.service';
 import { adminSettingsService } from './settings/admin-settings.service';
 import { adminUsersService } from './users/admin-users.service';
@@ -50,7 +50,6 @@ import { contentRevisionService } from './revisions/revision.service';
 import { adminRevisionsRestoreService } from './revisions/admin-revisions-restore.service';
 import { adminAuditService } from './audit/audit.service';
 import { adminDashboardService } from './dashboard/admin-dashboard.service';
-import { NotFoundError } from '../../core/errors/app-error';
 
 function buildAuditContext(req: Request): RequestAuditContext {
   return {
@@ -403,6 +402,22 @@ export class AdminController {
     return sendSuccess(res, media, 201, 'فایل با موفقیت بارگذاری و ثبت شد');
   };
 
+  public getMediaOverview = async (_req: Request, res: Response) => {
+    const overview = await adminMediaService.getMediaOverview();
+    return sendSuccess(res, overview);
+  };
+
+  public updateMediaLimits = async (req: Request, res: Response) => {
+    const dto = AdminUpdateMediaLimitsDtoSchema.parse(req.body);
+    const actor = extractAdminActor(req);
+    const overview = await adminMediaService.updateMediaLimits(
+      dto,
+      actor,
+      buildAuditContext(req)
+    );
+    return sendSuccess(res, overview, 200, 'سقف حجم آپلود فایل‌ها با موفقیت بروزرسانی شد');
+  };
+
   public getMedia = async (req: Request, res: Response) => {
     const { mediaId } = MediaIdParamSchema.parse(req.params);
     const media = await adminMediaService.getMediaById(mediaId);
@@ -412,20 +427,13 @@ export class AdminController {
   public serveAdminMediaFile = async (req: Request, res: Response) => {
     const { mediaId } = MediaIdParamSchema.parse(req.params);
     const media = await adminMediaService.getMediaById(mediaId);
-    const exists = await localMediaStorage.exists(media.storageKey);
-    if (!exists) {
-      throw new NotFoundError('فایل فیزیکی رسانه در ذخیره‌سازی یافت نشد');
-    }
-    const { stream, sizeBytes } = await localMediaStorage.openReadStreamSafe(media.storageKey);
-    const disposition = media.mediaType === 'document' ? 'attachment' : 'inline';
-    res.setHeader('Content-Type', media.mimeType);
-    res.setHeader('Content-Length', String(sizeBytes));
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader(
-      'Content-Disposition',
-      `${disposition}; filename="${encodeURIComponent(media.originalFileName)}"`
-    );
-    stream.pipe(res);
+    await adminMediaService.serveMediaStream({
+      req,
+      res,
+      media,
+      cacheControl: 'private, max-age=3600',
+      notFoundMessage: 'فایل فیزیکی رسانه در ذخیره‌سازی یافت نشد',
+    });
   };
 
   public updateMedia = async (req: Request, res: Response) => {

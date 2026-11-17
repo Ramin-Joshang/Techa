@@ -40,7 +40,7 @@ describe('Phase 5 — Kavenegar OTP & Phone Verification Integration Tests', () 
     vi.spyOn(otpChallengeRepository, 'updateDeliveryStatus').mockResolvedValue(null);
   });
 
-  describe('POST /api/v1/auth/otp/request (Anti-User-Enumeration)', () => {
+  describe('POST /api/v1/auth/otp/request', () => {
     it('returns standard challenge envelope when user exists and is active', async () => {
       const mockUser = {
         _id: new mongoose.Types.ObjectId('507f1f77bcf86cd799439011'),
@@ -64,20 +64,36 @@ describe('Phase 5 — Kavenegar OTP & Phone Verification Integration Tests', () 
       expect(kavenegarProvider.sendVerifyLookup).toHaveBeenCalled();
     });
 
-    it('returns an identical response structure when phone does NOT exist (Anti-Enumeration)', async () => {
+    it('returns 404 ACCOUNT_NOT_FOUND without sending SMS when phone has no registered account', async () => {
       vi.spyOn(authRepository, 'findUserByPhone').mockResolvedValue(null);
 
       const res = await request(app)
         .post('/api/v1/auth/otp/request')
         .send({ phone: '09999999999' });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('challengeId');
-      expect(res.body.data.purpose).toBe('login');
-      expect(res.body.data.maskedPhone).toContain('***');
-      expect(res.body.data.retryAfterSeconds).toBe(60);
-      // Ensure NO SMS is actually sent to protect credit & prevent probing
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('ACCOUNT_NOT_FOUND');
+      expect(res.body.error.message).toContain('حساب کاربری ندارید');
+      expect(kavenegarProvider.sendVerifyLookup).not.toHaveBeenCalled();
+    });
+
+    it('returns 403 PHONE_NOT_VERIFIED without sending login SMS when account is pending verification', async () => {
+      vi.spyOn(authRepository, 'findUserByPhone').mockResolvedValue({
+        _id: new mongoose.Types.ObjectId('507f1f77bcf86cd799439012'),
+        phoneE164: '+989123456788',
+        status: 'pending_verification',
+        phoneVerifiedAt: null,
+        roles: ['student'],
+      } as any);
+
+      const res = await request(app)
+        .post('/api/v1/auth/otp/request')
+        .send({ phone: '09123456788' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('PHONE_NOT_VERIFIED');
       expect(kavenegarProvider.sendVerifyLookup).not.toHaveBeenCalled();
     });
   });

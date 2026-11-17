@@ -1,5 +1,6 @@
 import { AdminUpdateSiteSettingsDto } from '@techa/shared';
 import { SiteSettingsModel, SiteSettingsRaw } from '../../../models/site-settings.model';
+import { env } from '../../../core/config/env';
 import { ConflictError, NotFoundError } from '../../../core/errors/app-error';
 import { AuthenticatedAdminActor } from '../authz/permissions.middleware';
 import { adminAuditService } from '../audit/audit.service';
@@ -15,6 +16,10 @@ import { adminMediaService, RequestAuditContext } from '../media/media.service';
 import { normalizeSiteHeader } from '../../../core/utils/dto-normalizer';
 
 export function toAdminSiteSettingsDto(doc: SiteSettingsRaw | any) {
+  const defaultImageMb = Math.max(1, Math.round(env.MEDIA_MAX_IMAGE_BYTES / (1024 * 1024)));
+  const defaultVideoMb = Math.max(5, Math.round(env.MEDIA_MAX_VIDEO_BYTES / (1024 * 1024)));
+  const defaultDocMb = Math.max(1, Math.round(env.MEDIA_MAX_DOCUMENT_BYTES / (1024 * 1024)));
+
   return {
     id: doc._id.toString(),
     settingsKey: doc.settingsKey,
@@ -23,6 +28,11 @@ export function toAdminSiteSettingsDto(doc: SiteSettingsRaw | any) {
     footer: doc.footer,
     seo: doc.seo,
     general: doc.general,
+    media: {
+      maxImageSizeMb: doc.media?.maxImageSizeMb ?? defaultImageMb,
+      maxVideoSizeMb: doc.media?.maxVideoSizeMb ?? defaultVideoMb,
+      maxDocumentSizeMb: doc.media?.maxDocumentSizeMb ?? defaultDocMb,
+    },
     version: doc.version ?? 1,
     updatedBy: doc.updatedBy ? doc.updatedBy.toString() : null,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -64,7 +74,7 @@ export class AdminSettingsService {
       updatedBy: actor.objectId,
     };
 
-    for (const section of ['branding', 'header', 'footer', 'seo', 'general'] as const) {
+    for (const section of ['branding', 'header', 'footer', 'seo', 'general', 'media'] as const) {
       if (dto[section] !== undefined) {
         updatePayload[section] = dto[section];
         changedFields.push(section);

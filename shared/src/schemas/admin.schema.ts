@@ -308,6 +308,37 @@ export const MediaUsageItemSchema = z.object({
   field: z.string(),
 });
 
+export const AdminUpdateMediaLimitsDtoSchema = z.object({
+  maxImageSizeMb: z.number().min(1, 'حداقل ۱ مگابایت').max(200, 'حداکثر ۲۰۰ مگابایت'),
+  maxVideoSizeMb: z.number().min(5, 'حداقل ۵ مگابایت').max(2048, 'حداکثر ۲۰۴۸ مگابایت'),
+  maxDocumentSizeMb: z.number().min(1, 'حداقل ۱ مگابایت').max(500, 'حداکثر ۵۰۰ مگابایت'),
+});
+
+export const AdminMediaFolderStatSchema = z.object({
+  category: MediaCategorySchema,
+  folderPath: z.string(),
+  count: z.number().int().nonnegative(),
+  totalBytes: z.number().int().nonnegative(),
+});
+
+export const AdminMediaOverviewDtoSchema = z.object({
+  limits: z.object({
+    maxImageSizeMb: z.number(),
+    maxVideoSizeMb: z.number(),
+    maxDocumentSizeMb: z.number(),
+    maxImageBytes: z.number().int().positive(),
+    maxVideoBytes: z.number().int().positive(),
+    maxDocumentBytes: z.number().int().positive(),
+  }),
+  storage: z.object({
+    totalFiles: z.number().int().nonnegative(),
+    totalBytes: z.number().int().nonnegative(),
+    gridFsPersistentBackup: z.boolean(),
+    gitTrackedPath: z.string(),
+    folders: z.array(AdminMediaFolderStatSchema),
+  }),
+});
+
 // =============================================================================
 // 7. Admin Site Pages & Site Settings Schemas
 // =============================================================================
@@ -543,6 +574,9 @@ export type AdminMediaListQuery = z.infer<typeof AdminMediaListQuerySchema>;
 export type AdminUpdateMediaDto = z.input<typeof AdminUpdateMediaDtoSchema>;
 export type AdminMediaDto = z.infer<typeof AdminMediaDtoSchema>;
 export type MediaUsageItem = z.infer<typeof MediaUsageItemSchema>;
+export type AdminUpdateMediaLimitsDto = z.infer<typeof AdminUpdateMediaLimitsDtoSchema>;
+export type AdminMediaFolderStat = z.infer<typeof AdminMediaFolderStatSchema>;
+export type AdminMediaOverviewDto = z.infer<typeof AdminMediaOverviewDtoSchema>;
 export type AdminSitePageListQuery = z.infer<typeof AdminSitePageListQuerySchema>;
 export type AdminCreateSitePageDto = z.input<typeof AdminCreateSitePageDtoSchema>;
 export type AdminUpdateSitePageDto = z.input<typeof AdminUpdateSitePageDtoSchema>;

@@ -11,7 +11,6 @@ import { publicService } from './public.service';
 import { sendSuccess } from '../../core/utils/api-response';
 import { NotFoundError } from '../../core/errors/app-error';
 import { adminMediaService } from '../admin/media/media.service';
-import { localMediaStorage } from '../admin/media/media-storage.service';
 
 export class PublicController {
   private setPublicCacheHeaders(res: Response, maxAge = 60, sMaxAge = 300): void {
@@ -128,24 +127,13 @@ export class PublicController {
       throw new NotFoundError('رسانه درخواستی یافت نشد');
     }
 
-    const exists = await localMediaStorage.exists(media.storageKey);
-    if (!exists) {
-      throw new NotFoundError('فایل رسانه در مخزن موجود نیست');
-    }
-
-    const { stream, sizeBytes } = await localMediaStorage.openReadStreamSafe(media.storageKey);
-    const disposition = media.mediaType === 'document' ? 'attachment' : 'inline';
-
-    res.setHeader('Content-Type', media.mimeType);
-    res.setHeader('Content-Length', String(sizeBytes));
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.setHeader(
-      'Content-Disposition',
-      `${disposition}; filename="${encodeURIComponent(media.originalFileName)}"`
-    );
-
-    stream.pipe(res);
+    await adminMediaService.serveMediaStream({
+      req,
+      res,
+      media,
+      cacheControl: 'public, max-age=31536000, immutable',
+      notFoundMessage: 'فایل رسانه در مخزن موجود نیست',
+    });
   };
 }
 

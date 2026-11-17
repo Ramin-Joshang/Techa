@@ -1,15 +1,18 @@
+import { Readable } from 'node:stream';
 import Busboy from 'busboy';
-import { Request } from 'express';
-import { Types } from 'mongoose';
+import { Request, Response } from 'express';
+import mongoose, { Types } from 'mongoose';
 import {
+  AdminMediaListQuery,
+  AdminMediaOverviewDto,
+  AdminUpdateMediaDto,
+  AdminUpdateMediaLimitsDto,
   MEDIA_CATEGORIES,
   MEDIA_VISIBILITIES,
   MediaCategory,
-  MediaVisibility,
-  AdminMediaListQuery,
-  AdminUpdateMediaDto,
-  AdminMediaDto,
   MediaUsageItem,
+  MediaVisibility,
+  AdminMediaDto,
 } from '@techa/shared';
 import { MediaAssetModel, MediaAssetRaw } from '../../../models/media-asset.model';
 import { CourseModel } from '../../../models/course.model';
@@ -22,9 +25,15 @@ import {
   NotFoundError,
 } from '../../../core/errors/app-error';
 import { escapeRegex } from '../../../core/utils/regex';
-import { localMediaStorage } from './media-storage.service';
-import { AuthenticatedAdminActor, assertOwnershipIfEditorOnly } from '../authz/permissions.middleware';
+import { localMediaStorage, parseHttpByteRange } from './media-storage.service';
+import { mediaGridFsStorage } from './media-gridfs.service';
+import { MediaSizeLimitsBytes, getDefaultMediaLimitsBytes } from './media-validation';
+import {
+  AuthenticatedAdminActor,
+  assertOwnershipIfEditorOnly,
+} from '../authz/permissions.middleware';
 import { adminAuditService } from '../audit/audit.service';
+import { contentRevisionService, withOptionalTransaction } from '../revisions/revision.service';
 
 export interface RequestAuditContext {
   requestId: string;
@@ -62,6 +71,190 @@ export function toAdminMediaDto(doc: MediaAssetRaw | any): AdminMediaDto {
 }
 
 export class AdminMediaService {
+  public async getActiveMediaLimits(): Promise<{
+    limitsMb: AdminUpdateMediaLimitsDto;
+    limitsBytes: MediaSizeLimitsBytes;
+  }> {
+    const defaults = getDefaultMediaLimitsBytes();
+    let maxImageSizeMb = Math.max(1, Math.round(defaults.image / (1024 * 1024)));
+    let maxVideoSizeMb = Math.max(5, Math.round(defaults.video / (1024 * 1024)));
+    let maxDocumentSizeMb = Math.max(1, Math.round(defaults.document / (1024 * 1024)));
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const settings = await SiteSettingsModel.findOne({ settingsKey: 'global' })
+          .select({ media: 1 })
+          .lean();
+        if (settings?.media) {
+          if (typeof settings.media.maxImageSizeMb === 'number' && settings.media.maxImageSizeMb >= 1) {
+            maxImageSizeMb = settings.media.maxImageSizeMb;
+          }
+          if (typeof settings.media.maxVideoSizeMb === 'number' && settings.media.maxVideoSizeMb >= 5) {
+            maxVideoSizeMb = settings.media.maxVideoSizeMb;
+          }
+          if (typeof settings.media.maxDocumentSizeMb === 'number' && settings.media.maxDocumentSizeMb >= 1) {
+            maxDocumentSizeMb = settings.media.maxDocumentSizeMb;
+          }
+        }
+      } catch {
+        // Fallback to env defaults
+      }
+    }
+
+    return {
+      limitsMb: {
+        maxImageSizeMb,
+        maxVideoSizeMb,
+        maxDocumentSizeMb,
+      },
+      limitsBytes: {
+        image: Math.round(maxImageSizeMb * 1024 * 1024),
+        video: Math.round(maxVideoSizeMb * 1024 * 1024),
+        document: Math.round(maxDocumentSizeMb * 1024 * 1024),
+      },
+    };
+  }
+
+  public async getMediaOverview(): Promise<AdminMediaOverviewDto> {
+    const { limitsMb, limitsBytes } = await this.getActiveMediaLimits();
+
+    const agg = await MediaAssetModel.aggregate<{
+      _id: MediaCategory;
+      count: number;
+      totalBytes: number;
+    }>([
+      { $match: { status: { $ne: 'archived' } } },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          totalBytes: { $sum: '$sizeBytes' },
+        },
+      },
+    ]);
+
+    const byCategory = new Map<string, { count: number; totalBytes: number }>();
+    let totalFiles = 0;
+    let totalBytes = 0;
+
+    for (const row of agg || []) {
+      const count = Number(row.count || 0);
+      const bytes = Number(row.totalBytes || 0);
+      byCategory.set(row._id, { count, totalBytes: bytes });
+      totalFiles += count;
+      totalBytes += bytes;
+    }
+
+    const folders = MEDIA_CATEGORIES.map((category) => {
+      const stats = byCategory.get(category) || { count: 0, totalBytes: 0 };
+      return {
+        category,
+        folderPath: `media/${category}`,
+        count: stats.count,
+        totalBytes: stats.totalBytes,
+      };
+    });
+
+    return {
+      limits: {
+        ...limitsMb,
+        maxImageBytes: limitsBytes.image,
+        maxVideoBytes: limitsBytes.video,
+        maxDocumentBytes: limitsBytes.document,
+      },
+      storage: {
+        totalFiles,
+        totalBytes,
+        gridFsPersistentBackup: mediaGridFsStorage.isAvailable(),
+        gitTrackedPath: 'backend/storage/media',
+        folders,
+      },
+    };
+  }
+
+  public async updateMediaLimits(
+    dto: AdminUpdateMediaLimitsDto,
+    actor: AuthenticatedAdminActor,
+    ctx: RequestAuditContext
+  ): Promise<AdminMediaOverviewDto> {
+    const updatedDoc = await withOptionalTransaction(async (session) => {
+      const existing = await SiteSettingsModel.findOne({ settingsKey: 'global' }).session(session ?? null);
+      let doc;
+      if (!existing) {
+        const createdArr = session
+          ? await SiteSettingsModel.create(
+              [
+                {
+                  settingsKey: 'global',
+                  media: dto,
+                  updatedBy: actor.objectId,
+                  version: 1,
+                },
+              ],
+              { session }
+            )
+          : [
+              await SiteSettingsModel.create({
+                settingsKey: 'global',
+                media: dto,
+                updatedBy: actor.objectId,
+                version: 1,
+              }),
+            ];
+        doc = createdArr[0];
+      } else {
+        doc = await SiteSettingsModel.findOneAndUpdate(
+          { _id: existing._id },
+          {
+            $set: {
+              media: dto,
+              updatedBy: actor.objectId,
+            },
+            $inc: { version: 1 },
+          },
+          { returnDocument: 'after', runValidators: true, session }
+        );
+      }
+
+      if (doc) {
+        await contentRevisionService.createRevision(
+          {
+            resourceType: 'site_settings',
+            resourceId: doc._id.toString(),
+            snapshot: doc.toObject(),
+            changeSummary: `تغییر سقف حجم آپلود رسانه (تصویر ${dto.maxImageSizeMb}MB، ویدیو ${dto.maxVideoSizeMb}MB، سند ${dto.maxDocumentSizeMb}MB)`,
+            createdBy: actor.objectId,
+          },
+          session
+        );
+
+        await adminAuditService.record(
+          {
+            actorUserId: actor.objectId,
+            actorRole: actor.primaryRole,
+            action: 'settings_update',
+            resourceType: 'site_settings',
+            resourceId: doc._id.toString(),
+            result: 'success',
+            requestId: ctx.requestId,
+            changedFields: ['media'],
+            changeSummary: `بروزرسانی سقف مجاز آپلود رسانه‌ها`,
+            ipHash: ctx.ipHash,
+            userAgent: ctx.userAgent,
+          },
+          session
+        );
+      }
+      return doc;
+    });
+
+    if (!updatedDoc) {
+      throw new NotFoundError('تنظیمات سایت برای ذخیره سقف حجم یافت نشد');
+    }
+
+    return this.getMediaOverview();
+  }
+
   public async assertMediaKeysExist(storageKeys: Array<string | undefined | null>): Promise<void> {
     const keys = Array.from(
       new Set(storageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0))
@@ -91,6 +284,8 @@ export class AdminMediaService {
     if (!contentType.toLowerCase().includes('multipart/form-data')) {
       throw new BadRequestError('درخواست بارگذاری فایل باید از نوع multipart/form-data باشد');
     }
+
+    const { limitsBytes } = await this.getActiveMediaLimits();
 
     const parsedUpload = await new Promise<{
       stored: Awaited<ReturnType<typeof localMediaStorage.storeFromStream>>;
@@ -133,10 +328,17 @@ export class AdminMediaService {
           fileStream.resume();
           return;
         }
+        const preCategory = (fields.category || 'site_asset').trim() as MediaCategory;
+        const initialCategory: MediaCategory = MEDIA_CATEGORIES.includes(preCategory)
+          ? preCategory
+          : 'site_asset';
+
         filePromise = localMediaStorage.storeFromStream({
           fileStream,
           originalFileName: info.filename || 'upload',
           claimedMimeType: info.mimeType || 'application/octet-stream',
+          category: initialCategory,
+          limits: limitsBytes,
         });
         filePromise.catch((err) => failOnce(err));
       });
@@ -162,6 +364,14 @@ export class AdminMediaService {
             return failOnce(new BadRequestError('دسته‌بندی رسانه نامعتبر است'));
           }
 
+          // Ensure file resides inside its exact category subfolder even if category field followed the file
+          const finalStorageKey = await localMediaStorage.relocateToCategoryFolder({
+            currentStorageKey: stored.storageKey,
+            targetCategory: rawCategory,
+            safeFilename: stored.safeFilename,
+          });
+          stored.storageKey = finalStorageKey;
+
           const rawVisibility = (fields.visibility || 'public').trim() as MediaVisibility;
           if (!MEDIA_VISIBILITIES.includes(rawVisibility)) {
             await localMediaStorage.deleteFile(stored.storageKey);
@@ -185,6 +395,19 @@ export class AdminMediaService {
     });
 
     try {
+      // Persist binary copy in MongoDB GridFS so media survives container restarts/deployments
+      const savedDiskPath = localMediaStorage.resolveSafePath(parsedUpload.stored.storageKey);
+      await mediaGridFsStorage.saveFromFile({
+        storageKey: parsedUpload.stored.storageKey,
+        filePath: savedDiskPath,
+        metadata: {
+          mimeType: parsedUpload.stored.mimeType,
+          mediaType: parsedUpload.stored.mediaType,
+          category: parsedUpload.category,
+          checksumSha256: parsedUpload.stored.checksumSha256,
+        },
+      });
+
       const created = await MediaAssetModel.create({
         storageKey: parsedUpload.stored.storageKey,
         safeFilename: parsedUpload.stored.safeFilename,
@@ -218,8 +441,118 @@ export class AdminMediaService {
       return toAdminMediaDto(created);
     } catch (err) {
       await localMediaStorage.deleteFile(parsedUpload.stored.storageKey);
+      await mediaGridFsStorage.deleteByStorageKey(parsedUpload.stored.storageKey);
       throw err;
     }
+  }
+
+  /**
+   * Opens a stream for public/admin serving. If local disk file was wiped
+   * (e.g. container restart), automatically recovers from MongoDB GridFS and
+   * re-hydrates the disk cache seamlessly.
+   */
+  public async openMediaForServing(
+    storageKey: string,
+    range?: { start: number; end: number }
+  ): Promise<{ stream: Readable; sizeBytes: number } | null> {
+    if (await localMediaStorage.exists(storageKey)) {
+      return localMediaStorage.openReadStreamSafe(storageKey, range);
+    }
+
+    // Attempt transparent recovery from MongoDB GridFS
+    const diskPath = localMediaStorage.resolveSafePath(storageKey);
+    const restored = await mediaGridFsStorage.restoreToDisk(storageKey, diskPath);
+    if (restored && (await localMediaStorage.exists(storageKey))) {
+      return localMediaStorage.openReadStreamSafe(storageKey, range);
+    }
+
+    // Fallback: stream directly from GridFS if disk write is unavailable
+    return mediaGridFsStorage.openDownloadStream(storageKey, range);
+  }
+
+  public async getMediaTotalSize(storageKey: string): Promise<number | null> {
+    if (await localMediaStorage.exists(storageKey)) {
+      const opened = await localMediaStorage.openReadStreamSafe(storageKey);
+      opened.stream.destroy();
+      return opened.sizeBytes;
+    }
+
+    const record = await mediaGridFsStorage.findFileRecord(storageKey);
+    return record ? record.length : null;
+  }
+
+  public async serveMediaStream(params: {
+    req: Request;
+    res: Response;
+    media: {
+      storageKey: string;
+      mimeType: string;
+      mediaType: string;
+      originalFileName: string;
+    };
+    cacheControl?: string;
+    notFoundMessage?: string;
+  }): Promise<void> {
+    const { req, res, media, cacheControl, notFoundMessage } = params;
+    const totalSize = await this.getMediaTotalSize(media.storageKey);
+    if (totalSize === null) {
+      throw new NotFoundError(notFoundMessage || 'فایل رسانه در مخزن موجود نیست');
+    }
+
+    const disposition = media.mediaType === 'document' ? 'attachment' : 'inline';
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Type', media.mimeType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (cacheControl) {
+      res.setHeader('Cache-Control', cacheControl);
+    }
+    res.setHeader(
+      'Content-Disposition',
+      `${disposition}; filename="${encodeURIComponent(media.originalFileName)}"`
+    );
+
+    const parsedRange = parseHttpByteRange(req.headers.range, totalSize);
+    if (parsedRange?.kind === 'unsatisfiable') {
+      res.setHeader('Content-Range', `bytes */${totalSize}`);
+      res.status(416).end();
+      return;
+    }
+
+    const activeRange =
+      parsedRange?.kind === 'range'
+        ? { start: parsedRange.start, end: parsedRange.end }
+        : undefined;
+
+    const opened = await this.openMediaForServing(media.storageKey, activeRange);
+    if (!opened) {
+      throw new NotFoundError(notFoundMessage || 'فایل رسانه در مخزن موجود نیست');
+    }
+
+    if (activeRange) {
+      const chunkLen = activeRange.end - activeRange.start + 1;
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${activeRange.start}-${activeRange.end}/${totalSize}`);
+      res.setHeader('Content-Length', String(chunkLen));
+    } else {
+      res.status(200);
+      res.setHeader('Content-Length', String(opened.sizeBytes));
+    }
+
+    opened.stream.on('error', () => {
+      if (!res.headersSent) {
+        res.status(500).end();
+      } else {
+        res.destroy();
+      }
+    });
+
+    res.on('close', () => {
+      if (!opened.stream.destroyed) {
+        opened.stream.destroy();
+      }
+    });
+
+    opened.stream.pipe(res);
   }
 
   public async listMedia(query: AdminMediaListQuery) {
@@ -463,6 +796,8 @@ export class AdminMediaService {
     } catch {
       // Do not fail DB deletion if orphaned disk file cannot be unlinked
     }
+
+    await mediaGridFsStorage.deleteByStorageKey(deleted.storageKey);
 
     await adminAuditService.record({
       actorUserId: actor.objectId,

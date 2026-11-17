@@ -16,8 +16,15 @@ import {
   AdminUpdateUserRolesDtoSchema,
 } from '@techa/shared';
 import { env } from '../../src/core/config/env';
-import { verifyMagicBytes, sanitizeOriginalFilename } from '../../src/modules/admin/media/media-validation';
-import { LocalMediaStorageProvider } from '../../src/modules/admin/media/media-storage.service';
+import {
+  verifyMagicBytes,
+  sanitizeOriginalFilename,
+  resolveAllowedMediaSpec,
+} from '../../src/modules/admin/media/media-validation';
+import {
+  LocalMediaStorageProvider,
+  parseHttpByteRange,
+} from '../../src/modules/admin/media/media-storage.service';
 import {
   redactSensitiveFieldNames,
   sanitizeSummaryText,
@@ -280,6 +287,80 @@ describe('Phase 6 — CMS Backend & Governance Unit Tests', () => {
         );
       };
       expect(walkTmp(tempRoot)).toEqual([]);
+    });
+
+    it('organizes uploads into category subfolders and supports relocation', async () => {
+      const pngBytes = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+      ]);
+
+      const stored = await storage.storeFromStream({
+        fileStream: Readable.from([pngBytes]),
+        originalFileName: 'course-cover.png',
+        claimedMimeType: 'image/png',
+        category: 'course_cover',
+      });
+
+      expect(stored.storageKey.startsWith('media/course_cover/')).toBe(true);
+      expect(await storage.exists(stored.storageKey)).toBe(true);
+
+      const relocatedKey = await storage.relocateToCategoryFolder({
+        currentStorageKey: stored.storageKey,
+        targetCategory: 'lesson_image',
+        safeFilename: stored.safeFilename,
+      });
+
+      expect(relocatedKey.startsWith('media/lesson_image/')).toBe(true);
+      expect(await storage.exists(stored.storageKey)).toBe(false);
+      expect(await storage.exists(relocatedKey)).toBe(true);
+      await storage.deleteFile(relocatedKey);
+    });
+
+    it('verifies video formats, generic MIME fallback, dynamic size limits, and HTTP Byte-Range parsing', async () => {
+      const validMp4 = Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32]);
+      const validWebm = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81]);
+      const validMov = Buffer.from([0x00, 0x00, 0x00, 0x14, 0x6d, 0x6f, 0x6f, 0x76, 0x00, 0x00, 0x00, 0x00]);
+      const validGif = Buffer.from('GIF89a\x01\x00\x01\x00', 'ascii');
+
+      expect(verifyMagicBytes(validMp4, 'video/mp4')).toBe(true);
+      expect(verifyMagicBytes(validWebm, 'video/webm')).toBe(true);
+      expect(verifyMagicBytes(validMov, 'video/quicktime')).toBe(true);
+      expect(verifyMagicBytes(validGif, 'image/gif')).toBe(true);
+
+      expect(resolveAllowedMediaSpec('application/octet-stream', '.mp4')?.mimeType).toBe('video/mp4');
+      expect(resolveAllowedMediaSpec('application/octet-stream', '.mov')?.mimeType).toBe('video/quicktime');
+
+      // Dynamic size limit enforcement (cap at 50 bytes)
+      const largeMp4 = Buffer.concat([validMp4, Buffer.alloc(100, 0)]);
+      await expect(
+        storage.storeFromStream({
+          fileStream: Readable.from([largeMp4]),
+          originalFileName: 'clip.mp4',
+          claimedMimeType: 'video/mp4',
+          category: 'lesson_video',
+          limits: { image: 1024, video: 50, document: 1024 },
+        })
+      ).rejects.toThrow();
+
+      // Valid MP4 upload under limit into lesson_video folder
+      const storedVideo = await storage.storeFromStream({
+        fileStream: Readable.from([largeMp4]),
+        originalFileName: 'lesson-intro.mp4',
+        claimedMimeType: 'video/mp4',
+        category: 'lesson_video',
+        limits: { image: 1024, video: 1024 * 1024, document: 1024 },
+      });
+      expect(storedVideo.mediaType).toBe('video');
+      expect(storedVideo.storageKey.startsWith('media/lesson_video/')).toBe(true);
+      await storage.deleteFile(storedVideo.storageKey);
+
+      // HTTP Byte-Range parser
+      expect(parseHttpByteRange(undefined, 1000)).toBeNull();
+      expect(parseHttpByteRange('bytes=0-99', 1000)).toEqual({ kind: 'range', start: 0, end: 99 });
+      expect(parseHttpByteRange('bytes=500-', 1000)).toEqual({ kind: 'range', start: 500, end: 999 });
+      expect(parseHttpByteRange('bytes=-100', 1000)).toEqual({ kind: 'range', start: 900, end: 999 });
+      expect(parseHttpByteRange('bytes=1500-2000', 1000)).toEqual({ kind: 'unsatisfiable' });
     });
   });
 

@@ -156,6 +156,16 @@ export function MediaPickerModal({
           <MediaUploaderZone
             defaultCategory={defaultCategory}
             defaultVisibility="public"
+            singleFile
+            accept={
+              allowedMediaType === 'image'
+                ? 'image/jpeg,image/png,image/webp,image/gif'
+                : allowedMediaType === 'video'
+                  ? 'video/mp4,video/webm,video/quicktime,video/x-m4v,video/ogg,.mp4,.webm,.mov,.m4v,.ogv,.ogg'
+                  : allowedMediaType === 'document'
+                    ? '.pdf,.zip,application/pdf,application/zip'
+                    : undefined
+            }
             onUploaded={(media) => {
               onSelect(media);
               onClose();
@@ -190,7 +200,11 @@ export function MediaPickerModal({
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {items.map((item) => {
-                const src = resolvePreviewMediaUrl(item.publicUrl || item.storageKey);
+                const src = resolvePreviewMediaUrl(
+                  item.publicUrl || item.storageKey,
+                  item.id,
+                  item.visibility
+                );
                 return (
                   <button
                     key={item.id}

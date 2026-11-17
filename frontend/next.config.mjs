@@ -8,6 +8,7 @@ const nextConfig = {
   experimental: {
     staticGenerationRetryCount: 3,
     staticGenerationMaxConcurrency: 1,
+    proxyTimeout: 900000,
   },
   images: {
     remotePatterns: [

@@ -30,3 +30,8 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 .vercel/
+
+# Tracked media storage directory (ensure uploaded CMS files are not gitignored)
+!backend/storage/
+!backend/storage/media/
+!backend/storage/media/**

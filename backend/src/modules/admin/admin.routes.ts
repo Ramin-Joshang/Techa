@@ -188,6 +188,17 @@ adminRoutes.get(
   requirePermission('media:read'),
   asyncHandler(adminController.listMedia)
 );
+adminRoutes.get(
+  '/media/overview',
+  requirePermission('media:read'),
+  asyncHandler(adminController.getMediaOverview)
+);
+adminRoutes.patch(
+  '/media/limits',
+  adminWriteRateLimiter,
+  requirePermission('settings:update'),
+  asyncHandler(adminController.updateMediaLimits)
+);
 adminRoutes.post(
   '/media/upload',
   adminUploadRateLimiter,
